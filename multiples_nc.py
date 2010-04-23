@@ -1,6 +1,4 @@
 from small_multiples import small_multiples_plot
-# from acuity.data import Bounds, Data, DataTransform, DataSelection
-# from acuity.coordinateSystems import MapProjection, GeographicSystem
 
 from datetime import datetime, timedelta
 import numpy as np

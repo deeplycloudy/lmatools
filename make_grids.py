@@ -6,7 +6,7 @@ import tables
 
 import density_to_files
 
-from acuity.coordinateSystems import MapProjection, GeographicSystem
+from coordinateSystems import MapProjection, GeographicSystem
 
 
 def to_seconds(dt):
