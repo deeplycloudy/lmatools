@@ -269,16 +269,16 @@ def grid_h5flashfiles(h5_filenames, start_time, end_time,
                         
     write_cf_netcdf(outfiles[0], t_ref, np.asarray(t_edges_seconds[:-1]),
                     x_coord/1.0e3, y_coord/1.0e3, lons, lats, ctr_lat, ctr_lon, 
-                    outgrids[0], fieldnames[0], field_descriptions[0])
+                    outgrids[0], field_names[0], field_descriptions[0])
     write_cf_netcdf(outfiles[1], t_ref, np.asarray(t_edges_seconds[:-1]),
                     x_coord/1.0e3, y_coord/1.0e3, lons, lats, ctr_lat, ctr_lon, 
-                    outgrids[1], fieldnames[1], field_descriptions[1])
+                    outgrids[1], field_names[1], field_descriptions[1])
     write_cf_netcdf(outfiles[2], t_ref, np.asarray(t_edges_seconds[:-1]),
                     x_coord/1.0e3, y_coord/1.0e3, lons, lats, ctr_lat, ctr_lon, 
-                    outgrids[2], fieldnames[2], field_descriptions[2])
+                    outgrids[2], field_names[2], field_descriptions[2])
     write_cf_netcdf(outfiles[3], t_ref, np.asarray(t_edges_seconds[:-1]),
                     x_coord/1.0e3, y_coord/1.0e3, lons, lats, ctr_lat, ctr_lon, 
-                    outgrids[3], fieldnames[3], field_descriptions[3], format='f')
+                    outgrids[3], field_names[3], field_descriptions[3], format='f')
                     
     print 'max extent is', extent_density_grid.max()
 
