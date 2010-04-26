@@ -1,4 +1,5 @@
 import glob 
+import os
 from datetime import datetime, timedelta
 
 import numpy as np
@@ -89,6 +90,9 @@ def write_cf_netcdf(outfile, t_start, t, xloc, yloc, lon_for_x, lat_for_y, ctr_l
 
 
 def read_flashes(h5LMAfiles, target, base_date=None, min_points=10):
+    """ This routine is the head of the data pipeline, responsible for pushing out 
+        events and flashes. Using a different flash data source format is a matter of
+        replacing this routine to read in the necessary event and flash data."""
 
     for filename in h5LMAfiles:
         h5 = tables.openFile(filename)
@@ -127,6 +131,8 @@ def grid_h5flashfiles(h5_filenames, start_time, end_time,
                         y_bnd = (-100e3, 100e3),
                         z_bnd = (-20e3, 20e3),
                         ctr_lat = 35.23833, ctr_lon = -97.46028,
+                        min_points_per_flash=10,
+                        outpath = ''
                         ):
     from math import ceil
     """
@@ -220,7 +226,7 @@ def grid_h5flashfiles(h5_filenames, start_time, end_time,
         
     framer = density_to_files.flashes_to_frames(t_edges_seconds, all_frames, time_key='start')
     
-    read_flashes( h5_filenames, framer, base_date=t_ref)
+    read_flashes( h5_filenames, framer, base_date=t_ref, min_points=min_points_per_flash)
     
     # print 'event_density_grid ', id(event_density_grid[:,:,-1])
     # print 'extent_density_grid', id(extent_density_grid[:,:,-1])
@@ -240,24 +246,43 @@ def grid_h5flashfiles(h5_filenames, start_time, end_time,
     lons.shape=x_all.shape
     lats.shape=y_all.shape
     
-    outflile_basename = 'LMA_%s_%d_' % (start_time.strftime('%Y%m%d_%H%M%S'), to_seconds(duration))
+    outflile_basename = os.path.join(outpath,'LMA_%s_%d_' % (start_time.strftime('%Y%m%d_%H%M%S'), to_seconds(duration)))
     
-    write_cf_netcdf(outflile_basename+'flash_extent.nc', t_ref, np.asarray(t_edges_seconds[:-1]),
+    outfiles = (outflile_basename+'flash_extent.nc',
+                outflile_basename+'flash_init.nc',
+                outflile_basename+'source.nc',
+                outflile_basename+'footprint.nc',
+                )
+                
+    outgrids = (extent_density_grid,
+                init_density_grid,
+                event_density_grid,
+                footprint_grid
+                )
+                
+    field_names = ('flash_extent', 'flash_initiation', 'lma_source', 'flash_footprint')
+    
+    field_descriptions = ('LMA flash extent density',
+                        'LMA flash initiation density',
+                        'LMA source density',
+                        'LMA per-flash footprint')
+                        
+    write_cf_netcdf(outfiles[0], t_ref, np.asarray(t_edges_seconds[:-1]),
                     x_coord/1.0e3, y_coord/1.0e3, lons, lats, ctr_lat, ctr_lon, 
-                    extent_density_grid, 'flash_extent', 'LMA flash extent density')
-    write_cf_netcdf(outflile_basename+'flash_init.nc', t_ref, np.asarray(t_edges_seconds[:-1]),
+                    outgrids[0], fieldnames[0], field_descriptions[0])
+    write_cf_netcdf(outfiles[1], t_ref, np.asarray(t_edges_seconds[:-1]),
                     x_coord/1.0e3, y_coord/1.0e3, lons, lats, ctr_lat, ctr_lon, 
-                    init_density_grid, 'flash_initiation', 'LMA flash initiation density')
-    write_cf_netcdf(outflile_basename+'source.nc', t_ref, np.asarray(t_edges_seconds[:-1]),
+                    outgrids[1], fieldnames[1], field_descriptions[1])
+    write_cf_netcdf(outfiles[2], t_ref, np.asarray(t_edges_seconds[:-1]),
                     x_coord/1.0e3, y_coord/1.0e3, lons, lats, ctr_lat, ctr_lon, 
-                    event_density_grid, 'lma_source', 'LMA source density')
-    write_cf_netcdf(outflile_basename+'footprint.nc', t_ref, np.asarray(t_edges_seconds[:-1]),
+                    outgrids[2], fieldnames[2], field_descriptions[2])
+    write_cf_netcdf(outfiles[3], t_ref, np.asarray(t_edges_seconds[:-1]),
                     x_coord/1.0e3, y_coord/1.0e3, lons, lats, ctr_lat, ctr_lon, 
-                    footprint_grid, 'flash_footprint', 'LMA per-flash footprint', format='f')
+                    outgrids[3], fieldnames[3], field_descriptions[3], format='f')
                     
     print 'max extent is', extent_density_grid.max()
 
-    return x_coord, y_coord, lons, lats, extent_density_grid
+    return x_coord, y_coord, lons, lats, extent_density_grid, outfiles, field_names
 
 
 if __name__ == '__main__':
