@@ -2,14 +2,15 @@ import matplotlib
 matplotlib.rc('xtick', labelsize=6) 
 matplotlib.rc('ytick', labelsize=6) 
 
-from pylab import figure, show #, subplot, show
+
 from numpy import arange
 
 class small_multiples_plot(object):
     
     def __init__(self, fig=None, *args, **kwargs):
         if fig is None:
-            fig = figure()
+            raise AssertionError, "A valid figure must be passed in."
+            # fig = figure()
         self.fig = fig
         self.fig.subplots_adjust(bottom=0.20, left = 0.1, right=0.9, top=0.9)
         self.colorbar_ax = fig.add_axes((0.1, 0.1, 0.8, 0.05))
@@ -66,6 +67,7 @@ def small_multiples(f, rows=4, columns=5, margin=(0.0,0.0), zoom_together=True):
 
 
 if __name__ == '__main__':
+    from pylab import figure, show #, subplot, show
     f=figure()
     m=small_multiples(f)
 
