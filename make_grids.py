@@ -90,7 +90,7 @@ def write_cf_netcdf(outfile, t_start, t, xloc, yloc, lon_for_x, lat_for_y, ctr_l
 
 
 def read_flashes(h5LMAfiles, target, base_date=None, min_points=10):
-    """ This routine is the head of the data pipeline, responsible for pushing out 
+    """ This routine is the data pipeline source, responsible for pushing out 
         events and flashes. Using a different flash data source format is a matter of
         replacing this routine to read in the necessary event and flash data."""
 
@@ -119,8 +119,14 @@ def read_flashes(h5LMAfiles, target, base_date=None, min_points=10):
 
         n_flashes = len(flashes)
         print '    ', n_flashes, ' total flashes, with extra dt of', extra_dt
+        
+        push_out = (events, flashes)
 
-        target.send((events,flashes))
+        target.send(push_out)
+        
+        # del events
+        # del flashes
+        del push_out
 
         h5.close()
         

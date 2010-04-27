@@ -1,5 +1,5 @@
 import glob
-
+import gc
 import numpy as np
 
 from density_tools import unique_vectors
@@ -19,6 +19,7 @@ def broadcast(targets):
         stuff = (yield)
         for target in targets:
             target.send(stuff)
+        del stuff
 
 
 # class map_projector(object):
@@ -54,6 +55,7 @@ def filter_flash(target, min_points=10):
         evs, flash = (yield)           # Receive a flash
         if (flash['n_points'] >= 10):
             target.send((evs, flash))
+        del evs, flash
             
 
 @coroutine
@@ -67,6 +69,7 @@ def flashes_to_frames(time_edges, targets, time_key='start'):
         slices = [slice(*i) for i in zip(idx[0:-1], idx[1:])]
         for target, s in zip(targets, slices):
             target.send((events, flashes[sort_idx][s]))
+        del events, flashes, start_times, sort_idx, idx, slices
 
 def event_yielder(evs, fls):
     for fl in fls:
@@ -98,6 +101,7 @@ def extract_events_for_flashes(target, flashID_key='flash_id'):
         # events = np.fromiter( (mapper[fl['flash_id']] for fl in fls), dtype=event_dtype)
 
         target.send((events, fls))
+        del events, evs, fls
 
 # @coroutine
 # def extract_events(target, flashID_key='flash_id'):
@@ -126,6 +130,7 @@ def no_projection(x_coord, y_coord, z_coord, target, use_flashes=False):
             points = events
         x,y,z = points[x_coord], points[y_coord], points[z_coord]
         target.send((events, flashes, x,y,z))
+        del events, flashes, x,y,z, points
     
 
 @coroutine
@@ -141,6 +146,7 @@ def project(x_coord, y_coord, z_coord, mapProj, geoProj, target, use_flashes=Fal
                 *geoProj.toECEF(points[x_coord], points[y_coord], points[z_coord])
                 )
         target.send((events, flashes, x,y,z))
+        del events, flashes, x,y,z, points
 
 @coroutine
 def footprint_mean(flash_id_key='flash_id', area_key='area'):
@@ -162,8 +168,10 @@ def footprint_mean(flash_id_key='flash_id', area_key='area'):
             areas = [footprints[fi] for fi in fl_id] #puts areas in same order as x[unq_idx], y[unq_idx]
             # counts normalized by areas 
             target.send((x[unq_idx],y[unq_idx],areas))
+            del footprints, unq_idx, fl_id, areas
         # else:
             # print ''
+        del events, flash, x, y, z, x_i, y_i
 
 @coroutine
 def point_density(target):
@@ -175,6 +183,7 @@ def point_density(target):
         if len(x) > 0:
             print 'with points numbering', len(x)
             target.send((x, y, None))
+        del events, flash ,x,y,z
         # else:
             # print ''
 
@@ -202,12 +211,14 @@ def extent_density(x0, y0, dx, dy, target, flash_id_key='flash_id', weight_key=N
             if weight_key <> None:
                 weight_lookup = dict(zip(flash[flash_id_key], flash[weight_key]))
                 weights = [weight_lookup[fi] for fi in events[unq_idx]['flash_id']] #puts weights in same order as x[unq_idx], y[unq_idx]
+                del weight_lookup
             else:
                 weights = None
             target.send((x[unq_idx], y[unq_idx], weights))
+            del weights, unq_idx
         # else:
             # print ''
-
+        del events, flash, x, y, z, x_i, y_i
 
 @coroutine
 def accumulate_points_on_grid(grid, xedge, yedge, out=None, label=''):
@@ -233,6 +244,8 @@ def accumulate_points_on_grid(grid, xedge, yedge, out=None, label=''):
                     count = np.asarray(total, dtype='float32')/count
                     count[bad] = 0.0 
                     
+                    del total, edges, bad
+                    
                 # try:
                     # count, edges = np.histogramdd((x,y), bins=(xedge, yedge), weights=weights)
                 # except AttributeError:
@@ -248,6 +261,9 @@ def accumulate_points_on_grid(grid, xedge, yedge, out=None, label=''):
                     out['out'] = grid
                 else:
                     grid += count
+                del count
+            del x, y, weights
+            gc.collect()
     except GeneratorExit:
         out['out'] = grid
         

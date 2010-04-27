@@ -1,3 +1,5 @@
+""" The data used to make the grids are LMA data that have been sorted into flashes. The LMA source data and flash metadata are saved into an HDF5 file."""
+
 import glob
 from datetime import datetime
 
