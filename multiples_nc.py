@@ -4,12 +4,13 @@ from datetime import datetime, timedelta
 import numpy as np
 import pupynere as nc
 
-import matplotlib.pyplot as plt
 # from pylab import figure, get_cmap, colorbar
-from matplotlib.figure import figaspect
+from matplotlib.figure import figaspect, Figure
 from matplotlib.colorbar import ColorbarBase
+from matplotlib.cm import get_cmap
 from matplotlib.ticker import FuncFormatter
 from matplotlib.dates import mx2num, date2num, DateFormatter
+from matplotlib.backends.backend_agg import FigureCanvasAgg  
 
 from math import ceil
 
@@ -79,7 +80,7 @@ def make_plot(filename, grid_name, x_name='x', y_name='y', t_name='time', n_cols
     
     w, h = figaspect(float(n_rows)/n_cols)
 
-    colormap = plt.get_cmap('gist_earth')
+    colormap = get_cmap('gist_earth')
     grey_color = (0.5,)*3
     frame_color = (0.2,)*3
     
@@ -96,9 +97,13 @@ def make_plot(filename, grid_name, x_name='x', y_name='y', t_name='time', n_cols
     # count_scale_factor = dx # / 1000.0
     # max_count_baseline = 450 * count_scale_factor #/ 10.0
     min_count, max_count = 1, grid[:].max() #max_count_baseline*(t[1]-t[0])
+    
+    f.close()
 
-    f = plt.figure(figsize=(w,h))
-    p = small_multiples_plot(fig=f, rows=n_rows, columns=n_cols)
+    fig = Figure(figsize=(w,h))
+    canvas = FigureCanvasAgg(fig)                                
+    fig.set_canvas(canvas)
+    p = small_multiples_plot(fig=fig, rows=n_rows, columns=n_cols)
     p.label_edges(True)
     pad = 0.0 # for time labels in each frame
             
@@ -149,10 +154,8 @@ def make_plot(filename, grid_name, x_name='x', y_name='y', t_name='time', n_cols
     print 'making multiples',
     p.multiples.flat[0].axis(view_x+view_y)
     filename = 'LMA-%s_%s_%5.2fkm_%5.1fs.pdf' % (grid_name, start_time.strftime('%Y%m%d_%H%M%S'), dx, time_delta.seconds)
-    f.savefig(filename, dpi=150)
+    fig.savefig(filename, dpi=150)
     print ' ... done'
-    plt.close(f)
-    # f.clf()
         
 
         
