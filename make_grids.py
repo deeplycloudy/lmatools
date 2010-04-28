@@ -252,7 +252,7 @@ def grid_h5flashfiles(h5_filenames, start_time, end_time,
     lons.shape=x_all.shape
     lats.shape=y_all.shape
     
-    outflile_basename = os.path.join(outpath,'LMA_%s_%d_' % (start_time.strftime('%Y%m%d_%H%M%S'), to_seconds(duration)))
+    outflile_basename = os.path.join(outpath,'LMA_%s_%d_%dsrc_' % (start_time.strftime('%Y%m%d_%H%M%S'), to_seconds(duration), min_points_per_flash))
     
     outfiles = (outflile_basename+'flash_extent.nc',
                 outflile_basename+'flash_init.nc',
