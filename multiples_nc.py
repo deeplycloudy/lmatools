@@ -1,5 +1,8 @@
 from small_multiples import small_multiples_plot
 
+import os
+import gc
+
 from datetime import datetime, timedelta
 import numpy as np
 import pupynere as nc
@@ -52,8 +55,9 @@ def centers_to_edges(x):
     return xedge        
 
 
-
-def make_plot(filename, grid_name, x_name='x', y_name='y', t_name='time', n_cols=6):
+    
+    
+def make_plot(filename, grid_name, x_name='x', y_name='y', t_name='time', n_cols=6, outpath='', filename_prefix='LMA'):
     
     f = nc.NetCDFFile(filename)
     data = f.variables  # dictionary of variable names to nc_var objects
@@ -120,7 +124,7 @@ def make_plot(filename, grid_name, x_name='x', y_name='y', t_name='time', n_cols
     start_time = base_date + time_delta
         
     indexer = [None,]*len(grid.shape)
-
+    
     for i in range(n_frames):
         frame_start = base_date + timedelta(0,float(t[i]),0)
         indexer[grid_t_idx] = i
@@ -135,26 +139,28 @@ def make_plot(filename, grid_name, x_name='x', y_name='y', t_name='time', n_cols
                                    cmap=colormap)
         label_string = frame_start.strftime('%H%M:%S')
         text_label = p.multiples.flat[i].text(xedge[0]-pad+x_range*.015, yedge[0]-pad+y_range*.015, label_string, color=grey_color, size=6)
-        density_plot.set_rasterized(True)
+        # density_plot.set_rasterized(True)
         density_maxes.append(density.max())
         total_counts.append(density.sum())
         all_t.append(frame_start)
         print label_string, x.shape, density.max(), density.sum()
-
+    
     color_scale = ColorbarBase(p.colorbar_ax, cmap=density_plot.cmap,
                                        norm=density_plot.norm,
                                        orientation='horizontal')
-
+    
     # color_scale.set_label('count per pixel')
     color_scale.set_label('log10(count per pixel)')
-
+    
     view_x = (xedge.min(), xedge.max())
     view_y = (yedge.min(), yedge.max())
     
     print 'making multiples',
     p.multiples.flat[0].axis(view_x+view_y)
-    filename = 'LMA-%s_%s_%5.2fkm_%5.1fs.pdf' % (grid_name, start_time.strftime('%Y%m%d_%H%M%S'), dx, time_delta.seconds)
+    filename = '%s-%s_%s_%05.2fkm_%05.1fs.pdf' % (filename_prefix, grid_name, start_time.strftime('%Y%m%d_%H%M%S'), dx, time_delta.seconds)
+    filename = os.path.join(outpath, filename)
     fig.savefig(filename, dpi=150)
+    
     print ' ... done'
         
 
