@@ -1,5 +1,5 @@
 import glob 
-import os
+import os, sys
 from datetime import datetime, timedelta
 
 import numpy as np
@@ -138,7 +138,8 @@ def grid_h5flashfiles(h5_filenames, start_time, end_time,
                         z_bnd = (-20e3, 20e3),
                         ctr_lat = 35.23833, ctr_lon = -97.46028,
                         min_points_per_flash=10,
-                        outpath = ''
+                        outpath = '',
+                        flash_count_logfile = None
                         ):
     from math import ceil
     """
@@ -168,6 +169,9 @@ def grid_h5flashfiles(h5_filenames, start_time, end_time,
 
     grids are in an HDF5 file. how to handle flushing?
     """
+    
+    if flash_count_logfile is None:
+        flash_count_logfile = sys.stdout
     
     # reference time is the date part of the start_time
     ref_date = start_time.date()
@@ -230,7 +234,9 @@ def grid_h5flashfiles(h5_filenames, start_time, end_time,
 
         all_frames.append( density_to_files.extract_events_for_flashes( spew_to_density_types ) )
         
-    framer = density_to_files.flashes_to_frames(t_edges_seconds, all_frames, time_key='start')
+    frame_count_log = density_to_files.flash_count_log(flash_count_logfile)
+        
+    framer = density_to_files.flashes_to_frames(t_edges_seconds, all_frames, time_key='start', time_edges_datetime=t_edges, flash_counter=frame_count_log)
     
     read_flashes( h5_filenames, framer, base_date=t_ref, min_points=min_points_per_flash)
     
@@ -246,6 +252,8 @@ def grid_h5flashfiles(h5_filenames, start_time, end_time,
     
     x_all, y_all = (a.T for a in np.meshgrid(x_coord, y_coord))
     assert x_all.shape == y_all.shape
+    assert x_all.shape[0] == nx
+    assert x_all.shape[1] == ny
     z_all = np.zeros_like(x_all)
             
     lons, lats, alts = x,y,z = geoProj.fromECEF( *mapProj.toECEF(x_all, y_all, z_all) )
