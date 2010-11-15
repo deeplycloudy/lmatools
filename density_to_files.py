@@ -45,6 +45,16 @@ def broadcast(targets):
 #         target.send((x,y,z))
 
 
+@coroutine
+def flash_count_log(logfile, format_string="%s flashes in frame starting at %s"):
+    """ Write flash count for some frame to a file"""
+    while True:
+        # Receive list of flashes, frame start time
+        flashes, frame_start_time = (yield)
+        
+        n_flashes = len(flashes)
+        flash_count_status = format_string % (n_flashes, frame_start_time)
+        logfile.write(flash_count_status+'\n')
 
 
 @coroutine
@@ -56,10 +66,20 @@ def filter_flash(target, min_points=10):
         if (flash['n_points'] >= 10):
             target.send((evs, flash))
         del evs, flash
-            
+
 
 @coroutine
-def flashes_to_frames(time_edges, targets, time_key='start'):
+def flashes_to_frames(time_edges, targets, time_key='start', time_edges_datetime=None, flash_counter=None):
+    """ time_edges_datetime is same len as time_edges but with datetime objects instead of floats.
+        allows 
+    """
+    if time_edges_datetime is None:
+        # print "Datetime-style time edges not found, using time edges in seconds for flash count label"
+        time_edges_datetime = time_edges
+    
+    flash_count_messages = []
+    
+    assert len(time_edges) == (len(time_edges_datetime))
     assert len(time_edges) == (len(targets)+1)
     while True:
         events, flashes = (yield)
@@ -67,9 +87,16 @@ def flashes_to_frames(time_edges, targets, time_key='start'):
         sort_idx = np.argsort(start_times) #, order=[time_key])
         idx = np.searchsorted(start_times[sort_idx], time_edges)
         slices = [slice(*i) for i in zip(idx[0:-1], idx[1:])]
-        for target, s in zip(targets, slices):
-            target.send((events, flashes[sort_idx][s]))
+        for target, s, frame_start_time in zip(targets, slices, time_edges_datetime[:-1]):
+            these_flashes = flashes[sort_idx][s]
+            if flash_counter is not None:
+                flash_counter.send((these_flashes, frame_start_time))
+            # flash_count_status = "Sending %s flashes to frame starting at %s" % (len(these_flashes), frame_start_time)
+            # flash_count_messages += flash_count_status
+            # print flash_count_status
+            target.send((events, these_flashes))
         del events, flashes, start_times, sort_idx, idx, slices
+    print flash_count_messages
 
 def event_yielder(evs, fls):
     for fl in fls:
