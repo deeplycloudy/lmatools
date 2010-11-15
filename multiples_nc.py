@@ -57,13 +57,15 @@ def centers_to_edges(x):
 
     
     
-def make_plot(filename, grid_name, x_name='x', y_name='y', t_name='time', n_cols=6, outpath='', filename_prefix='LMA'):
+def make_plot(filename, grid_name, x_name='x', y_name='y', t_name='time',
+                n_cols=6, outpath='', filename_prefix='LMA', 
+                do_save=True, image_type='pdf'):
     
     f = nc.NetCDFFile(filename)
     data = f.variables  # dictionary of variable names to nc_var objects
     dims = f.dimensions # dictionary of dimension names to sizes
-    x = data[y_name]
-    y = data[x_name]
+    x = data[x_name]
+    y = data[y_name]
     t = data[t_name]
     grid = data[grid_name]
     
@@ -125,8 +127,11 @@ def make_plot(filename, grid_name, x_name='x', y_name='y', t_name='time', n_cols
         
     indexer = [None,]*len(grid.shape)
     
+    
+    frame_start_times = []
     for i in range(n_frames):
         frame_start = base_date + timedelta(0,float(t[i]),0)
+        frame_start_times.append(frame_start)
         indexer[grid_t_idx] = i
         
         density = grid[indexer]
@@ -157,9 +162,12 @@ def make_plot(filename, grid_name, x_name='x', y_name='y', t_name='time', n_cols
     
     print 'making multiples',
     p.multiples.flat[0].axis(view_x+view_y)
-    filename = '%s-%s_%s_%05.2fkm_%05.1fs.pdf' % (filename_prefix, grid_name, start_time.strftime('%Y%m%d_%H%M%S'), dx, time_delta.seconds)
+    filename = '%s-%s_%s_%05.2fkm_%05.1fs.%s' % (filename_prefix, grid_name, start_time.strftime('%Y%m%d_%H%M%S'), dx, time_delta.seconds, image_type)
     filename = os.path.join(outpath, filename)
-    fig.savefig(filename, dpi=150)
+    if do_save:
+        fig.savefig(filename, dpi=150)
+    
+    return fig, p, frame_start_times, filename
     
     print ' ... done'
         
