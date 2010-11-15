@@ -47,14 +47,28 @@ def broadcast(targets):
 
 @coroutine
 def flash_count_log(logfile, format_string="%s flashes in frame starting at %s"):
-    """ Write flash count for some frame to a file"""
-    while True:
-        # Receive list of flashes, frame start time
-        flashes, frame_start_time = (yield)
+    """ Write flash count for some frame to a file-like object. File open/close should be handled
+        by the calling routine."""
         
-        n_flashes = len(flashes)
-        flash_count_status = format_string % (n_flashes, frame_start_time)
-        logfile.write(flash_count_status+'\n')
+    # Track flash count for each frame
+    frame_times = {}
+    try:
+        while True:
+            # Receive list of flashes, frame start time
+            flashes, frame_start_time = (yield)
+            n_flashes = len(flashes)
+        
+            try:
+                frame_times[frame_start_time] += n_flashes
+            except KeyError:
+                # Key doesn't exist, so can't increment flash count 
+                frame_times[frame_start_time]  = n_flashes
+    except GeneratorExit:
+        all_times = frame_times.keys()
+        all_times.sort()
+        for frame_start_time in all_times:
+            flash_count_status = format_string % (frame_times[frame_start_time], frame_start_time)
+            logfile.write(flash_count_status+'\n')
 
 
 @coroutine
