@@ -55,7 +55,59 @@ def centers_to_edges(x):
     return xedge        
 
 
+def multiples_figaspect(n_rows, n_cols, x_range, y_range, fig_width=None, max_height=None):
+    """ 
+        DIMENSIONS, assuming no margins anywhere.
+        Plottable area: w, h (inches)
+        Data units: x_range, y_range (km, array shape, etc.)
+        Subaxis count: n_cols, n_rows (laid out in a uniformly spaced grid)
+        Subaxis size: x_box, y_box (inches)
+        
+        y_box = h / n_row
+        x_box = w / n_col
+        
+        Assume we're working with a plottable area of fig_width (no margins).
+        Also assume we want squared-up units (e.g, square 
+        grid pixels if x_range, y_range are nx and ny for an array, or physical
+        units, so 1 km north = 1 km east). In that case, we want:
+            
+            y_range / y_box  =  x_range / x_box  (e.g., km/in)
+            
+        So, given w = fig_width (taken from rcParams by default):
+            
+            (y_range * n_rows) / h  =  (x_range * n_col) / w
+            
+            or 
+            
+            h = (y_range * n_rows * w) / (x_range * n_col)
+            
+        If we want to calculate the number of rows that can fit on a page with max_height,
+            
+            y_box = h / n_rows
+            n_rows_perpage = floor(max_height / y_box)
+            
+        Returns: w, h, n_rows_perpage, n_pages
+        
+    """
+    if fig_width is None:
+        fig_width, fig_height = matplotlib.rcParams['figure.figsize'][0:1]
+    w = float(fig_width)
     
+    n_rows, n_cols, x_range, y_range = (float(i) for i in (n_rows, n_cols, x_range, y_range))
+    
+    h = (y_range * n_rows * w) / (x_range * n_cols)
+    
+    if max_height is not None:
+        max_height = float(max_height)
+        y_box = h / n_row
+        n_rows_perpage = floor(max_height / y_box)
+        n_pages = ceil(n_rows/n_rows_perpage)
+    else:
+        n_rows_perpage = n_rows
+        n_pages = 1
+        
+    return w, h, n_rows_perpage, n_pages
+
     
 def make_plot(filename, grid_name, x_name='x', y_name='y', t_name='time',
                 n_cols=6, outpath='', filename_prefix='LMA', 
@@ -84,8 +136,6 @@ def make_plot(filename, grid_name, x_name='x', y_name='y', t_name='time',
     # n_cols = 6
     n_rows = int(ceil( float(n_frames) / n_cols ))
     
-    w, h = figaspect(float(n_rows)/n_cols)
-
     colormap = get_cmap('gist_earth')
     grey_color = (0.5,)*3
     frame_color = (0.2,)*3
@@ -99,6 +149,9 @@ def make_plot(filename, grid_name, x_name='x', y_name='y', t_name='time',
     yedge = centers_to_edges(y)
     y_range = yedge.max() - yedge.min()
     dx = (xedge[1]-xedge[0])
+    
+    # w, h = figaspect(float(n_rows)/n_cols) # breaks for large numbers of frames - has a hard-coded max figure size
+    w, h, n_rows_perpage, n_pages = multiples_figaspect(n_rows, n_cols, x_range, y_range, fig_width=8.5, max_height=None)
 
     # count_scale_factor = dx # / 1000.0
     # max_count_baseline = 450 * count_scale_factor #/ 10.0
