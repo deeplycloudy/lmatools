@@ -163,7 +163,7 @@ class RadarCoordinateSystem(CoordinateSystem):
         a = self.Requator         # Equatorial radius  - WGS-84 value = 6378137.0
         Rearth = a/sqrt(1-e2*(sin(lat))**2) # radius of curvature
         
-        Rprime = self.effectiveRadiusMultiplier * self.Requator
+        Rprime = self.effectiveRadiusMultiplier * self.Rearth
         
         # Eqns 2.28b,c in Doviak and Zrnic 1993
         # Radar altitude is tacked on at the end, which isn't part of their derivation. At 100 km, it's 
@@ -188,7 +188,7 @@ class RadarCoordinateSystem(CoordinateSystem):
         a = self.Requator         # Equatorial radius  - WGS-84 value = 6378137.0
         Rearth = a/sqrt(1-e2*(sin(lat))**2) # radius of curvature
         
-        Rprime = self.effectiveRadiusMultiplier * self.Requator
+        Rprime = self.effectiveRadiusMultiplier * self.Rearth
         
         h = array(z - self.ctrAlt, dtype='float64')
         s = array(groundRange, dtype='float64')
