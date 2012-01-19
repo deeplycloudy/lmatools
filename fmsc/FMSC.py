@@ -87,25 +87,16 @@ def sparsify(W,conn):
     
 def fmsc(data, neighbors_to_find=10):
     print "Finding {0} nearest neighbors".format(neighbors_to_find)
+
     W_knn, conn = initial_weights(data, neighbors_to_find)
     W_dilute = dilute_weights(W_knn, conn)
     print "Making sparse array"
     W = sparsify(W_dilute, conn)
+    V = np.arange(W.shape[0], dtype=int) # every point
+    G = [(V, W)]
+    s = 1
     print "Calculating interpolation matrix"
     P, C_idx, F_idx = interpolation_matrix(W, 0.2)
-    return P, W, C_idx, F_idx
-    
-    
-    
-    
-if __name__ == '__main__':
-    
-    data = np.random.randn(100,2) # (N pts, D-dimensional)
-    P, W, C_idx, F_idx = fmsc(data, neighbors_to_find=10)
-    
-    # Coarse aggregate points p and q are connected by
-    # W_pq_coarse = sum(P_kp * W_kl * P_lq)
-    # for k not equal to l
     
     N = P.shape[0]
     W_s1 = sparse.lil_matrix((N,N))
@@ -121,6 +112,29 @@ if __name__ == '__main__':
                 w_pq += (this_P_csc * W_csc[k,l] * P_csc[l,q_i]).sum()
         # print p,q, w_pq
         W_s1[p,q] = w_pq
+        
+    W_s1_other = P.T * W * P
+    
+    print W_s1
+    print W_s1_other
+    
+    
+    
+        
+    return P, W, W_s1, C_idx, F_idx
+    
+    
+    
+    
+if __name__ == '__main__':
+    
+    data = np.random.randn(100,2) # (N pts, D-dimensional)
+    P, W, W_s1, C_idx, F_idx = fmsc(data, neighbors_to_find=10)
+    
+    # Coarse aggregate points p and q are connected by
+    # W_pq_coarse = sum(P_kp * W_kl * P_lq)
+    # for k not equal to l
+    
         
         
     

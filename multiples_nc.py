@@ -197,7 +197,7 @@ def make_plot(filename, grid_name, x_name='x', y_name='y', t_name='time',
                                    cmap=colormap)
         label_string = frame_start.strftime('%H%M:%S')
         text_label = p.multiples.flat[i].text(xedge[0]-pad+x_range*.015, yedge[0]-pad+y_range*.015, label_string, color=grey_color, size=6)
-        # density_plot.set_rasterized(True)
+        density_plot.set_rasterized(True)
         density_maxes.append(density.max())
         total_counts.append(density.sum())
         all_t.append(frame_start)

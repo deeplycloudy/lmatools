@@ -80,7 +80,7 @@ def filter_flash(target, min_points=10):
         if (flash['n_points'] >= 10):
             target.send((evs, flash))
         del evs, flash
-
+    
 
 @coroutine
 def flashes_to_frames(time_edges, targets, time_key='start', time_edges_datetime=None, flash_counter=None):

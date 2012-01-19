@@ -235,8 +235,8 @@ def run_files_with_params(files, output_path, params, min_points=1, retain_ascii
             d = build() # returns temporary directory name
             logger.debug('Built flash program in %s' % d)
         
+            logger.info('Sorting flashes for %s' % a_file)
             out, err = sort_file(a_file, d) # out contains sorted flash data (via stdout)
-            logger.info('Sorted flashes for %s' % a_file)
             # print out
         
         
@@ -262,7 +262,7 @@ def run_files_with_params(files, output_path, params, min_points=1, retain_ascii
             else:
                 logger.warning('did not delete flashsort directory in /tmp')
         except:
-            logger.error("Did not successfully sort %s \n Error was: %s" % (a_file, sys.exc_info()[0]))
+            logger.error("Did not successfully sort %s \n Error was: %s" % (a_file, sys.exc_info()[1]))
             raise
     # loghandler.doRollover()
 
