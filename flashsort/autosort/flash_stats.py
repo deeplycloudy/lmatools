@@ -48,7 +48,7 @@ def calculate_flash_stats(flash, min_pts=2, max_pts=10):
             from matplotlib import delaunay
             tri = delaunay.Triangulation(x,y)
             hull = tri.hull
-            area = poly_area(x[hull], y[hull])
+            area = poly_area(tri.x[hull], tri.y[hull])
         except ImportError:
             logger.error("*** Flash area not calculated - requires delaunay from or matplotlib or scipy")
         except IndexError:
