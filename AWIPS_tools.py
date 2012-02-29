@@ -97,10 +97,11 @@ def write_AWIPS_netcdf_grid(outfile, t_start, t, xloc, yloc, lon_for_x, lat_for_
 
 
 
-def make_AWIPS_grid():
+def make_AWIPS_grid(h5_filenames=None):
     """ Write LMA data to a Lambert Conformal grid in AWIPS NetCDF Grid format"""
     
-    h5_filenames = glob.glob('/data/WTLMA/FirstLightning/processed7stn/thresh-0.15_dist-3000.0/LYL*.flash.h5')
+    if h5_filenames is None:
+        h5_filenames = glob.glob('/data/WTLMA/FirstLightning/processed7stn/thresh-0.15_dist-3000.0/LYL*.flash.h5')
     
     print h5_filenames
 
