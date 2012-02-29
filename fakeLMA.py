@@ -1,11 +1,11 @@
 import numpy as np
-import argparse
+import os
 import datetime
 
 PRELOADED_DATA = 'LYLOUT_111121_145001_0600.dat.npy'
 
 def preload_some_data():
-    from LMAtools.flashsort.autosort.LMAarrayFile import LMAdataFile
+    from lmatools.flashsort.autosort.LMAarrayFile import LMAdataFile
     lma = LMAdataFile('/data/WTLMA/FirstLightning/processed7stn/LYLOUT_111121_145001_0600.dat.gz')
     np.save(PRELOADED_DATA, lma.data)
 
@@ -15,12 +15,14 @@ def recycle_LMA_file(duration, seconds_offset):
     try:
         data = np.load(PRELOADED_DATA)
     except:
+        print "Regenerating preloadable LMA data"
         preload_some_data()
         data = np.load(PRELOADED_DATA)
         
     data['time'] -= data['time'][0]
     avail_duration = data['time'][-1] - data['time'][0]
     while (avail_duration < duration):
+        # Keep extending the array with itself until we have enough data
         start_len = data.shape[0]
         t_max = data['time'][-1]
         data = np.hstack((data,data))
@@ -42,7 +44,7 @@ def recycle_LMA_file(duration, seconds_offset):
     return n_points, output_data_string
 
 def fake_LMA_file(year=2012, month=2, day=28, hour=0, minute=0, second=0, 
-                  duration=60, outfile=None, gzip=False, header_template="", event_generator=None):
+                  duration=60, outpath=None, outfile=None, gzip=False, header_template="", event_generator=None):
     """ event_rate: events per second
         event_generator: called with (duration, seconds_offset). Is expected to return (n_points, event_multiline_string)
         """
@@ -69,17 +71,20 @@ def fake_LMA_file(year=2012, month=2, day=28, hour=0, minute=0, second=0,
 
     if outfile == None:
         outfile = "LYLOUT_{0:s}_{1:04d}.dat".format(start_time.strftime("%y%m%d_%H%M%S"), duration)
+        
+    if outpath is not None:
+        outfile = os.path.join(outpath, outfile)
 
     header_data['n_points'] = n_points
     header_data['analysis_end'] = datetime.datetime.now().strftime('%c')
-
-        
     
     f_out = file(outfile, 'w')
     f_out.write(header_template.format(**header_data))
     f_out.write(output_data_string)
+    f_out.close()
     
     # print header_template.format(**header_data)
+    return outfile
 
 
 real_analysis_program_line =  "Analysis program: /data/rtlma/bin/lma_analysis-10.8.0/lma_analysis -d 20111121 -t 145001 -s 600 -l wt -a -n 5 -o /data/rtlma/processed_data/20111121 -q -v -x 5.00 -y 500.00 [datafiles]"
@@ -146,28 +151,31 @@ Number of events: {n_points:d}
 *** data ***
 """
 
-now = datetime.datetime.now()
-
-parser = argparse.ArgumentParser(description="Generate fake LMA data for arbitrary durations and days.\nExample Usage: python fakeLMA.py -Y 2012 -m5 -d26 -H23 -M59")
-parser.add_argument('-Y', type=int, dest='year', default=now.year,
-                    help='Year, 4-digit (e.g., 2012)')
-parser.add_argument('-m', type=int, dest='month', default=now.month,
-                    help='Month, digit  (e.g., 2)')
-parser.add_argument('-d', type=int, dest='day', default=now.day,
-                    help='Day, digit (e.g., 29)')
-parser.add_argument('-H', type=int, dest='hour', default=now.hour,
-                    help='Hour, digit, 24-hour  (e.g., 13)')
-parser.add_argument('-M', type=int, dest='minute', default=now.minute,
-                    help='Minute, digit (e.g., 50)')
-parser.add_argument('-S', type=int, default=0, dest='second',
-                    help='Second, digit  (e.g., 0)')
-parser.add_argument('--duration', type=int, default=60, dest='duration',
-                    help='Duration of data in seconds')
 
 
-args = parser.parse_args()
-fake_LMA_file(year=args.year, month=args.month, day=args.day, hour=args.hour, minute=args.minute, second=args.second, 
-                duration=args.duration, header_template=late2011_header)
+if __name__ == '__main__':
+    import argparse
 
-# if __name__ == '__main__':
-    # fake_LMA_file('thisfile', hour=12, minute=50, duration=60, header_template=late2011_header)
+    now = datetime.datetime.now()
+    
+    parser = argparse.ArgumentParser(description="Generate fake LMA data for arbitrary durations and days.\nExample Usage: python fakeLMA.py -Y 2012 -m5 -d26 -H23 -M59")
+    parser.add_argument('-Y', type=int, dest='year', default=now.year,
+                        help='Year, 4-digit (e.g., 2012)')
+    parser.add_argument('-m', type=int, dest='month', default=now.month,
+                        help='Month, digit  (e.g., 2)')
+    parser.add_argument('-d', type=int, dest='day', default=now.day,
+                        help='Day, digit (e.g., 29)')
+    parser.add_argument('-H', type=int, dest='hour', default=now.hour,
+                        help='Hour, digit, 24-hour  (e.g., 13)')
+    parser.add_argument('-M', type=int, dest='minute', default=now.minute,
+                        help='Minute, digit (e.g., 50)')
+    parser.add_argument('-S', type=int, default=0, dest='second',
+                        help='Second, digit  (e.g., 0)')
+    parser.add_argument('--duration', type=int, default=60, dest='duration',
+                        help='Duration of data in seconds')
+
+
+    args = parser.parse_args()
+    fake_LMA_file(year=args.year, month=args.month, day=args.day, hour=args.hour, minute=args.minute, second=args.second, 
+                    duration=args.duration, header_template=late2011_header)
+
