@@ -54,7 +54,7 @@ class CoordinateSystem(object):
 
 class GeographicSystem(CoordinateSystem):
     """
-    Coordinate system defined on the surface of the earth using latitude, longitide, and altitude 
+    Coordinate system defined on the surface of the earth using latitude, longitide, and altitude, referenced to WGS84 ellipse
     """
     
     WGS84lla = proj4.Proj(proj='latlong', ellps='WGS84', datum='WGS84')
@@ -79,8 +79,8 @@ class MapProjection(CoordinateSystem):
         equidistant cylindrical projection
     """
     
-    def __init__(self, projection='eqc', ctrLat=None, ctrLon=None, **kwargs):
-        self.projection = proj4.Proj(proj=projection, ellps='WGS84', datum='WGS84', **kwargs)
+    def __init__(self, projection='eqc', ctrLat=None, ctrLon=None, ellipse='WGS84', datum='WGS84', **kwargs):
+        self.projection = proj4.Proj(proj=projection, ellps=ellipse, datum=datum, **kwargs)
         self.ctrLat=ctrLat
         self.ctrLon=ctrLon
         self.ctrAlt=0.0
@@ -163,7 +163,7 @@ class RadarCoordinateSystem(CoordinateSystem):
         a = self.Requator         # Equatorial radius  - WGS-84 value = 6378137.0
         Rearth = a/sqrt(1-e2*(sin(lat))**2) # radius of curvature
         
-        Rprime = self.effectiveRadiusMultiplier * self.Rearth
+        Rprime = self.effectiveRadiusMultiplier * Rearth
         
         # Eqns 2.28b,c in Doviak and Zrnic 1993
         # Radar altitude is tacked on at the end, which isn't part of their derivation. At 100 km, it's 
