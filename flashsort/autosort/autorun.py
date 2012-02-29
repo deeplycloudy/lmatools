@@ -228,6 +228,7 @@ def run_files_with_params(files, output_path, params, min_points=1, retain_ascii
     
     logger.info('%s', params)
 
+    h5_outfiles = []
     for a_file in files:
         try:
             write_header(os.path.join(src_dir,'mflashcustom.f'), **params)
@@ -251,7 +252,9 @@ def run_files_with_params(files, output_path, params, min_points=1, retain_ascii
                             outfile)            
             
             lmadata, flashes = collect_output(outfile)#, min_points=min_points)
-            write_output(outfile+'.h5', flashes, a_file)
+            outfile_with_extension = outfile + '.h5'
+            h5_outfiles.append(outfile_with_extension)
+            write_output(outfile_with_extension, flashes, a_file)
 
             if retain_ascii_output==False:
                 os.remove(outfile)
@@ -265,6 +268,7 @@ def run_files_with_params(files, output_path, params, min_points=1, retain_ascii
             logger.error("Did not successfully sort %s \n Error was: %s" % (a_file, sys.exc_info()[1]))
             raise
     # loghandler.doRollover()
+    return h5_outfiles
 
 
 def test_output():
