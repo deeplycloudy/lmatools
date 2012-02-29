@@ -139,7 +139,12 @@ def grid_h5flashfiles(h5_filenames, start_time, end_time,
                         ctr_lat = 35.23833, ctr_lon = -97.46028,
                         min_points_per_flash=10,
                         outpath = '',
-                        flash_count_logfile = None
+                        flash_count_logfile = None,
+                        proj_name = 'aeqd',
+                        proj_datum = 'WGS84',
+                        proj_ellipse = 'WGS84',
+                        output_writer = write_cf_netcdf,
+                        output_kwargs = {}
                         ):
     from math import ceil
     """
@@ -192,7 +197,8 @@ def grid_h5flashfiles(h5_filenames, start_time, end_time,
     x0 = xedge[0]
     y0 = yedge[0]
     
-    mapProj = MapProjection(projection='aeqd', ctrLat=ctr_lat, ctrLon=ctr_lon, lat_ts=ctr_lat, lon_0=ctr_lon, lat_0=ctr_lat)
+    mapProj = MapProjection(projection=proj_name, ctrLat=ctr_lat, ctrLon=ctr_lon, lat_ts=ctr_lat, 
+                            lon_0=ctr_lon, lat_0=ctr_lat, lat_1=ctr_lat, ellipse=proj_ellipse, datum=proj_datum)
     geoProj = GeographicSystem()
     
     
@@ -279,24 +285,43 @@ def grid_h5flashfiles(h5_filenames, start_time, end_time,
     field_descriptions = ('LMA flash extent density',
                         'LMA flash initiation density',
                         'LMA source density',
-                        'LMA per-flash footprint')
-                        
-    write_cf_netcdf(outfiles[0], t_ref, np.asarray(t_edges_seconds[:-1]),
+                        'LMA local mean flash area')
+    
+    density_units = "{0:5.1f} km^2".format(dx/1000.0 * dy/1000.0).lstrip()
+    time_units = "{0:5.1f} min".format(frame_interval/60.0).lstrip()
+    density_label = 'Count per ' + density_units + " pixel per "+ time_units
+    
+    field_units = ( density_label,
+                    density_label,
+                    density_label,
+                    "km^2 per flash",
+                     )
+    
+    output_writer(outfiles[0], t_ref, np.asarray(t_edges_seconds[:-1]),
                     x_coord/1.0e3, y_coord/1.0e3, lons, lats, ctr_lat, ctr_lon, 
-                    outgrids[0], field_names[0], field_descriptions[0])
-    write_cf_netcdf(outfiles[1], t_ref, np.asarray(t_edges_seconds[:-1]),
+                    outgrids[0], field_names[0], field_descriptions[0], 
+                    grid_units=field_units[0],
+                    **output_kwargs)
+    output_writer(outfiles[1], t_ref, np.asarray(t_edges_seconds[:-1]),
                     x_coord/1.0e3, y_coord/1.0e3, lons, lats, ctr_lat, ctr_lon, 
-                    outgrids[1], field_names[1], field_descriptions[1])
-    write_cf_netcdf(outfiles[2], t_ref, np.asarray(t_edges_seconds[:-1]),
+                    outgrids[1], field_names[1], field_descriptions[1], 
+                    grid_units=field_units[1],
+                    **output_kwargs)
+    output_writer(outfiles[2], t_ref, np.asarray(t_edges_seconds[:-1]),
                     x_coord/1.0e3, y_coord/1.0e3, lons, lats, ctr_lat, ctr_lon, 
-                    outgrids[2], field_names[2], field_descriptions[2])
-    write_cf_netcdf(outfiles[3], t_ref, np.asarray(t_edges_seconds[:-1]),
+                    outgrids[2], field_names[2], field_descriptions[2], 
+                    grid_units=field_units[2],
+                    **output_kwargs)
+    output_writer(outfiles[3], t_ref, np.asarray(t_edges_seconds[:-1]),
                     x_coord/1.0e3, y_coord/1.0e3, lons, lats, ctr_lat, ctr_lon, 
-                    outgrids[3], field_names[3], field_descriptions[3], format='f')
+                    outgrids[3], field_names[3], field_descriptions[3], format='f', 
+                    grid_units=field_units[3],
+                    **output_kwargs)
                     
     print 'max extent is', extent_density_grid.max()
 
     return x_coord, y_coord, lons, lats, extent_density_grid, outfiles, field_names
+    
 
 
 if __name__ == '__main__':
