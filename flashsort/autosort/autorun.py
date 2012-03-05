@@ -9,14 +9,17 @@ import datetime
 from flash_stats import calculate_flash_stats
 from mflash import write_header
 
-LOG_BASEFILENAME = datetime.datetime.now().strftime('Flash-autosort-%Y%m%d-%H%M%S.log')
+LOG_BASEFILENAME = datetime.datetime.now().strftime('Flash-autosort.log')
 
-# logfile = os.path.join(output_path, LOG_BASEFILENAME)
 
-logger = logging.getLogger('FlashAutorunLogger')
-loghandler = logging.handlers.RotatingFileHandler(LOG_BASEFILENAME, backupCount=10)
-logger.addHandler(loghandler)
-logger.setLevel(logging.DEBUG)
+
+def logger_setup(logpath):
+    logger = logging.getLogger('FlashAutorunLogger')
+    logfile = os.path.join(logpath, LOG_BASEFILENAME)
+    loghandler = logging.handlers.RotatingFileHandler(logfile, maxBytes=1024*1024, backupCount=3)
+    logger.addHandler(loghandler)
+    logger.setLevel(logging.DEBUG)
+
 
 # assume that source code for the flash program is in the same directory as this module
 try:
@@ -55,6 +58,8 @@ def build(directory=None):
     
 
 def cleanup_build(directory):
+    logger = logging.getLogger('FlashAutorunLogger')
+    
     if tmp_flashsort_prepend in directory:
         shutil.rmtree(directory)
     else:
@@ -104,6 +109,7 @@ def cat_LMA(filename):
 
 def sort_file(filename, directory):
     """ Sort one LMA data file into flashes. dir is the directory with the flash program"""
+    logger = logging.getLogger('FlashAutorunLogger')
     
     f, command, the_input = cat_LMA(filename)
     
@@ -171,6 +177,7 @@ def collect_output(datafile, min_points=1):
     from LMAarrayFile import LMAdataFile
     import numpy as np
     
+    logger = logging.getLogger('FlashAutorunLogger')
     
     # outdir = os.path.join(flash_dir,flash_output_dir)
     # os.chdir(outdir)
@@ -212,6 +219,10 @@ def write_output(outfile, flashes, orig_LMA_file):
 
 
 def run_files_with_params(files, output_path, params, min_points=1, retain_ascii_output=True, cleanup_tmp=True):
+    logger = logging.getLogger('FlashAutorunLogger')
+    
+    now = datetime.datetime.now().strftime('Flash autosort started %Y%m%d-%H%M%S')
+    logger.info(now)
     
     # Calculate the number of header lines based on the first data file.
     lma_pipe, command, any_input = cat_LMA(files[0])
@@ -284,6 +295,8 @@ def test_output():
 
 
 if __name__ == '__main__':
+    
+    logger_setup('.')
     
     DClat = 38.8888500 # falls church / western tip of arlington, rough centroid of stations
     DClon = -77.1685800

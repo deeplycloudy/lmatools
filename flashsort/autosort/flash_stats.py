@@ -1,7 +1,7 @@
 import numpy as np
 import logging
 
-logger = logging.getLogger('FlashAutorunLogger')
+# logger = logging.getLogger('FlashAutorunLogger')
 
     
 def poly_area(x,y):
@@ -15,6 +15,7 @@ def poly_area(x,y):
     return area
     
 def calculate_flash_stats(flash, min_pts=2, max_pts=10):
+    logger = logging.getLogger('FlashAutorunLogger')
     
     Re = 6378.137*1000;           #Earth's radius in m
     pi = np.pi
