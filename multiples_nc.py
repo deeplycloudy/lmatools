@@ -156,7 +156,8 @@ def make_plot(filename, grid_name, x_name='x', y_name='y', t_name='time',
     # count_scale_factor = dx # / 1000.0
     # max_count_baseline = 450 * count_scale_factor #/ 10.0
     min_count, max_count = 1, grid[:].max() #max_count_baseline*(t[1]-t[0])
-    
+    if (max_count == 0) | (max_count == 1 ):
+        max_count = min_count+1
     f.close()
 
     fig = Figure(figsize=(w,h))
