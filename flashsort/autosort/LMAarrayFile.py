@@ -47,7 +47,7 @@ def mask_to_int(mask):
         mask_int = np.fromiter((int(v,16) for v in mask), int)
     return mask_int
 
-class LMAdataFile:
+class LMAdataFile(object):
     
     def __init__(self, filename, iterator=False):
         """ iterator=True makes self.data an iterator yielding individual event records"""
