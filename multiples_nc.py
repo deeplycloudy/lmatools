@@ -176,7 +176,7 @@ def make_plot(filename, grid_name, x_name='x', y_name='y', t_name='time',
     #     ax.yaxis.set_major_formatter(kilo_formatter)
     #     ax.xaxis.set_major_formatter(kilo_formatter)
     base_date = datetime.strptime(t.units, "seconds since %Y-%m-%d %H:%M:%S")
-    time_delta = timedelta(0,float(t[1]-t[0]),0)
+    time_delta = timedelta(0,float(t[0]),0)
     start_time = base_date + time_delta
         
     indexer = [None,]*len(grid.shape)
