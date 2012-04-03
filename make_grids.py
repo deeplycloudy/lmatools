@@ -144,6 +144,7 @@ def grid_h5flashfiles(h5_filenames, start_time, end_time,
                         proj_datum = 'WGS84',
                         proj_ellipse = 'WGS84',
                         output_writer = write_cf_netcdf,
+                        output_filename_prefix="LMA",
                         output_kwargs = {}
                         ):
     from math import ceil
@@ -266,7 +267,7 @@ def grid_h5flashfiles(h5_filenames, start_time, end_time,
     lons.shape=x_all.shape
     lats.shape=y_all.shape
     
-    outflile_basename = os.path.join(outpath,'LMA_%s_%d_%dsrc_%sm-dx_' % (start_time.strftime('%Y%m%d_%H%M%S'), to_seconds(duration), min_points_per_flash, dx))
+    outflile_basename = os.path.join(outpath,'%s_%s_%d_%dsrc_%sm-dx_' % (output_filename_prefix, start_time.strftime('%Y%m%d_%H%M%S'), to_seconds(duration), min_points_per_flash, dx))
     
     outfiles = (outflile_basename+'flash_extent.nc',
                 outflile_basename+'flash_init.nc',
