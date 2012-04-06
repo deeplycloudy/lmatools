@@ -186,36 +186,45 @@ def collect_output(datafile, min_points=1):
     
     # get the mapping from flash_ids to the points
     order = np.argsort(lma.flash_id)
-    flid = lma.flash_id[order]
-    boundaries, = np.where(flid[1:]-flid[:-1])    # where indices are nonzero
-    boundaries = np.hstack(([0], boundaries+1))
     
-    all_data = lma.data[order]
+    # In the case of no data in the file, lma.data.shape will have length zero, i.e., a 0-d array
+    if len(lma.data.shape) == 0:
+        # No data
+        flashes = []
+    else:
+        flid = lma.flash_id[order]
+        boundaries, = np.where(flid[1:]-flid[:-1])    # where indices are nonzero
+        boundaries = np.hstack(([0], boundaries+1))
     
-    max_idx = len(flid) #- 1
-    slice_lower_edges = tuple(boundaries)
-    slice_upper_edges = slice_lower_edges[1:] + (max_idx,)
-    slices = zip(slice_lower_edges, slice_upper_edges)
+        all_data = lma.data[order]
     
-    flashes = [ Flash(all_data[slice(*sl)]) for sl in slices ]
+        max_idx = len(flid) #- 1
+        slice_lower_edges = tuple(boundaries)
+        slice_upper_edges = slice_lower_edges[1:] + (max_idx,)
+        slices = zip(slice_lower_edges, slice_upper_edges)
     
-    # calculate extra flash metadata, e.g., initation, centroid
-    logtext = "Calculating flash initation, centroid, area, etc. for %d flashes" % (len(flashes), )
-    logger.info(logtext)
-    # print flashes[0].points.dtype
-    for fl in flashes:
-        header = ''.join(lma.header)
-        fl.metadata = FlashMetadata(header)
-        calculate_flash_stats(fl)
+        flashes = [ Flash(all_data[slice(*sl)]) for sl in slices ]
+    
+        # calculate extra flash metadata, e.g., initation, centroid
+        logtext = "Calculating flash initation, centroid, area, etc. for %d flashes" % (len(flashes), )
+        logger.info(logtext)
+        # print flashes[0].points.dtype
+        for fl in flashes:
+            header = ''.join(lma.header)
+            fl.metadata = FlashMetadata(header)
+            calculate_flash_stats(fl)
                     
     return lma, flashes
 
 
-def write_output(outfile, flashes, orig_LMA_file):
+def write_output(outfile, flashes, orig_LMA_file, metadata=None):
     from write_flashes import write_h5
-    # use metadata from the first flash as the canonical metadata, 
-    #   since all flashes were sorted fromt the same LYLOUT file
-    write_h5(outfile, flashes, flashes[0].metadata, orig_LMA_file)
+    if metadata is None:
+        # use metadata from the first flash as the canonical metadata, 
+        #   since all flashes were sorted fromt the same LYLOUT file
+        # This breaks in the case of empty flashes; in that case the calling function should pass in metadata.
+        metadata = flashes[0].metadata
+    write_h5(outfile, flashes, metadata, orig_LMA_file)
 
 
 def run_files_with_params(files, output_path, params, min_points=1, retain_ascii_output=True, cleanup_tmp=True):
@@ -263,9 +272,11 @@ def run_files_with_params(files, output_path, params, min_points=1, retain_ascii
                             outfile)            
             
             lmadata, flashes = collect_output(outfile)#, min_points=min_points)
+            header = ''.join(lmadata.header)
+            fl_metadata = FlashMetadata(header)
             outfile_with_extension = outfile + '.h5'
             h5_outfiles.append(outfile_with_extension)
-            write_output(outfile_with_extension, flashes, a_file)
+            write_output(outfile_with_extension, flashes, a_file, metadata=fl_metadata)
 
             if retain_ascii_output==False:
                 os.remove(outfile)

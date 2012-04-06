@@ -104,8 +104,12 @@ def read_flashes(h5LMAfiles, target, base_date=None, min_points=10):
         # events_all = getattr(h5.root.events, table_name)[:]
         flashes = getattr(h5.root.flashes, table_name)
         events = getattr(h5.root.events, table_name)[:]
-
-        fl_dtype = flashes[0].dtype
+        
+        if flashes.shape[0] == 0:
+            # There are no flashes
+            pass
+        
+        fl_dtype = flashes.dtype
         flashes = np.fromiter((fl[:] for fl in flashes if fl['n_points'] >= min_points), dtype=fl_dtype)
 
         # get the start date of the file, which is the seconds-of-day reference
