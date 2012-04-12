@@ -97,7 +97,7 @@ def write_h5(outfile, flashes, metadata, orig_LMA_file):
                              )    
     event = table.row
     fl_meta = fl_table.row
-    
+        
     for i, flash in enumerate(flashes):
         fl_meta['flash_id'] = flash.id
         fl_meta['n_points'] = flash.pointCount
@@ -147,5 +147,9 @@ def write_h5(outfile, flashes, metadata, orig_LMA_file):
     
     
     table.flush()
+    if len(flashes) == 0:
+        i = -1
+        
     logger.info('total flashes: %d' % (i+1,))
+    
     h5file.close()

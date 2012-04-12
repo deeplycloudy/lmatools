@@ -129,8 +129,8 @@ def extract_events_for_flashes(target, flashID_key='flash_id'):
     while True:
         evs, fls = (yield)
         # print 'extracting events'
-        event_dtype = evs[0].dtype
-        
+        # event_dtype = evs[0].dtype
+        event_dtype = evs.dtype
         events = np.fromiter( (event_yielder(evs, fls)) , dtype=event_dtype)
         
         # The line below (maybe maybe maybe)
