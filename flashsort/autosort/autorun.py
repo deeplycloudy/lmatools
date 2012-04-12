@@ -27,7 +27,7 @@ try:
 except:
     src_dir = os.getcwd()
     
-build_files = ( 'mflashcustom.f',
+build_files = ( #'mflashcustom.f',
                 'makefile',
                 )
                 
@@ -36,14 +36,17 @@ flash_prg_name   = 'mflashcustom'   # created within the build directory
 
 tmp_flashsort_prepend = 'flashsort_'
 
-def build(directory=None):
+def build(directory=None, mflash_params=None):
     """ Build the flash program in directory; a temporary directory is created by default. """
-
+    
 
     if directory == None:
         d = tempfile.mkdtemp('', tmp_flashsort_prepend)
     else:
         d = directory
+        
+    write_header(os.path.join(d,'mflashcustom.f'), **mflash_params)
+
     for filename in build_files:
         shutil.copyfile(os.path.join(src_dir, filename),
                         os.path.join(d, filename))
@@ -242,9 +245,8 @@ def run_files_with_params(files, output_path, params, min_points=1, retain_ascii
     h5_outfiles = []
     for a_file in files:
         try:
-            write_header(os.path.join(src_dir,'mflashcustom.f'), **params)
 
-            d = build() # returns temporary directory name
+            d = build(mflash_params=params) # returns temporary directory name
             logger.debug('Built flash program in %s' % d)
         
             logger.info('Sorting flashes for %s' % a_file)
