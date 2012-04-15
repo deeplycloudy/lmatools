@@ -173,7 +173,7 @@ class FlashMetadata(object):
             self.columns = [columnName.strip() for columnName in columns]
     
 
-def collect_output(datafile, min_points=1):
+def collect_output(datafile, min_points=1, mask_length=4):
     """ collect all output from the flash program output directory created by
         the flash program in flash_dir and calculate some additional stats on each flash        
         """
@@ -185,7 +185,7 @@ def collect_output(datafile, min_points=1):
     # outdir = os.path.join(flash_dir,flash_output_dir)
     # os.chdir(outdir)
     
-    lma = LMAdataFile(datafile)
+    lma = LMAdataFile(datafile, mask_length=mask_length)
     
     # get the mapping from flash_ids to the points
     order = np.argsort(lma.flash_id)
@@ -273,7 +273,11 @@ def run_files_with_params(files, output_path, params, min_points=1, retain_ascii
             shutil.copyfile(os.path.join(d, 'flashes_out.dat'),
                             outfile)            
             
-            lmadata, flashes = collect_output(outfile)#, min_points=min_points)
+            if 'mask_length' in params:
+                mask_length = params['mask_length']
+            else:
+                mask_length = 4
+            lmadata, flashes = collect_output(outfile, mask_length=mask_length)#, min_points=min_points)
             header = ''.join(lmadata.header)
             fl_metadata = FlashMetadata(header)
             outfile_with_extension = outfile + '.h5'

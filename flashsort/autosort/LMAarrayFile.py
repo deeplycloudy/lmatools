@@ -49,7 +49,7 @@ def mask_to_int(mask):
 
 class LMAdataFile(object):
     
-    def __init__(self, filename, iterator=False):
+    def __init__(self, filename, iterator=False, mask_length=4):
         """ iterator=True makes self.data an iterator yielding individual event records"""
         self.filename=filename
         self.iterator=iterator
@@ -87,7 +87,7 @@ class LMAdataFile(object):
                                 'lon':       float,
                                 'chi2':      float,
                                 'power':     float,
-                                'mask':      'S4',
+                                'mask':      'S{0:d}'.format(mask_length),
                                 # 'mask':      object,
                                 # 'mask':      str,
                                 'alt':       float,
