@@ -15,7 +15,7 @@ def to_seconds(dt):
     return dt.days * 86400 + dt.seconds + dt.microseconds/1.0e6
 
 
-def write_cf_netcdf(outfile, t_start, t, xloc, yloc, lon_for_x, lat_for_y, ctr_lat, ctr_lon, grid, grid_var_name, grid_description, format='i'):
+def write_cf_netcdf(outfile, t_start, t, xloc, yloc, lon_for_x, lat_for_y, ctr_lat, ctr_lon, grid, grid_var_name, grid_description, format='i', **kwargs):
     """ Write a Climate and Forecast Metadata-compliant NetCDF file. 
     
         Should display natively in conformant packages like McIDAS-V.
