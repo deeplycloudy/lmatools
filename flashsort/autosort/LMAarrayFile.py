@@ -274,7 +274,7 @@ class LMAdataFile(object):
 
 def apply_format(item, format):
     if format is object: return item
-    if format == 'S4':
+    if (format == 'S4') or (format =='S6'):
         return str(item)
     return format(item)
     
