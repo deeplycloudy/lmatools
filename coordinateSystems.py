@@ -188,7 +188,7 @@ class RadarCoordinateSystem(CoordinateSystem):
         a = self.Requator         # Equatorial radius  - WGS-84 value = 6378137.0
         Rearth = a/sqrt(1-e2*(sin(lat))**2) # radius of curvature
         
-        Rprime = self.effectiveRadiusMultiplier * self.Rearth
+        Rprime = self.effectiveRadiusMultiplier * Rearth
         
         h = array(z - self.ctrAlt, dtype='float64')
         s = array(groundRange, dtype='float64')
@@ -258,7 +258,7 @@ class TangentPlaneCartesianSystem:
         #normal vector to earth's surface at the center is the local z direction
         n = aboveCenterECEF - self.centerECEF
         n = n / norm(n)
-        localz = n[:,NewAxis] #make a column vector
+        localz = n[:,None] #make a column vector
         
         # n (dot) x = d defines a plane for normal vector n and position vector x on the plane
         d = dot(n, aboveCenterECEF)
@@ -273,7 +273,7 @@ class TangentPlaneCartesianSystem:
         # This calculation seems like it should only be done with latitude/north since the local x 
         #   direction curves away along a non-straight line when projected onto the plane
         northCenterECEF = array(proj4.transform(WGS84lla, WGS84xyz, self.ctrLon, self.ctrLat+0.01, self.ctrAlt))
-        localy = dot(P, northCenterECEF[:,NewAxis] )
+        localy = dot(P, northCenterECEF[:,None] )
         localy = -localy / norm(localy) # negation gets x and y pointing in the right direction
         
         
@@ -282,9 +282,9 @@ class TangentPlaneCartesianSystem:
         localx = localx / norm(localx)
         
         
-        ECEFx = array((1.0, 0.0, 0.0))[:,NewAxis]
-        ECEFy = array((0.0, 1.0, 0.0))[:,NewAxis]
-        ECEFz = array((0.0, 0.0, 1.0))[:,NewAxis]
+        ECEFx = array((1.0, 0.0, 0.0))[:,None]
+        ECEFy = array((0.0, 1.0, 0.0))[:,None]
+        ECEFz = array((0.0, 0.0, 1.0))[:,None]
         
         #
         # Calculate the transformation matrix TM to go from 
@@ -315,6 +315,6 @@ class TangentPlaneCartesianSystem:
         """Transforms 3xN array of data (position vectors) in the ECEF sytem to the local tangent plane cartesian system.
            Returns another 3xN array 
         """
-        return array( [ dot(self.TransformToLocal, (v-self.centerECEF)[:,NewAxis]) for v in data[0:3,:].transpose()]).squeeze().transpose()
+        return array( [ dot(self.TransformToLocal, (v-self.centerECEF)[:,None]) for v in data[0:3,:].transpose()]).squeeze().transpose()
         
         #Transform from local to ECEF uses transpose of the TransformToLocal matrix
