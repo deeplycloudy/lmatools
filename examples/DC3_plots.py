@@ -16,6 +16,11 @@ base_sort_dir = '/data/DC3/flash_sort_prelim/'
 h5_dir = os.path.join(base_sort_dir, 'h5_files')
 grid_dir = os.path.join(base_sort_dir, 'grid_files')
 plot_dir = os.path.join(base_sort_dir, 'plots')
+center_ID = 'COLMA'
+
+centers = {'WTLMA':{'ctr_lat':33.606968, 'ctr_lon':-101.822625},
+           'COLMA':{'ctr_lat':40.446398, 'ctr_lon':-104.636813},
+           }
 
 def tfromfile(name):
     parts = name.split('_')
@@ -25,8 +30,6 @@ def tfromfile(name):
 
 autorun.logger_setup(base_sort_dir)
     
-wtlat = 33.6069680
-wtlon = -101.8226250
 params = {'stations':(6,13),
           'chi2':(0,5.0),  
           'lat':(-90., 90.),
@@ -35,7 +38,7 @@ params = {'stations':(6,13),
           'distance':3000.0, 'thresh_duration':3.0, 
           'thresh_critical_time':0.15, 'merge_critical_time':0.5, 
           'ascii_flashes_out':'flashes_out.dat',
-          'ctr_lat':wtlat, 'ctr_lon':wtlon,
+          'ctr_lat':centers[center_ID]['ctr_lat'], 'ctr_lon':centers[center_ID]['ctr_lon'],
           'mask_length':6,
           }
 
@@ -78,8 +81,8 @@ h5_filenames.sort()
 
 
 frame_interval=60.0*5
-ctr_lat =  33.606968
-ctr_lon =  -101.822625
+ctr_lat =  centers[center_ID]['ctr_lat']
+ctr_lon =  centers[center_ID]['ctr_lon']
 dx_km=3.0e3
 dy_km=3.0e3
 x_bnd_km = (-200e3, 200e3)
@@ -106,7 +109,7 @@ for f in h5_filenames:
         subprocess.call(['chmod', 'a+w', outpath, grid_dir+'/20%s' %(date.strftime('%y/%b')), grid_dir+'/20%s' %(date.strftime('%y'))])
     grid_h5flashfiles(h5_filenames, start_time, end_time, frame_interval=frame_interval, proj_name='latlong',
                 dx=dx, dy=dy, x_bnd=x_bnd, y_bnd=y_bnd, ctr_lon=ctr_lon, ctr_lat=ctr_lat, outpath = outpath,
-                output_writer = write_cf_netcdf_latlon, output_filename_prefix="WTLMA", spatial_scale_factor=1.0
+                output_writer = write_cf_netcdf_latlon, output_filename_prefix=center_ID, spatial_scale_factor=1.0
                 )
 
 # Make plots
