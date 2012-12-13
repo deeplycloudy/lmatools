@@ -13,7 +13,59 @@ from coordinateSystems import MapProjection, GeographicSystem
 def to_seconds(dt):
     'convert datetime.timedelta object to float seconds'
     return dt.days * 86400 + dt.seconds + dt.microseconds/1.0e6
+    
 
+def dlonlat_at_grid_center(ctr_lat, ctr_lon, dx=4.0e3, dy=4.0e3,
+    x_bnd = (-100e3, 100e3), y_bnd = (-100e3, 100e3),
+    proj_datum = 'WGS84', proj_ellipse = 'WGS84'):
+    """ 
+    
+    Utility function useful for producing a regular grid of lat/lon data, 
+    where an approximate spacing (dx, dy) and total span of the grid (x_bnd, y_bnd) 
+    is desired. Units are in meters.
+    
+    There is guaranteed to be distortion away from the grid center, i.e.,
+    only the grid cells adjacent to the center location will have area dx * dy. 
+    
+    Likewise, the lat, lon range is calculated naively using dlat, dlon multiplied
+    by the number of grid cells implied by x_bnd/dx, y_bnd/dy. This is the naive approach,
+    but probably what's expected when specifying distances in kilometers for
+    an inherently distorted lat/lon grid.
+    
+    Returns: 
+    (dlon, dlat, lon_bnd, lat_bnd)
+    corresponding to 
+    (dx, dy, x_range, y_range)
+    
+    """
+
+    # Use the Azimuthal equidistant projection as the method for converting to kilometers.
+    proj_name = 'aeqd'
+    
+    mapProj = MapProjection(projection=proj_name, ctrLat=ctr_lat, ctrLon=ctr_lon, lat_ts=ctr_lat, 
+                            lon_0=ctr_lon, lat_0=ctr_lat, lat_1=ctr_lat, ellipse=proj_ellipse, datum=proj_datum)
+    geoProj = GeographicSystem()
+    
+    # Get dlat
+    lon_n, lat_n, z_n = geoProj.fromECEF(*mapProj.toECEF(0,dy,0))
+    dlat = lat_n - ctr_lat
+    
+    # Get dlon
+    lon_e, lat_e, z_e = geoProj.fromECEF(*mapProj.toECEF(dx,0,0)) 
+    dlon = lon_e - ctr_lon
+    
+    lon_min = ctr_lon + dlon * (x_bnd[0]/dx)
+    lon_max = ctr_lon + dlon * (x_bnd[1]/dx)
+    lat_min = ctr_lat + dlat * (y_bnd[0]/dy)
+    lat_max = ctr_lat + dlat * (y_bnd[1]/dy)
+    
+    # Alternate method: lat lon for the actual distance to the NSEW in the projection
+    #lon_range_n, lat_range_n, z_range_n = geoProj.fromECEF(*mapProj.toECEF(0,y_bnd,0))
+    #lon_range_e, lat_range_e, z_range_e = geoProj.fromECEF(*mapProj.toECEF(x_bnd,0,0))
+    
+    return dlon, dlat, (lon_min, lon_max), (lat_min, lat_max)
+    
+    
 
 def write_cf_netcdf(outfile, t_start, t, xloc, yloc, lon_for_x, lat_for_y, ctr_lat, ctr_lon, grid, grid_var_name, grid_description, format='i', **kwargs):
     """ Write a Climate and Forecast Metadata-compliant NetCDF file. 
@@ -149,7 +201,8 @@ def grid_h5flashfiles(h5_filenames, start_time, end_time,
                         proj_ellipse = 'WGS84',
                         output_writer = write_cf_netcdf,
                         output_filename_prefix="LMA",
-                        output_kwargs = {}
+                        output_kwargs = {},
+                        spatial_scale_factor = 1.0/1000.0,
                         ):
     from math import ceil
     """
@@ -202,7 +255,10 @@ def grid_h5flashfiles(h5_filenames, start_time, end_time,
     x0 = xedge[0]
     y0 = yedge[0]
     
-    mapProj = MapProjection(projection=proj_name, ctrLat=ctr_lat, ctrLon=ctr_lon, lat_ts=ctr_lat, 
+    if proj_name == 'latlong':
+        mapProj = GeographicSystem()
+    else:
+        mapProj = MapProjection(projection=proj_name, ctrLat=ctr_lat, ctrLon=ctr_lon, lat_ts=ctr_lat, 
                             lon_0=ctr_lon, lat_0=ctr_lat, lat_1=ctr_lat, ellipse=proj_ellipse, datum=proj_datum)
     geoProj = GeographicSystem()
     
@@ -292,7 +348,10 @@ def grid_h5flashfiles(h5_filenames, start_time, end_time,
                         'LMA source density',
                         'LMA local mean flash area')
     
-    density_units = "{0:5.1f} km^2".format(dx/1000.0 * dy/1000.0).lstrip()
+    if proj_name=='latlong':
+        density_units = "grid"
+    else:
+        density_units = "{0:5.1f} km^2".format(dx/1000.0 * dy/1000.0).lstrip()
     time_units = "{0:5.1f} min".format(frame_interval/60.0).lstrip()
     density_label = 'Count per ' + density_units + " pixel per "+ time_units
     
@@ -303,22 +362,26 @@ def grid_h5flashfiles(h5_filenames, start_time, end_time,
                      )
     
     output_writer(outfiles[0], t_ref, np.asarray(t_edges_seconds[:-1]),
-                    x_coord/1.0e3, y_coord/1.0e3, lons, lats, ctr_lat, ctr_lon, 
+                    x_coord*spatial_scale_factor, y_coord*spatial_scale_factor, 
+                    lons, lats, ctr_lat, ctr_lon, 
                     outgrids[0], field_names[0], field_descriptions[0], 
                     grid_units=field_units[0],
                     **output_kwargs)
     output_writer(outfiles[1], t_ref, np.asarray(t_edges_seconds[:-1]),
-                    x_coord/1.0e3, y_coord/1.0e3, lons, lats, ctr_lat, ctr_lon, 
+                    x_coord*spatial_scale_factor, y_coord*spatial_scale_factor, 
+                    lons, lats, ctr_lat, ctr_lon, 
                     outgrids[1], field_names[1], field_descriptions[1], 
                     grid_units=field_units[1],
                     **output_kwargs)
     output_writer(outfiles[2], t_ref, np.asarray(t_edges_seconds[:-1]),
-                    x_coord/1.0e3, y_coord/1.0e3, lons, lats, ctr_lat, ctr_lon, 
+                    x_coord*spatial_scale_factor, y_coord*spatial_scale_factor, 
+                    lons, lats, ctr_lat, ctr_lon, 
                     outgrids[2], field_names[2], field_descriptions[2], 
                     grid_units=field_units[2],
                     **output_kwargs)
     output_writer(outfiles[3], t_ref, np.asarray(t_edges_seconds[:-1]),
-                    x_coord/1.0e3, y_coord/1.0e3, lons, lats, ctr_lat, ctr_lon, 
+                    x_coord*spatial_scale_factor, y_coord*spatial_scale_factor, 
+                    lons, lats, ctr_lat, ctr_lon, 
                     outgrids[3], field_names[3], field_descriptions[3], format='f', 
                     grid_units=field_units[3],
                     **output_kwargs)
