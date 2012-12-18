@@ -210,7 +210,7 @@ def grid_h5flashfiles(h5_filenames, start_time, end_time,
     Create 2D plan-view density grids for events, flash origins, flash extents, and mean flash footprint
     
     frame_interval: Frame time-step in seconds
-    dx, dy: horizontal grid size in m
+    dx, dy: horizontal grid size in m (or deg)
     {x,y,z}_bnd: horizontal grid edges in m
     ctr_lat, ctr_lon: coordinate center
     
@@ -256,8 +256,10 @@ def grid_h5flashfiles(h5_filenames, start_time, end_time,
     y0 = yedge[0]
     
     if proj_name == 'latlong':
+        dx_units = '{0:6.4f}deg'.format(dx)
         mapProj = GeographicSystem()
     else:
+        dx_units = '{0:5.1f}m'.format(dx)
         mapProj = MapProjection(projection=proj_name, ctrLat=ctr_lat, ctrLon=ctr_lon, lat_ts=ctr_lat, 
                             lon_0=ctr_lon, lat_0=ctr_lat, lat_1=ctr_lat, ellipse=proj_ellipse, datum=proj_datum)
     geoProj = GeographicSystem()
@@ -327,7 +329,7 @@ def grid_h5flashfiles(h5_filenames, start_time, end_time,
     lons.shape=x_all.shape
     lats.shape=y_all.shape
     
-    outflile_basename = os.path.join(outpath,'%s_%s_%d_%dsrc_%sm-dx_' % (output_filename_prefix, start_time.strftime('%Y%m%d_%H%M%S'), to_seconds(duration), min_points_per_flash, dx))
+    outflile_basename = os.path.join(outpath,'%s_%s_%d_%dsrc_%s-dx_' % (output_filename_prefix, start_time.strftime('%Y%m%d_%H%M%S'), to_seconds(duration), min_points_per_flash, dx_units))
     
     outfiles = (outflile_basename+'flash_extent.nc',
                 outflile_basename+'flash_init.nc',
