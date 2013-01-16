@@ -241,12 +241,18 @@ def run_files_with_params(files, output_path, params, min_points=1, retain_ascii
     lma_text, err = lma_pipe.communicate(input=any_input)
     isDataLine = r"^.*\*+.*data.*\*+.*" #Search for asterisks, data, and asterisks
     matchDataLine = re.compile(isDataLine, re.IGNORECASE)
-    for lineIdx, line in enumerate(lma_text.split('\n')):
+    split_lma_text = lma_text.split('\n')
+    for lineIdx, line in enumerate(split_lma_text):
         if matchDataLine.search(line):
             params['nhead'] = lineIdx+1
             logger.info("Header is %d lines. This length will be used for all files this run." % (params['nhead'],))
             break
-    del lma_text
+            
+    # We could parse for the number of lines from the header, but that is wrong sometimes. 
+    # Instead, set the number of points to the total number of lines in the file minus the header.
+    params['n_sources'] = len(split_lma_text) - params['nhead']
+    print 'Calculated sources: ', params['n_sources']
+    del lma_text, split_lma_text
     # lma_pipe.close()
     
     logger.info('%s', params)
