@@ -236,8 +236,11 @@ def run_files_with_params(files, output_path, params, min_points=1, retain_ascii
     now = datetime.datetime.now().strftime('Flash autosort started %Y%m%d-%H%M%S')
     logger.info(now)
     
-    # Calculate the number of header lines based on the first data file.
-    lma_pipe, command, any_input = cat_LMA(files[0])
+    # Calculate the number of header lines based on the largest data file.
+    
+    f_sizes = [os.path.getsize(f) for f in files]
+    largest_file_index = f_sizes.index(max(f_sizes))
+    lma_pipe, command, any_input = cat_LMA(files[largest_file_index])
     lma_text, err = lma_pipe.communicate(input=any_input)
     isDataLine = r"^.*\*+.*data.*\*+.*" #Search for asterisks, data, and asterisks
     matchDataLine = re.compile(isDataLine, re.IGNORECASE)
@@ -248,10 +251,10 @@ def run_files_with_params(files, output_path, params, min_points=1, retain_ascii
             logger.info("Header is %d lines. This length will be used for all files this run." % (params['nhead'],))
             break
             
-    # We could parse for the number of lines from the header, but that is wrong sometimes. 
+    # We could parse for the number of sources from the header, but that is wrong sometimes. 
     # Instead, set the number of points to the total number of lines in the file minus the header.
     params['n_sources'] = len(split_lma_text) - params['nhead']
-    print 'Calculated sources: ', params['n_sources']
+    logger.info('Calculated max source count for this run: {0}'.format(params['n_sources']))
     del lma_text, split_lma_text
     # lma_pipe.close()
     
