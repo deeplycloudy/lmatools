@@ -160,6 +160,12 @@ def make_plot(filename, grid_name, x_name='x', y_name='y', t_name='time',
         max_count = min_count+1
     f.close()
     
+    default_vmin = -0.2
+    if np.log10(max_count) <= default_vmin:
+        vmin_count = np.log10(max_count) + default_vmin
+    else:
+        vmin_count = default_vmin
+    
     fig = Figure(figsize=(w,h))
     canvas = FigureCanvasAgg(fig)
     fig.set_canvas(canvas)
@@ -193,7 +199,7 @@ def make_plot(filename, grid_name, x_name='x', y_name='y', t_name='time',
         # density,edges = np.histogramdd((x,y), bins=(xedge,yedge))
         density_plot  = p.multiples.flat[i].pcolormesh(xedge,yedge,
                                    np.log10(density.transpose()), 
-                                   vmin=-0.2,
+                                   vmin=vmin_count,
                                    vmax=np.log10(max_count),
                                    cmap=colormap)
         label_string = frame_start.strftime('%H%M:%S')
