@@ -111,8 +111,11 @@ def multiples_figaspect(n_rows, n_cols, x_range, y_range, fig_width=None, max_he
     
 def make_plot(filename, grid_name, x_name='x', y_name='y', t_name='time',
                 n_cols=6, outpath='', filename_prefix='LMA', 
-                do_save=True, image_type='pdf'):
-    
+                do_save=True, image_type='pdf', colormap='gist_earth'):
+    """ colormap: a string giving the name of a matplotlib built-in colormap, 
+            or a matplotlib.colors.Colormap instance
+        """
+
     f = nc.NetCDFFile(filename)
     data = f.variables  # dictionary of variable names to nc_var objects
     dims = f.dimensions # dictionary of dimension names to sizes
@@ -136,7 +139,8 @@ def make_plot(filename, grid_name, x_name='x', y_name='y', t_name='time',
     # n_cols = 6
     n_rows = int(ceil( float(n_frames) / n_cols ))
     
-    colormap = get_cmap('gist_earth')
+    if type(colormap) == type(''):
+        colormap = get_cmap(colormap)
     grey_color = (0.5,)*3
     frame_color = (0.2,)*3
     
