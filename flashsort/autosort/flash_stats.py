@@ -1,7 +1,49 @@
 import numpy as np
 import logging
+import re
 
 # logger = logging.getLogger('FlashAutorunLogger')
+class Flash(object):
+    def __init__(self, points):
+        self.points = points
+
+class FlashMetadata(object):
+
+    def __init__(self, headerText):
+        #Search the header for info on how the data is written
+
+        self.header = headerText
+
+        isColumnHeaderLine = r"^Data:(.*)"
+        matchDataFormatLine = re.compile(isColumnHeaderLine, re.IGNORECASE | re.MULTILINE)
+
+        isDataStartTime = r"^Data start time:(.*)"
+        matchDataStartTimeLine = re.compile(isDataStartTime, re.IGNORECASE | re.MULTILINE)
+
+        secAnalyzedLine = r"^Number of seconds analyzed:(.*)"
+        matchSecAnalyzedLine = re.compile(secAnalyzedLine, re.IGNORECASE | re.MULTILINE)
+
+
+        startTimeMatch = matchDataStartTimeLine.search(headerText)
+        if startTimeMatch:
+            #Looking to deal with something like: " 06/28/04 23:50:00"
+            dateAndTime = startTimeMatch.group(1).split()
+            self.startmonth, self.startday, self.startyear = [ int(datePart) for datePart in dateAndTime[0].split('/') ]
+            self.starthour, self.startminute, self.startsecond = [ int(timePart) for timePart in dateAndTime[1].split(':') ]
+            if self.startyear < 1000 and self.startyear > 70:
+                self.startyear += 1900
+            else:
+                self.startyear += 2000
+
+        secAnalyzedMatch=matchSecAnalyzedLine.search(headerText)
+        if secAnalyzedMatch:
+            self.sec_analyzed = int(secAnalyzedMatch.group(1))
+
+
+        formatMatch=matchDataFormatLine.search(headerText)
+        if formatMatch:
+            columns = formatMatch.group(1).split(',')
+            self.columns = [columnName.strip() for columnName in columns]
 
     
 def poly_area(x,y):

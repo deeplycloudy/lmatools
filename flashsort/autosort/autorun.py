@@ -6,7 +6,10 @@ import subprocess
 import logging, logging.handlers
 import datetime
 
-from flash_stats import calculate_flash_stats
+from flash_stats import calculate_flash_stats, Flash, FlashMetadata
+from LMAarrayFile import cat_LMA
+
+from autorun_mflash import build, cleanup_build, collect_output
 from mflash import write_header
 
 LOG_BASEFILENAME = datetime.datetime.now().strftime('Flash-autosort.log')
@@ -21,54 +24,54 @@ def logger_setup(logpath):
     logger.setLevel(logging.DEBUG)
 
 
-# assume that source code for the flash program is in the same directory as this module
-try:
-    src_dir = os.path.dirname(__file__)
-except:
-    src_dir = os.getcwd()
-    
-build_files = ( #'mflashcustom.f',
-                'makefile',
-                )
-                
-flash_output_dir = 'output'     # created within the build directory
-flash_prg_name   = 'mflashcustom'   # created within the build directory
-
-tmp_flashsort_prepend = 'flashsort_'
-
-def build(directory=None, mflash_params=None):
-    """ Build the flash program in directory; a temporary directory is created by default. """
-    
-
-    if directory == None:
-        d = tempfile.mkdtemp('', tmp_flashsort_prepend)
-    else:
-        d = directory
-        
-    write_header(os.path.join(d,'mflashcustom.f'), **mflash_params)
-
-    for filename in build_files:
-        shutil.copyfile(os.path.join(src_dir, filename),
-                        os.path.join(d, filename))
-    
-    os.chdir(d)
-    os.mkdir(flash_output_dir)
-    
-    make_cmd = ['make','-f','makefile']
-    rc = subprocess.call(make_cmd)
-    
-    return d
-    
-
-def cleanup_build(directory):
-    logger = logging.getLogger('FlashAutorunLogger')
-    
-    if tmp_flashsort_prepend in directory:
-        shutil.rmtree(directory)
-    else:
-        logger.warning( 
-            "Temporary build directory %s doesn't appear to be a flashsort directory." % (directory,)
-            )
+# # assume that source code for the flash program is in the same directory as this module
+# try:
+#     src_dir = os.path.dirname(__file__)
+# except:
+#     src_dir = os.getcwd()
+#     
+# build_files = ( #'mflashcustom.f',
+#                 'makefile',
+#                 )
+#                 
+# flash_output_dir = 'output'     # created within the build directory
+# flash_prg_name   = 'mflashcustom'   # created within the build directory
+# 
+# tmp_flashsort_prepend = 'flashsort_'
+# 
+# def build(directory=None, mflash_params=None):
+#     """ Build the flash program in directory; a temporary directory is created by default. """
+#     
+# 
+#     if directory == None:
+#         d = tempfile.mkdtemp('', tmp_flashsort_prepend)
+#     else:
+#         d = directory
+#         
+#     write_header(os.path.join(d,'mflashcustom.f'), **mflash_params)
+# 
+#     for filename in build_files:
+#         shutil.copyfile(os.path.join(src_dir, filename),
+#                         os.path.join(d, filename))
+#     
+#     os.chdir(d)
+#     os.mkdir(flash_output_dir)
+#     
+#     make_cmd = ['make','-f','makefile']
+#     rc = subprocess.call(make_cmd)
+#     
+#     return d
+#     
+# 
+# def cleanup_build(directory):
+#     logger = logging.getLogger('FlashAutorunLogger')
+#     
+#     if tmp_flashsort_prepend in directory:
+#         shutil.rmtree(directory)
+#     else:
+#         logger.warning( 
+#             "Temporary build directory %s doesn't appear to be a flashsort directory." % (directory,)
+#             )
     
 
 def fetch_gzipdata_from_url(the_url):
@@ -93,131 +96,131 @@ def fetch_gzipdata_from_url(the_url):
     return data
 
     
-def cat_LMA(filename):
-    """ Returns subprocess pipe with LMA data file on stdout """
-    if filename.find('http://') >= 0:
-        # data = fetch_gzipdata_from_url(filename)
-        url_copy = subprocess.Popen(['curl', '-s', filename], stdout=subprocess.PIPE)#, stdin=subprocess.PIPE)
-        command = ['gunzip', '-c']
-        f = subprocess.Popen(command, stdin=url_copy.stdout, stdout=subprocess.PIPE)
-        any_input=None
-    else:
-        if filename.find('.gz') >= 0:
-            command = ['gunzip', '-c', filename]
-        else:
-            command  = ['cat', filename]
-        f = subprocess.Popen(command, stdout=subprocess.PIPE)
-        any_input = None
-    return f, command, any_input
+# def cat_LMA(filename):
+#     """ Returns subprocess pipe with LMA data file on stdout """
+#     if filename.find('http://') >= 0:
+#         # data = fetch_gzipdata_from_url(filename)
+#         url_copy = subprocess.Popen(['curl', '-s', filename], stdout=subprocess.PIPE)#, stdin=subprocess.PIPE)
+#         command = ['gunzip', '-c']
+#         f = subprocess.Popen(command, stdin=url_copy.stdout, stdout=subprocess.PIPE)
+#         any_input=None
+#     else:
+#         if filename.find('.gz') >= 0:
+#             command = ['gunzip', '-c', filename]
+#         else:
+#             command  = ['cat', filename]
+#         f = subprocess.Popen(command, stdout=subprocess.PIPE)
+#         any_input = None
+#     return f, command, any_input
+# 
+# def sort_file(filename, directory):
+#     """ Sort one LMA data file into flashes. dir is the directory with the flash program"""
+#     logger = logging.getLogger('FlashAutorunLogger')
+#     
+#     f, command, the_input = cat_LMA(filename)
+#     
+#     run_cmd = [os.path.join(directory, flash_prg_name)]
+#     logger.info( 'Running %s' % (run_cmd,)) #, 'with stdin from ', command 
+#     
+#     # comment out stdout=subprocess.PIPE to print stdout to the terminal. when uncommented,
+#     #   stdout is captured to python, which leads to less noise in the terminal
+#     p = subprocess.Popen(run_cmd, stdin=f.stdout, stdout=subprocess.PIPE)#, preexec_fn=f.stdin.close)
+#     
+#     # The communication step is key to not blocking at completion.
+#     out, err = p.communicate()#input=the_input) #out, err not connected to pipes, so nothing to capture or print
+#     
+#     # print out
+#     # print 'Errors: ', err
+#     return out, err
+    
+# class Flash(object):
+#     def __init__(self, points):
+#         self.points = points
+# 
+# class FlashMetadata(object):
+# 
+#     def __init__(self, headerText):
+#         #Search the header for info on how the data is written
+# 
+#         self.header = headerText
+# 
+#         isColumnHeaderLine = r"^Data:(.*)"
+#         matchDataFormatLine = re.compile(isColumnHeaderLine, re.IGNORECASE | re.MULTILINE)
+# 
+#         isDataStartTime = r"^Data start time:(.*)"
+#         matchDataStartTimeLine = re.compile(isDataStartTime, re.IGNORECASE | re.MULTILINE)
+# 
+#         secAnalyzedLine = r"^Number of seconds analyzed:(.*)"
+#         matchSecAnalyzedLine = re.compile(secAnalyzedLine, re.IGNORECASE | re.MULTILINE)
+# 
+# 
+#         startTimeMatch = matchDataStartTimeLine.search(headerText)
+#         if startTimeMatch:
+#             #Looking to deal with something like: " 06/28/04 23:50:00"
+#             dateAndTime = startTimeMatch.group(1).split()
+#             self.startmonth, self.startday, self.startyear = [ int(datePart) for datePart in dateAndTime[0].split('/') ]
+#             self.starthour, self.startminute, self.startsecond = [ int(timePart) for timePart in dateAndTime[1].split(':') ]
+#             if self.startyear < 1000 and self.startyear > 70:
+#                 self.startyear += 1900
+#             else:
+#                 self.startyear += 2000
+# 
+#         secAnalyzedMatch=matchSecAnalyzedLine.search(headerText)
+#         if secAnalyzedMatch:
+#             self.sec_analyzed = int(secAnalyzedMatch.group(1))
+# 
+# 
+#         formatMatch=matchDataFormatLine.search(headerText)
+#         if formatMatch:
+#             columns = formatMatch.group(1).split(',')
+#             self.columns = [columnName.strip() for columnName in columns]
+    
 
-def sort_file(filename, directory):
-    """ Sort one LMA data file into flashes. dir is the directory with the flash program"""
-    logger = logging.getLogger('FlashAutorunLogger')
-    
-    f, command, the_input = cat_LMA(filename)
-    
-    run_cmd = [os.path.join(directory, flash_prg_name)]
-    logger.info( 'Running %s' % (run_cmd,)) #, 'with stdin from ', command 
-    
-    # comment out stdout=subprocess.PIPE to print stdout to the terminal. when uncommented,
-    #   stdout is captured to python, which leads to less noise in the terminal
-    p = subprocess.Popen(run_cmd, stdin=f.stdout, stdout=subprocess.PIPE)#, preexec_fn=f.stdin.close)
-    
-    # The communication step is key to not blocking at completion.
-    out, err = p.communicate()#input=the_input) #out, err not connected to pipes, so nothing to capture or print
-    
-    # print out
-    # print 'Errors: ', err
-    return out, err
-    
-class Flash(object):
-    def __init__(self, points):
-        self.points = points
-
-class FlashMetadata(object):
-
-    def __init__(self, headerText):
-        #Search the header for info on how the data is written
-
-        self.header = headerText
-
-        isColumnHeaderLine = r"^Data:(.*)"
-        matchDataFormatLine = re.compile(isColumnHeaderLine, re.IGNORECASE | re.MULTILINE)
-
-        isDataStartTime = r"^Data start time:(.*)"
-        matchDataStartTimeLine = re.compile(isDataStartTime, re.IGNORECASE | re.MULTILINE)
-
-        secAnalyzedLine = r"^Number of seconds analyzed:(.*)"
-        matchSecAnalyzedLine = re.compile(secAnalyzedLine, re.IGNORECASE | re.MULTILINE)
-
-
-        startTimeMatch = matchDataStartTimeLine.search(headerText)
-        if startTimeMatch:
-            #Looking to deal with something like: " 06/28/04 23:50:00"
-            dateAndTime = startTimeMatch.group(1).split()
-            self.startmonth, self.startday, self.startyear = [ int(datePart) for datePart in dateAndTime[0].split('/') ]
-            self.starthour, self.startminute, self.startsecond = [ int(timePart) for timePart in dateAndTime[1].split(':') ]
-            if self.startyear < 1000 and self.startyear > 70:
-                self.startyear += 1900
-            else:
-                self.startyear += 2000
-
-        secAnalyzedMatch=matchSecAnalyzedLine.search(headerText)
-        if secAnalyzedMatch:
-            self.sec_analyzed = int(secAnalyzedMatch.group(1))
-
-
-        formatMatch=matchDataFormatLine.search(headerText)
-        if formatMatch:
-            columns = formatMatch.group(1).split(',')
-            self.columns = [columnName.strip() for columnName in columns]
-    
-
-def collect_output(datafile, min_points=1, mask_length=4):
-    """ collect all output from the flash program output directory created by
-        the flash program in flash_dir and calculate some additional stats on each flash        
-        """
-    from LMAarrayFile import LMAdataFile
-    import numpy as np
-    
-    logger = logging.getLogger('FlashAutorunLogger')
-    
-    # outdir = os.path.join(flash_dir,flash_output_dir)
-    # os.chdir(outdir)
-    
-    lma = LMAdataFile(datafile, mask_length=mask_length)
-    
-    # get the mapping from flash_ids to the points
-    order = np.argsort(lma.flash_id)
-    
-    # In the case of no data in the file, lma.data.shape will have length zero, i.e., a 0-d array
-    if len(lma.data.shape) == 0:
-        # No data
-        flashes = []
-    else:
-        flid = lma.flash_id[order]
-        boundaries, = np.where(flid[1:]-flid[:-1])    # where indices are nonzero
-        boundaries = np.hstack(([0], boundaries+1))
-    
-        all_data = lma.data[order]
-    
-        max_idx = len(flid) #- 1
-        slice_lower_edges = tuple(boundaries)
-        slice_upper_edges = slice_lower_edges[1:] + (max_idx,)
-        slices = zip(slice_lower_edges, slice_upper_edges)
-    
-        flashes = [ Flash(all_data[slice(*sl)]) for sl in slices ]
-    
-        # calculate extra flash metadata, e.g., initation, centroid
-        logtext = "Calculating flash initation, centroid, area, etc. for %d flashes" % (len(flashes), )
-        logger.info(logtext)
-        # print flashes[0].points.dtype
-        for fl in flashes:
-            header = ''.join(lma.header)
-            fl.metadata = FlashMetadata(header)
-            calculate_flash_stats(fl)
-                    
-    return lma, flashes
+# def collect_output(datafile, min_points=1, mask_length=4):
+#     """ collect all output from the flash program output directory created by
+#         the flash program in flash_dir and calculate some additional stats on each flash        
+#         """
+#     from LMAarrayFile import LMAdataFile
+#     import numpy as np
+#     
+#     logger = logging.getLogger('FlashAutorunLogger')
+#     
+#     # outdir = os.path.join(flash_dir,flash_output_dir)
+#     # os.chdir(outdir)
+#     
+#     lma = LMAdataFile(datafile, mask_length=mask_length)
+#     
+#     # get the mapping from flash_ids to the points
+#     order = np.argsort(lma.flash_id)
+#     
+#     # In the case of no data in the file, lma.data.shape will have length zero, i.e., a 0-d array
+#     if len(lma.data.shape) == 0:
+#         # No data
+#         flashes = []
+#     else:
+#         flid = lma.flash_id[order]
+#         boundaries, = np.where(flid[1:]-flid[:-1])    # where indices are nonzero
+#         boundaries = np.hstack(([0], boundaries+1))
+#     
+#         all_data = lma.data[order]
+#     
+#         max_idx = len(flid) #- 1
+#         slice_lower_edges = tuple(boundaries)
+#         slice_upper_edges = slice_lower_edges[1:] + (max_idx,)
+#         slices = zip(slice_lower_edges, slice_upper_edges)
+#     
+#         flashes = [ Flash(all_data[slice(*sl)]) for sl in slices ]
+#     
+#         # calculate extra flash metadata, e.g., initation, centroid
+#         logtext = "Calculating flash initation, centroid, area, etc. for %d flashes" % (len(flashes), )
+#         logger.info(logtext)
+#         # print flashes[0].points.dtype
+#         for fl in flashes:
+#             header = ''.join(lma.header)
+#             fl.metadata = FlashMetadata(header)
+#             calculate_flash_stats(fl)
+#                     
+#     return lma, flashes
 
 
 def write_output(outfile, flashes, orig_LMA_file, metadata=None):
@@ -230,7 +233,11 @@ def write_output(outfile, flashes, orig_LMA_file, metadata=None):
     write_h5(outfile, flashes, metadata, orig_LMA_file)
 
 
-def run_files_with_params(files, output_path, params, min_points=1, retain_ascii_output=True, cleanup_tmp=True):
+def run_files_with_params(files, output_path, params, clusterer=None, min_points=1, retain_ascii_output=True, cleanup_tmp=True):
+    if clusterer is None:
+        from autorun_mflash import cluster
+        clusterer = cluster
+
     logger = logging.getLogger('FlashAutorunLogger')
     
     now = datetime.datetime.now().strftime('Flash autosort started %Y%m%d-%H%M%S')
@@ -263,44 +270,49 @@ def run_files_with_params(files, output_path, params, min_points=1, retain_ascii
     h5_outfiles = []
     for a_file in files:
         try:
-
-            d = build(mflash_params=params) # returns temporary directory name
-            logger.debug('Built flash program in %s' % d)
-        
-            logger.info('Sorting flashes for %s' % a_file)
-            out, err = sort_file(a_file, d) # out contains sorted flash data (via stdout)
-            # print out
-        
-        
             file_base_name = os.path.split(a_file)[-1].replace('.gz', '')
             # print 'filebase =  ', file_base_name
             # outfile = os.path.join(output_path, file_base_name+'.flash.h5')
             # write_output(outfile, flashes, file_base_name)
-            # print 'Wrote original data and flashes to ', outfile
-        
+            # print 'Wrote original data and flashes to ', outfile        
             outfile = os.path.join(output_path, file_base_name+'.flash')
-            shutil.copyfile(os.path.join(d, 'flashes_out.dat'),
-                            outfile)            
             
-            if 'mask_length' in params:
-                mask_length = params['mask_length']
-            else:
-                mask_length = 4
-            lmadata, flashes = collect_output(outfile, mask_length=mask_length)#, min_points=min_points)
+            # clusterer should use the name outfile as the base for any, e.g., ASCII data it would like to save
+            lmadata, flashes = clusterer(a_file, output_path, outfile, params, logger,
+                       min_points=min_points, retain_ascii_output=retain_ascii_output, cleanup_tmp=cleanup_tmp )
+            
+            # d = build(mflash_params=params) # returns temporary directory name
+            # logger.debug('Built flash program in %s' % d)
+            #         
+            # logger.info('Sorting flashes for %s' % a_file)
+            # out, err = sort_file(a_file, d) # out contains sorted flash data (via stdout)
+            # # print out
+            #         
+            #         
+            # shutil.copyfile(os.path.join(d, 'flashes_out.dat'),
+            #                 outfile)            
+            # 
+            # if 'mask_length' in params:
+            #     mask_length = params['mask_length']
+            # else:
+            #     mask_length = 4
+            # lmadata, flashes = collect_output(outfile, mask_length=mask_length)#, min_points=min_points)
+            logger.info('doing h5 {0}'.format(outfile))
+            
             header = ''.join(lmadata.header)
             fl_metadata = FlashMetadata(header)
             outfile_with_extension = outfile + '.h5'
             h5_outfiles.append(outfile_with_extension)
             write_output(outfile_with_extension, flashes, a_file, metadata=fl_metadata)
-
-            if retain_ascii_output==False:
-                os.remove(outfile)
-            else:
-                logger.info('Wrote ascii event and flash data to %s' % outfile)
-            if cleanup_tmp == True:
-                result = cleanup_build(d)
-            else:
-                logger.warning('did not delete flashsort directory in /tmp')
+            
+            # if retain_ascii_output==False:
+            #     os.remove(outfile)
+            # else:
+            #     logger.info('Wrote ascii event and flash data to %s' % outfile)
+            # if cleanup_tmp == True:
+            #     result = cleanup_build(d)
+            # else:
+            #     logger.warning('did not delete flashsort directory in /tmp')
         except:
             logger.error("Did not successfully sort %s \n Error was: %s" % (a_file, sys.exc_info()[1]))
             raise

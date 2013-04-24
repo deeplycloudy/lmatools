@@ -1,8 +1,27 @@
 import os, gzip, re
 import numpy as np
 import logging
+import subprocess
 
 logger = logging.getLogger('FlashAutorunLogger')
+
+def cat_LMA(filename):
+    """ Returns subprocess pipe with LMA data file on stdout """
+    if filename.find('http://') >= 0:
+        # data = fetch_gzipdata_from_url(filename)
+        url_copy = subprocess.Popen(['curl', '-s', filename], stdout=subprocess.PIPE)#, stdin=subprocess.PIPE)
+        command = ['gunzip', '-c']
+        f = subprocess.Popen(command, stdin=url_copy.stdout, stdout=subprocess.PIPE)
+        any_input=None
+    else:
+        if filename.find('.gz') >= 0:
+            command = ['gunzip', '-c', filename]
+        else:
+            command  = ['cat', filename]
+        f = subprocess.Popen(command, stdout=subprocess.PIPE)
+        any_input = None
+    return f, command, any_input
+
 
 def dec2bin(dec_number):
     if dec_number == 0: return '0'
