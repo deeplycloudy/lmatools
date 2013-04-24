@@ -7,7 +7,7 @@ import logging, logging.handlers
 import datetime
 
 from flash_stats import calculate_flash_stats, Flash, FlashMetadata
-from LMAarrayFile import cat_LMA
+from LMAarrayFile import cat_LMA, LMAdataFile
 
 from mflash import write_header
 
@@ -72,27 +72,6 @@ def cleanup_build(directory):
             "Temporary build directory %s doesn't appear to be a flashsort directory." % (directory,)
             )
     
-# 
-# def fetch_gzipdata_from_url(the_url):
-#     """ Returns unzipped data inside a gzipped file residing at the_url.
-# 
-#         From http://diveintopython.org/http_web_services/gzip_compression.html
-#     """
-#     import urllib2, httplib
-#     import StringIO
-#     import gzip
-# 
-#     httplib.HTTPConnection.debuglevel = 1
-#     request = urllib2.Request(the_url)
-#     request.add_header('Accept-encoding', 'gzip')
-#     opener = urllib2.build_opener()
-#     f = opener.open(request)
-#     compresseddata = f.read()
-#     compressedstream = StringIO.StringIO(compresseddata)
-#     gzipper = gzip.GzipFile(fileobj=compressedstream)      
-#     data = gzipper.read()
-#     gzipper.close()                            
-#     return data
 
     
 
@@ -122,7 +101,6 @@ def collect_output(datafile, min_points=1, mask_length=4):
     """ collect all output from the flash program output directory created by
         the flash program in flash_dir and calculate some additional stats on each flash        
         """
-    from LMAarrayFile import LMAdataFile
     import numpy as np
     
     logger = logging.getLogger('FlashAutorunLogger')
@@ -164,15 +142,6 @@ def collect_output(datafile, min_points=1, mask_length=4):
                     
     return lma, flashes
 
-
-# def write_output(outfile, flashes, orig_LMA_file, metadata=None):
-#     from write_flashes import write_h5
-#     if metadata is None:
-#         # use metadata from the first flash as the canonical metadata, 
-#         #   since all flashes were sorted fromt the same LYLOUT file
-#         # This breaks in the case of empty flashes; in that case the calling function should pass in metadata.
-#         metadata = flashes[0].metadata
-#     write_h5(outfile, flashes, metadata, orig_LMA_file)
 
 
 def cluster(a_file, output_path, outfile, params, logger, min_points=1, retain_ascii_output=True, cleanup_tmp=True):
@@ -230,44 +199,3 @@ def test_output():
     print flashes.cols.init_lon[0:10]
 
 
-if __name__ == '__main__':
-    
-    logger_setup('.')
-    
-    DClat = 38.8888500 # falls church / western tip of arlington, rough centroid of stations
-    DClon = -77.1685800
-    ctrLat = DClat
-    ctrLon = DClon
-    # kounLat = 35.23833
-    # kounLon = -97.46028
-    
-    
-    params = {'stations':(10,13),
-              'chi2':(0,1.0),
-              'ascii_flashes_out':'flashes_out.dat',
-              'ctr_lat':ctrLat, 'ctr_lon':ctrLon,
-              }
-
-    outpath = sys.argv[1]
-    files = sys.argv[2:]
-    
-    # outpath = '/Users/ebruning/out/'
-    # files = [# '/data/20040526/LMA/LYLOUT_040526_224000_0600.dat.gz',
-    #          # '/data/20040526/LMA/LYLOUT_040526_211000_0600.dat.gz',
-    #          # '/data/20040526/LMA/LYLOUT_040526_212000_0600.dat.gz',
-    #          '/data/20040526/LMA/LYLOUT_040526_213000_0600.dat.gz',
-    #         ]
-    # python autorun.py "`pwd`/tmpout" /data/20090329/LYLOUT_090329_200000_3600.dat.gz
-    run_files_with_params(files, outpath, params, retain_ascii_output=False, cleanup_tmp=True)
-    
-    # from initialization import write_header
-    # write_header('initialization.h', stations=(0,13))
-    # d = build()
-    # print 'Built flash program in', d
-    # test_file = '/data/20090329/LYLOUT_090329_200000_3600.dat.gz'
-    # test_file = '/data/20040526/LMA/LYLOUT_040526_213000_0600.dat.gz'
-    # sort_file(test_file, d)
-    # print 'Ran file ', test_file
-    # flf, flashes = collect_output(d, min_points=3)
-    # write_output('test.h5', flashes, test_file)
-    
