@@ -5,6 +5,8 @@ import subprocess
 
 logger = logging.getLogger('FlashAutorunLogger')
 
+from numpy.lib.recfunctions import append_fields
+            
 def cat_LMA(filename):
     """ Returns subprocess pipe with LMA data file on stdout """
     if filename.find('http://') >= 0:
@@ -136,8 +138,11 @@ class LMAdataFile(object):
         
         # If we got here, stations column wasn't in file.
         #   Try getting it from station mask.
-        if attrname=='stations': return self.hexMaskToStationCount()
-        
+        if attrname=='stations': 
+            stations = self.hexMaskToStationCount()
+            self.data = append_fields(self.data, ('stations',), (stations,))
+            return stations
+            
         return None
         #raise AttributeError, attrname
     

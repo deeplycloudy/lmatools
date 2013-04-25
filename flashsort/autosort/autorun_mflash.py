@@ -128,7 +128,7 @@ def collect_output(datafile, min_points=1, mask_length=4):
         slice_lower_edges = tuple(boundaries)
         slice_upper_edges = slice_lower_edges[1:] + (max_idx,)
         slices = zip(slice_lower_edges, slice_upper_edges)
-    
+        
         flashes = [ Flash(all_data[slice(*sl)]) for sl in slices ]
     
         # calculate extra flash metadata, e.g., initation, centroid
