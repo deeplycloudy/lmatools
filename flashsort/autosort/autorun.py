@@ -9,8 +9,7 @@ import datetime
 from flash_stats import calculate_flash_stats, Flash, FlashMetadata
 from LMAarrayFile import cat_LMA
 
-from autorun_mflash import build, cleanup_build, collect_output
-from mflash import write_header
+
 
 LOG_BASEFILENAME = datetime.datetime.now().strftime('Flash-autosort.log')
 
@@ -58,6 +57,7 @@ def write_output(outfile, flashes, orig_LMA_file, metadata=None):
 
 def run_files_with_params(files, output_path, params, clusterer=None, min_points=1, retain_ascii_output=True, cleanup_tmp=True):
     if clusterer is None:
+        from autorun_mflash import build, cleanup_build, collect_output
         from autorun_mflash import cluster
         clusterer = cluster
 
