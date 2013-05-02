@@ -83,7 +83,8 @@ def run_files_with_params(files, output_path, params, clusterer=None, min_points
             
     # We could parse for the number of sources from the header, but that is wrong sometimes. 
     # Instead, set the number of points to the total number of lines in the file minus the header.
-    params['n_sources'] = len(split_lma_text) - params['nhead']
+    # Add 5% to the total. The largest file might actually not be the largest when uncompressed due to variable packing efficiency
+    params['n_sources'] = int(1.05*(len(split_lma_text) - params['nhead']))
     logger.info('Calculated max source count for this run: {0}'.format(params['n_sources']))
     del lma_text, split_lma_text
     # lma_pipe.close()
