@@ -6,7 +6,7 @@ class NLDNdataFile(object):
     
     stroke_DC3 = {'columns':[ ('date','S10'), ('time','S20'), 
                               ('lat','f4'), ('lon','f4'), 
-                              ('peakCurrent','f4'), ('ellipse','f4'),
+                              ('peak_current','f4'), ('ellipse','f4'),
                               ], 
                   'date_dtype':[('year','i2'),('month','i1'),('day','i1')],
                   'time_dtype':[('hour','i1'),('minute','i1'),('second','float64')]
