@@ -13,6 +13,10 @@ class NLDNdataFile(object):
                  }
     
     def __init__(self, filename, date_sep='-', time_sep=':', format='stroke_DC3'):
+        """ Load NLDN data from a file, into a numpy named array stored in the
+            *data* attribute. *data*['time'] is relative to the *basedate* datetime
+            attribute
+            """
         self.format=format
         
         dtype_specs = getattr(self, format)
@@ -26,6 +30,7 @@ class NLDNdataFile(object):
         dates = [datetime(a['year'], a['month'], a['day'], b['hour'], b['minute']) 
                     for a, b in zip(date_part, time_part)]
         min_date = min(dates)
+        min_date = datetime(min_date.year, min_date.month, min_date.day)
         t = np.fromiter( ((d-min_date).total_seconds() for d in dates), dtype='float64')
         t += time_part['second']
         
