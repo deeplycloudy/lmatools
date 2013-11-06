@@ -1,32 +1,37 @@
 import numpy as np
 
-def unique_vectors(x_i, y_i, g_id):
+def unique_vectors(x_i, y_i, g_id, return_indices_only=True):
     """ x_i, y_i: Discretized (bin index) values of point locations.
         id:       Entity ids that group points
         
         Returns a (3, n_points) array of unique points and ids.
         """
+    vector_len = 3
+    itemsize = max((x_i.itemsize,y_i.itemsize,g_id.itemsize))
+    inttype = 'i{0:d}'.format(itemsize)
+    
         
     # Because we do casting below, ascontiguousarray is important
     locs = np.ascontiguousarray(np.vstack( (
-                           x_i.astype('int32'), 
-                           y_i.astype('int32'), 
-                           g_id.astype('int32')
-                       ) ).T )
+                           x_i.astype(inttype), 
+                           y_i.astype(inttype), 
+                           g_id.astype(inttype)
+                           ) ).T )
 
 	# Find unique rows (unique grid cells occupied per flash) by casting to a set
 	# of strings comprised of the bytes that make up the rows. Strings are not serialized, just ints cast to byte strings.
 	# Based on the example at
 	# http://www.mail-archive.com/numpy-discussion@scipy.org/msg04176.html
     # which doesn't quite get it right: it returns unique elements.
-    unq, unq_idx = np.unique(locs.view(
-                    ('S%d'%(locs.itemsize*locs.shape[1]))*locs.shape[0]), 
-                    return_index=True)
-    # these are unnecessary since we only need the row indices
-    # unq = unq.view('int32')
-    # unq = unq.reshape((len(unq)/locs.shape[1], locs.shape[1]))
-    
-    return unq_idx
+    vectorbytes = 'S{0:d}'.format(itemsize*vector_len)
+    unq, unq_index = np.unique(locs.view(vectorbytes), return_index=True)
+
+    if return_indices_only==True:
+        return unq_index
+    else:
+        # this is unnecessary if we only need the row indices
+        unq_restored = unq.view(inttype).reshape(unq.shape[0],vector_len)
+        return unq_restored, unq_index
 
 def extent_density(x, y, ids, x0, y0, dx, dy, xedge, yedge):
     x_i = np.floor( (x-x0)/dx ).astype('int32')
@@ -93,24 +98,49 @@ def test_extent_density():
 
 
 def test_unq():
-     locs = np.array([[ 0,  1,  2],
-                      [ 3,  4,  5],
-                      [ 8, 10, 11],
-                      [ 3,  5,  5],
-                      [ 3,  4,  5],
-                      [ 3,  4,  6],
-                      [ 9, 10, 11]])
-     
-     # this returns the unique elements
-     # unq, unq_idx = np.unique(locs.view('S%d'%locs.itemsize*locs.shape[0]), return_index=True)
-     
-     unq, unq_idx = np.unique(locs.view(('S%d'%(locs.itemsize*locs.shape[1]))*locs.shape[0]), return_index=True)
-     unq = unq.view('int32')
-     unq = unq.reshape((len(unq)/locs.shape[1], locs.shape[1]))
-     # print unq
-     # print locs[unq_idx] == unq
-     assert (locs[unq_idx] == unq).all()
+    locs = np.array([[ 0,  1,  2],
+                     [ 0,  0,  0],
+                     [ 3,  4,  5],
+                     [ 8, 10, 11],
+                     [ 3,  5,  5],
+                     [ 3,  4,  5],
+                     [ 3,  4,  6],
+                     [ 9, 10, 11]])
 
+
+    x_i = locs[:,0]
+    y_i = locs[:,1]
+    g_id = locs[:,2]
+
+
+    # vector_len = 3
+    # itemsize = max((x_i.itemsize,y_i.itemsize,g_id.itemsize))
+    # inttype = 'i{0:d}'.format(itemsize)
+    # 
+    # 
+    # locs = np.ascontiguousarray(np.vstack( (
+    #                        x_i.astype(inttype), 
+    #                        y_i.astype(inttype), 
+    #                        g_id.astype(inttype)
+    #                        ) ).T )
+    # 
+    # vectorbytes = 'S{0:d}'.format(itemsize*vector_len)
+    # unq, unq_index = np.unique(locs.view(vectorbytes), return_index=True)
+    # 
+    # unq_restored = unq.view(inttype).reshape(unq.shape[0],vector_len)
+    
+    # print unq_index
+    # print unq_restored
+    # print locs[unq_index,:]
+    
+    unq_restored, unq_index = unique_vectors(x_i,y_i,g_id, return_indices_only=False)
+    assert (unq_index == [1, 0, 2, 6, 4, 3, 7,]).all()
+    assert (locs[unq_index,:] == unq_restored).all()
+    assert locs[unq_index].shape == (7,3)
+
+
+def test_unq_func():
+    pass
         
 if __name__ == '__main__':
     test_unq()
