@@ -17,9 +17,9 @@ from matplotlib.backends.backend_agg import FigureCanvasAgg
 
 from math import ceil
 
-import pytz
-tz=pytz.timezone('US/Eastern') # Why, oh, why, is it using my local time zone?
-time_series_x_fmt = DateFormatter('%H%M:%S', tz=tz)
+#import pytz
+#tz=pytz.timezone('US/Eastern') # Why, oh, why, is it using my local time zone?
+#time_series_x_fmt = DateFormatter('%H%M:%S', tz=tz)
 
 
 def kilo(x, pos):
@@ -189,7 +189,7 @@ def make_plot(filename, grid_name, x_name='x', y_name='y', t_name='time',
     time_delta = timedelta(0,float(t[0]),0)
     start_time = base_date + time_delta
         
-    indexer = [None,]*len(grid.shape)
+    indexer = [slice(None),]*len(grid.shape)
     
     
     frame_start_times = []
