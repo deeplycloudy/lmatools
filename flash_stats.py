@@ -11,35 +11,56 @@ def bin_center(bins):
     return (bins[:-1] + bins[1:]) / 2.0
     
 
-
-def plot_histogram(histo, bin_edges, bin_unit='km', save=False, fig=None, color_cycle_length=1, color_map='gist_earth'):
-    """ Histogram for flash width vs. count """
-    import matplotlib.pyplot as plt
-    
-    flash_1d_extent = bin_center(np.sqrt(bin_edges))
-    
+def energy_plot_setup(fig=None, subplot=111, bin_unit='km'):
+    """ Create an energy spectrum plot with a 5/3 slope line and an spare line
+        to be used for plotting the spectrum. The spare line is intially located
+        on top of the 5/3 line 
+        If fig is specified, the spectrum axes will be created on that figure
+        in the subplot position given by subplot.
+        
+        Returns 
+    """    
     if fig is None:
+        import matplotlib.pyplot as plt
         fig = plt.figure()
-        
-    # ax.loglog(flash_1d_extent, histo)
-    ax  = fig.add_subplot(111)
     
-    bin_widths = np.sqrt(bin_edges[1:] - bin_edges[:-1])
+    spectrum_ax = fig.add_subplot(subplot)
+    spectrum_ax.set_xlabel('Flash width ($\sqrt{A_h}$, %s)' % (bin_unit,))
+    spectrum_ax.set_ylabel('$E(l) \mathrm{(m^2 s^{-2} km^{-1})}$')
+    spectrum_ax.set_xlim(10**-1, 10**2)
+    spectrum_ax.set_ylim(10**0, 10**8)
+    spectrum_ax.set_yscale('log')
+    spectrum_ax.set_xscale('log')
     
-    # This should give   s^-2                 m^2                      km^-1   =  m s^-2 km^-1
-    specific_energy = (histo/600.0 * flash_1d_extent*1000.0)**2.0 / (bin_widths) # flash_1d_extent #bin_widths
-    # print '{0} J total energy'.format((specific_energy*bin_widths).sum())
-    ax.loglog(flash_1d_extent, specific_energy, 'r')
-        
-    # wavelenth ^-5/3
+    #1e-2 to 1e4
+    min_pwr = -2
+    max_pwr = 4
+    delta_pwr = 0.1
+    powers = np.arange(min_pwr, max_pwr+delta_pwr, delta_pwr)
+    flash_1d_extent = 10**powers
     wavenumber = (2*np.pi)/flash_1d_extent
     inertialsubrange = 10**6 * (wavenumber)**(-5.0/3.0)
-    plt.plot(flash_1d_extent, inertialsubrange)
-    plt.text(1,1,save.split('/')[-1].split('.')[0], color='g')
     
-    plt.xlabel('Flash width ($\sqrt{A_h}$, %s)' % (bin_unit,))
-    plt.ylabel('$E(l) \mathrm{(m^2 s^{-2} km^{-1})}$')
-    ax.set_ylim(10**0, 10**8)
+    spectrum_line_artist = spectrum_ax.loglog(flash_1d_extent, inertialsubrange, 'r')[0]
+    fivethirds_line_artist = spectrum_ax.loglog(flash_1d_extent, inertialsubrange, 'k')[0]
+    
+    return fig, spectrum_ax, fivethirds_line_artist, spectrum_line_artist
+
+
+def plot_histogram(histo, bin_edges, bin_unit='km', save=False, fig=None, color_cycle_length=1, color_map='gist_earth', duration=600.0):
+    """ Histogram for flash width vs. count """
+
+    duration=float(duration)
+    fig, spectrum_ax, fivethirds_line_artist, spectrum_artist = energy_plot_setup()
+    
+    flash_1d_extent = bin_center(np.sqrt(bin_edges))    
+    bin_widths = np.sqrt(bin_edges[1:] - bin_edges[:-1])    
+    # This should give   s^-2                 m^2                      km^-1   =  m s^-2 km^-1
+    specific_energy = (histo/duration * flash_1d_extent*1000.0)**2.0 / (bin_widths) # flash_1d_extent #bin_widths
+    spectrum_artist.set_data(flash_1d_extent, specific_energy)
+    
+    # wavelenth ^-5/3
+    spectrum_ax.set_title(save.split('/')[-1].split('.')[0])
     
     if save==False:
         plt.show()
@@ -51,12 +72,36 @@ def plot_histogram(histo, bin_edges, bin_unit='km', save=False, fig=None, color_
 
 
 @coroutine
-def histogram_for_flash_parameter(paramname, bin_edges, plotter, flash_id_key='flash_id', histo_array=None, save=False, fig=None):
+def histogram_for_parameter(parameter, bin_edges, target=None):
+    """ General coroutine that accepts a named numpy array with field parameter
+        and calcualtes a histogram using bin_edges. Target is sent histogram, edges.
+    """
+    while True:
+        a = (yield)
+        histo, edges = np.histogram(a[parameter], bins=bin_edges)
+        if target is not None:
+            target.send((histo, edges))
+
+@coroutine
+def events_flashes_receiver(target=None):
+    """ Passes along only flashes """
+    while True:
+        events, flashes = (yield)
+        if target is not None:
+            target.send(flashes)
+
+
+@coroutine
+def histogram_accumulate_plot(plotter, histo_array=None, save=False, fig=None):
+    bin_edges=None
     try:
-        while True:
-            events, flashes = (yield)
-        
-            histo, edges = np.histogram(flashes[paramname], bins=bin_edges)
+        while True:        
+            histo, edges = (yield) 
+            
+            if bin_edges is None:
+                bin_edges = edges
+            else:
+                assert (bin_edges == edges).all()
             
             if histo_array is None:
                 histo_array  = histo
@@ -81,9 +126,11 @@ def footprint_stats(h5_filenames, save=False, fig=None, min_points=10):
 
     plotter = plot_histogram
 
-    histogrammer = histogram_for_flash_parameter('area', footprint_bin_edges, plotter, save=save, fig=fig)
-
-    read_flashes(h5_filenames, histogrammer, min_points=min_points)
+    
+    histogram_plot = histogram_accumulate_plot(plotter, save=save, fig=fig)
+    histogrammer=histogram_for_parameter('area', footprint_bin_edges, target=histogram_plot)
+    ev_fl_rx = events_flashes_receiver(target=histogrammer)
+    read_flashes(h5_filenames, ev_fl_rx, min_points=min_points)
     
 if __name__ == '__main__':
     # '/data/20090610/data'
