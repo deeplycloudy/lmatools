@@ -161,6 +161,8 @@ def create_flash_objs(lma, good_data):
                 
                 singleton_flashes = [ Flash(singleton[i:i+1]) for i in range(n_singles)]
                 
+                data[singles] = singleton
+                
                 print "finished singletons"
                 
                 flashes += singleton_flashes
@@ -225,7 +227,9 @@ def cluster(a_file, output_path, outfile, params, logger, min_points=1, **kwargs
     lma.sort_status = 'in process'
     
     # Maximum 3 s flash length, normalized to the time separation scale
-    chunker = chunk(XYZT[:,-1].min(), 3.0/.15, cluster_chunk_pairs(aggregate_ids(create_flash_objs(lma, data)), min_points=min_points) )
+    label_aggregator = aggregate_ids(create_flash_objs(lma, data))
+    clusterer = cluster_chunk_pairs(label_aggregator, min_points=min_points)
+    chunker = chunk(XYZT[:,-1].min(), 3.0/.15,  clusterer)
     stream(XYZT.astype('float32'),chunker)
     
     print lma.sort_status
