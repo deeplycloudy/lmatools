@@ -47,17 +47,26 @@ def energy_plot_setup(fig=None, subplot=111, bin_unit='km'):
     return fig, spectrum_ax, fivethirds_line_artist, spectrum_line_artist
 
 
-def calculate_energy_from_area_histogram(histo, bin_edges, duration, scaling_constant=1.0):
+def calculate_energy_from_area_histogram(histo, bin_edges, duration, scaling=1.0):
+    """ Given a histogram and bin edges for flash area, calculate the specific energy density
+        in units of (m^2/s^2) / km, as in Bruning and MacGorman 2013, J. Atmos. Sci. 
+        duration is the total number of seconds over which the flashes were counted.
+        
+        bin_edges are assumed to be in km^2. histo is a count corresponding to the intervals
+        specified by bin_edges.
+        
+        Before return, the spectrum is multipled by scaling (default = 1.0)
+    """
+    duration=float(duration)
     flash_1d_extent = bin_center(np.sqrt(bin_edges))    
     bin_widths = np.sqrt(bin_edges[1:] - bin_edges[:-1])    
     # This should give   s^-2                 m^2                      km^-1   =  m s^-2 km^-1
     specific_energy = (histo/duration * flash_1d_extent*1000.0)**2.0 / (bin_widths) # flash_1d_extent #bin_widths
-    specific_energy *= 1.0
+    specific_energy *= scaling
     return flash_1d_extent, specific_energy
 
 def plot_energy_from_area_histogram(histo, bin_edges, bin_unit='km', save=False, fig=None, color_cycle_length=1, color_map='gist_earth', duration=600.0):
     """ Histogram for flash width vs. count """
-    duration=float(duration)
     
     fig, spectrum_ax, fivethirds_line_artist, spectrum_artist = energy_plot_setup()
     spectrum_ax.set_title(save.split('/')[-1].split('.')[0])
