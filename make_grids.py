@@ -136,7 +136,29 @@ def write_cf_netcdf(outfile, t_start, t, xloc, yloc, lon_for_x, lat_for_y, ctr_l
     nc_out.close()
 
 
-
+def time_edges(start_time, end_time, frame_interval):
+    """ Return lists cooresponding the start and end times of frames lasting frame_interval
+        between start_time and end_time. The last interval may extend beyond end_time, but 
+        by no more than frame_interval. This makes each frame the same length.
+        
+        returns t_edges, duration, where t_edges is a list of datetime objects, and
+        duration is the total duration between the start and end times (and not the duration
+        of all frames)
+    """
+    frame_dt = timedelta(0, frame_interval, 0)
+    duration = end_time - start_time
+    n_frames = int(ceil(to_seconds(duration) / to_seconds(frame_dt)))
+    t_edges = [start_time + i*frame_dt for i in range(n_frames+1)]
+    return t_edges, duration
+    
+def seconds_since_start_of_day(start_time, t):
+    """ For each datetime object t, return the number of seconds elapsed since the 
+        start of the date given by start_time. Only the date part of start_time is used. 
+    """
+    ref_date = start_time.date()
+    t_ref = datetime(ref_date.year, ref_date.month, ref_date.day)
+    t_edges_seconds = [to_seconds(edge - t_ref) for edge in t]
+    return t_ref, t_edges_seconds
         
 
 def grid_h5flashfiles(h5_filenames, start_time, end_time, 
@@ -189,17 +211,10 @@ def grid_h5flashfiles(h5_filenames, start_time, end_time,
         flash_count_logfile = sys.stdout
     
     # reference time is the date part of the start_time
-    ref_date = start_time.date()
-    t_ref = datetime(ref_date.year, ref_date.month, ref_date.day)
-    
-    frame_dt = timedelta(0, frame_interval, 0)
-    
-    duration = end_time - start_time
-    n_frames = int(ceil(to_seconds(duration) / to_seconds(frame_dt)))
 
-    t_edges = [start_time + i*frame_dt for i in range(n_frames+1)]
-    
-    t_edges_seconds = [to_seconds(edge - t_ref) for edge in t_edges]
+    t_edges, duration = time_edges(start_time, end_time, frame_interval)
+    t_ref, t_edges_seconds = seconds_since_start_of_day(start_time, t_edges)
+    n_frames = len(t_edges)-1
     
     xedge=np.arange(x_bnd[0], x_bnd[1]+dx, dx)
     yedge=np.arange(y_bnd[0], y_bnd[1]+dy, dy)
