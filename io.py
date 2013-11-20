@@ -15,8 +15,6 @@ def read_flashes(h5LMAfiles, target, base_date=None, min_points=10):
         h5 = tables.openFile(filename)
         table_name = h5.root.events._v_children.keys()[0]
 
-        print filename
-
         # event_dtype = getattr(h5.root.events, table_name)[0].dtype
         # events_all = getattr(h5.root.events, table_name)[:]
         flashes = getattr(h5.root.flashes, table_name)
@@ -39,7 +37,7 @@ def read_flashes(h5LMAfiles, target, base_date=None, min_points=10):
         flashes['start'] += extra_dt
 
         n_flashes = len(flashes)
-        print '    ', n_flashes, ' total flashes, with extra dt of', extra_dt
+        print '{0} -- {1} flashes > {2} pts; dt+={3}  '.format(filename, n_flashes, min_points, extra_dt)
         
         push_out = (events, flashes)
 
