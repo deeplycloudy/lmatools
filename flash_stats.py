@@ -47,20 +47,23 @@ def energy_plot_setup(fig=None, subplot=111, bin_unit='km'):
     return fig, spectrum_ax, fivethirds_line_artist, spectrum_line_artist
 
 
-def plot_histogram(histo, bin_edges, bin_unit='km', save=False, fig=None, color_cycle_length=1, color_map='gist_earth', duration=600.0):
-    """ Histogram for flash width vs. count """
-
-    duration=float(duration)
-    fig, spectrum_ax, fivethirds_line_artist, spectrum_artist = energy_plot_setup()
-    
+def calculate_energy_from_area_histogram(histo, bin_edges, duration, scaling_constant=1.0):
     flash_1d_extent = bin_center(np.sqrt(bin_edges))    
     bin_widths = np.sqrt(bin_edges[1:] - bin_edges[:-1])    
     # This should give   s^-2                 m^2                      km^-1   =  m s^-2 km^-1
     specific_energy = (histo/duration * flash_1d_extent*1000.0)**2.0 / (bin_widths) # flash_1d_extent #bin_widths
-    spectrum_artist.set_data(flash_1d_extent, specific_energy)
+    specific_energy *= 1.0
+    return flash_1d_extent, specific_energy
+
+def plot_energy_from_area_histogram(histo, bin_edges, bin_unit='km', save=False, fig=None, color_cycle_length=1, color_map='gist_earth', duration=600.0):
+    """ Histogram for flash width vs. count """
+    duration=float(duration)
     
-    # wavelenth ^-5/3
+    fig, spectrum_ax, fivethirds_line_artist, spectrum_artist = energy_plot_setup()
     spectrum_ax.set_title(save.split('/')[-1].split('.')[0])
+    
+    flash_1d_extent, specific_energy = calculate_energy_from_area_histogram(histo, bin_edges, duration)
+    spectrum_artist.set_data(flash_1d_extent, specific_energy)
     
     if save==False:
         plt.show()
@@ -124,8 +127,7 @@ def footprint_stats(h5_filenames, save=False, fig=None, min_points=10):
     powers = np.arange(min_pwr, max_pwr+delta_pwr, delta_pwr)
     footprint_bin_edges = 10**powers
 
-    plotter = plot_histogram
-
+    plotter = plot_energy_from_area_histogram
     
     histogram_plot = histogram_accumulate_plot(plotter, save=save, fig=fig)
     histogrammer=histogram_for_parameter('area', footprint_bin_edges, target=histogram_plot)
