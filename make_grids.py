@@ -147,7 +147,7 @@ def time_edges(start_time, end_time, frame_interval):
     """
     frame_dt = timedelta(0, frame_interval, 0)
     duration = end_time - start_time
-    n_frames = int(ceil(to_seconds(duration) / to_seconds(frame_dt)))
+    n_frames = int(np.ceil(to_seconds(duration) / to_seconds(frame_dt)))
     t_edges = [start_time + i*frame_dt for i in range(n_frames+1)]
     return t_edges, duration
     
