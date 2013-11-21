@@ -4,7 +4,9 @@ import numpy as np
 
 from density_tools import unique_vectors
 
-
+# -------------------------------------------------------------------------- 
+# ----- This section could be replaced with stormdrain.pipeline imports ----
+# -------------------------------------------------------------------------- 
 
 def coroutine(func):
     def start(*args,**kwargs):
@@ -21,7 +23,29 @@ def broadcast(targets):
             target.send(stuff)
         del stuff
 
+class Branchpoint(object):
+    """ Class-based version useful for tracking a changing state or adjusting targets
+        at a later time. Some '.dot' access overhead this way, of course.
 
+        >>> brancher = Branchpoint( [target1, target2, ...] )
+
+        Allows for flexible branching by maintaining a set (in the formal sense) of targets.
+        brancher.targets.append(newtarget)
+        brancher.targets.remove(existingtarget)
+    """
+
+    def __init__(self, targets): 
+        """ Accepts a sequence of targets """
+        self.targets = set(targets) # this perhaps should be a set and not a list, so it remains unique
+
+    @coroutine
+    def broadcast(self):
+        while True:
+            stuff = (yield)
+            for target in self.targets:
+                target.send(stuff)
+            del stuff
+            
 # class map_projector(object):
 #     def __init__(self, ctr_lat, ctr_lon, proj_name='eqc'):
 #         self.mapProj = MapProjection(projection=proj_name, ctrLat=ctr_lat, ctrLon=ctr_lon, lat_ts=ctr_lat, lon_0=ctr_lon)
@@ -43,6 +67,10 @@ def broadcast(targets):
 #                 *self.geoProj.toECEF(lon, lat, alt)
 #                 )
 #         target.send((x,y,z))
+
+# -------------------------------------------------------------------------- 
+# -------------------------------------------------------------------------- 
+# -------------------------------------------------------------------------- 
 
 
 @coroutine

@@ -4,7 +4,7 @@ import os
 import numpy as np
 
 from lmatools.io import read_flashes
-from lmatools.density_to_files import coroutine
+from lmatools.density_to_files import coroutine, Branchpoint
 
 
 def bin_center(bins):
@@ -121,10 +121,55 @@ def histogram_accumulate_plot(plotter, histo_array=None, save=False, fig=None):
                 histo_array += histo
     except GeneratorExit:
         plotter(histo_array, bin_edges, save=save, fig=fig)
+
+@coroutine        
+def raw_moments_for_parameter(parameter, preprocess=None, n_moments=5, output_target=None):
+    """ This coroutine builds up raw moments by streaming samples into the coroutine.
+        When the samples are exhausted by a GeneratorExit, An array of size n_moments 
+        will be sent to the output_target, and will contain the zeroth and n_moments-1 
+        higher moments. The higher moments are already divided by the zeroth moment.
+        
+        Receives a data array, and calculate basic statistics from the distribution
+        of the named parameter in that array. Optionally call the preprocess function 
+        on the parameter before calculating the moment.
+        
+    """
+    sample_raw_moments = np.zeros(n_moments, dtype='f8')
+    try:
+        while True:
+            data = (yield)
+            a = data[parameter]
+            if preprocess is not None:
+                a = preprocess(a)
+            # calculate the sample moments
+            for i in range(n_moments):
+                sample_raw_moments[i] += (a**i).sum()
+            
+    except GeneratorExit:
+        sample_raw_moments[1:] /= sample_raw_moments[0]
+        if output_target is not None:
+            output_target.send(sample_raw_moments)
         
 
+def central_moments_from_raw(raw):
+    """ Returns ctr, std where
+            ctr = the zero through fourth central moments
+            std = (number, mean, variance, skewness, kurtosis)
+            
+            the zeroth and first central moments are set to zero.
+    """
+    ctr = np.zeros_like(raw)
+    # ctr[0] = 0
+    # ctr[1] = raw[1] - raw[1]
+    ctr[2] = raw[2] - raw[1]*raw[1]
+    ctr[3] = 2*(raw[1]**3) - 3*raw[1]*raw[2] + raw[3]
+    ctr[4] = -3*(raw[1]**4) + 6*raw[1]*raw[1]*raw[2] - 4*raw[3]*raw[1] + raw[4]
+    # number, mean, variance, skewness, kurtosis
+    std = raw[0], raw[1], ctr[2], ctr[3]/(ctr[2]**1.5), (ctr[4]/(ctr[2]*ctr[2]) - 3)
+    return ctr, std
     
-def footprint_stats(h5_filenames, save=False, fig=None, min_points=10):
+def footprint_stats(h5_filenames, save=False, fig=None, min_points=10, 
+                    base_date=None, other_analysis_targets=None):
     
     # start_time = datetime(2009,6,10, 20,0,0)
     # end_time   = datetime(2009,6,10, 21,0,0)
@@ -141,7 +186,40 @@ def footprint_stats(h5_filenames, save=False, fig=None, min_points=10):
     histogram_plot = histogram_accumulate_plot(plotter, save=save, fig=fig)
     histogrammer=histogram_for_parameter('area', footprint_bin_edges, target=histogram_plot)
     ev_fl_rx = events_flashes_receiver(target=histogrammer)
-    read_flashes(h5_filenames, ev_fl_rx, min_points=min_points)
+    brancher = Branchpoint([ev_fl_rx])
+    if other_analysis_targets is not None:
+        for t in other_analysis_targets:
+            brancher.targets.add(t)
+    read_flashes(h5_filenames, brancher.broadcast(), min_points=min_points, base_date=base_date)
+
+def plot_spectra_for_files(h5_filenames, min_points, time_criteria, distance_criteria,
+                           outdir_template='./figures/thresh-{0}_dist-{1}_pts-{2}/',
+                           other_analysis_targets=None, base_date=None):
+    """ Make standard plots of the flash energy spectrum. There will be one spectrum created
+        for each file in h5_filenames.
+
+        min_pts, time_criteria, distance_critera are tuples of point and time-space thresholds, all the same length.
+        They will be looped over, used to generate outdir_template which 
+        needs {0},{1},{2}, which will be filled in with time, distance, and min_pts criteria
+
+        The path in outdir_template will be created if it does not exist.
+    """
+    import matplotlib.pyplot as plt
+    fig = plt.figure()
+    for dpt in min_points:
+        for dt in time_criteria:
+            for dx in distance_criteria:
+                outdir = outdir_template.format(dt,dx,dpt)
+                if not os.path.exists(outdir):
+                    os.makedirs(outdir)
+
+                for h5_file in h5_filenames:
+                    file_basename = os.path.split(h5_file)[-1].split('.')[:-3][0]
+                    figure_file = os.path.join(outdir, '{0}-energy.pdf'.format(file_basename))
+                    footprint_stats([h5_file], save=figure_file, fig=fig, min_points=dpt, 
+                                    base_date=base_date, other_analysis_targets=other_analysis_targets)
+
+
     
 if __name__ == '__main__':
     # '/data/20090610/data'
