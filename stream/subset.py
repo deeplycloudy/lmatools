@@ -69,4 +69,5 @@ def chunk(start_time, max_duration, target, t_idx=-1):
             del v
     except GeneratorExit:
         target.send(np.asarray(v_buffer))
+        target.close()
 

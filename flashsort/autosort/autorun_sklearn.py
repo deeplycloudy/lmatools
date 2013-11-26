@@ -54,6 +54,7 @@ def cluster_chunk_pairs(clustered_output_target, min_points=10):
         clusters = db.fit(chunk1)
         labels = clusters.labels_.astype(int)
         clustered_output_target.send((chunk1, labels))
+        clustered_output_target.close()
         
 # @coroutine
 # def chunk_printer():
@@ -100,6 +101,7 @@ def aggregate_ids(target):
         print "sending {0} total points".format(total)
         target.send((unique_labels, point_labels))
         print "sent {0} total points".format(total)
+        target.close()
 
 @coroutine
 def create_flash_objs(lma, good_data):
@@ -227,10 +229,17 @@ def cluster(a_file, output_path, outfile, params, logger, min_points=1, **kwargs
     lma.sort_status = 'in process'
     
     # Maximum 3 s flash length, normalized to the time separation scale
-    label_aggregator = aggregate_ids(create_flash_objs(lma, data))
+
+    flash_object_maker = create_flash_objs(lma, data)
+    label_aggregator = aggregate_ids(flash_object_maker)
     clusterer = cluster_chunk_pairs(label_aggregator, min_points=min_points)
     chunker = chunk(XYZT[:,-1].min(), 3.0/.15,  clusterer)
     stream(XYZT.astype('float32'),chunker)
+    
+    # These are handled by target.close in each coroutine's GeneratorExit handler
+    # clusterer.close()
+    # label_aggregator.close()
+    # flash_object_maker.close()
     
     print lma.sort_status
     print len(lma.flash_objects)
