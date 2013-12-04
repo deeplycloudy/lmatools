@@ -24,20 +24,32 @@ def cluster_chunk_pairs(clustered_output_target, min_points=10):
             chunk2 = (yield)
             len1 = chunk1.shape[0]
             len2 = chunk2.shape[0]
-            print len1+len2
-            
+            if True: # optional debug switch
+                debugtxt = ''
+                for i in range(chunk1.shape[1]):
+                    debugtxt += "{0:4.2f}, ".format(chunk2[:, i].max() - chunk1[:, i].min())
+                print len1+len2, debugtxt
+                        
             # do stuff with chunk 1 and 2
             clusters = db.fit(np.vstack((chunk1, chunk2)))
             labels = clusters.labels_.astype(int)
             
-            clustered_output_target.send((chunk1, labels[:len1]))
+            # defer sending these in one bundle ... need to ensure all labels
+            # from this run of DBSCAN stay together
+            # clustered_output_target.send((chunk1, labels[:len1]))
             
             # pull data out of chunk2 that was clustered as part of chunk 1
             chunk1_labelset = set(labels[:len1])
             if -1 in chunk1_labelset:
                 chunk1_labelset.remove(-1) # remove the singleton cluster ID - we want to retain these from chunk 2.
             clustered_in_chunk2 = np.fromiter( ( True if label in chunk1_labelset else False for i,label in enumerate(labels[len1:])) , dtype=bool)
-            clustered_output_target.send((chunk2[clustered_in_chunk2], labels[len1:][clustered_in_chunk2]))  
+            
+            bundle_chunks = np.vstack((chunk1, chunk2[clustered_in_chunk2]))
+            bundle_labels = np.concatenate((labels[:len1], labels[len1:][clustered_in_chunk2]))
+            assert bundle_chunks.shape[0] == bundle_labels.shape[0]
+            clustered_output_target.send((bundle_chunks, bundle_labels))
+            del bundle_chunks, bundle_labels
+            # clustered_output_target.send((chunk2[clustered_in_chunk2], labels[len1:][clustered_in_chunk2]))  
             residuals = chunk2[clustered_in_chunk2==False]
             
             # optimization TODO: pull clusters out of chunk 2 whose final point is greater 
@@ -78,7 +90,7 @@ def aggregate_ids(target):
     point_labels = []
     # all_v = []
     try:
-        n_last = 0
+        # n_last = 0
         while True:
             (v, orig_labels) = (yield)
             labels = np.atleast_1d(orig_labels).copy()
