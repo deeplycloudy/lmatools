@@ -169,10 +169,12 @@ def central_moments_from_raw(raw):
     return ctr, std
     
 def footprint_stats(h5_filenames, save=False, fig=None, min_points=10, 
-                    base_date=None, other_analysis_targets=None):
-    
-    # start_time = datetime(2009,6,10, 20,0,0)
-    # end_time   = datetime(2009,6,10, 21,0,0)
+                    base_date=None, other_analysis_targets=None, filterer=None):
+    """ filter should be a non-running coroutine that receives the (events, flashes)
+        arrays emitted by io.read_flashes and sends filtered (events, flashes) arrays to 
+        a target defined by this function and passed to filter by keyword argument.
+        
+    """
 
     #1e-2 to 1e4
     min_pwr = -2
@@ -190,11 +192,17 @@ def footprint_stats(h5_filenames, save=False, fig=None, min_points=10,
     if other_analysis_targets is not None:
         for t in other_analysis_targets:
             brancher.targets.add(t)
-    read_flashes(h5_filenames, brancher.broadcast(), min_points=min_points, base_date=base_date)
+    if filterer is not None:
+        rcvr = filterer(target=brancher.broadcast())
+    else:
+        rcvr = brancher.broadcast()
+    read_flashes(h5_filenames, rcvr, min_points=min_points, base_date=base_date)
+
+            
 
 def plot_spectra_for_files(h5_filenames, min_points, time_criteria, distance_criteria,
                            outdir_template='./figures/thresh-{0}_dist-{1}_pts-{2}/',
-                           other_analysis_targets=None, base_date=None):
+                           other_analysis_targets=None, base_date=None, filterer=None):
     """ Make standard plots of the flash energy spectrum. There will be one spectrum created
         for each file in h5_filenames.
 
@@ -217,7 +225,8 @@ def plot_spectra_for_files(h5_filenames, min_points, time_criteria, distance_cri
                     file_basename = os.path.split(h5_file)[-1].split('.')[:-3][0]
                     figure_file = os.path.join(outdir, '{0}-energy.pdf'.format(file_basename))
                     footprint_stats([h5_file], save=figure_file, fig=fig, min_points=dpt, 
-                                    base_date=base_date, other_analysis_targets=other_analysis_targets)
+                                    base_date=base_date, other_analysis_targets=other_analysis_targets,
+                                    filterer=filterer)
 
 
     
