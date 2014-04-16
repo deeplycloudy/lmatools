@@ -3,7 +3,7 @@ import os
 
 import numpy as np
 
-from lmatools.io import read_flashes
+from lmatools.lma_io import read_flashes
 from lmatools.density_to_files import coroutine, Branchpoint
 
 

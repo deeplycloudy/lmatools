@@ -6,7 +6,7 @@ import numpy as np
 import tables
 
 import density_to_files
-from lmatools.io import read_flashes, to_seconds
+from lmatools.lma_io import read_flashes, to_seconds
 
 from coordinateSystems import MapProjection, GeographicSystem
     
