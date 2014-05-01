@@ -15,23 +15,35 @@ from flash_stats import calculate_flash_stats, Flash, FlashMetadata
 
 @coroutine
 def cluster_chunk_pairs(clustered_output_target, min_points=10):
-    db = DBSCAN(eps=1.0, min_samples=min_points, metric='euclidean')
+    #db = DBSCAN(eps=1.0, min_samples=min_points, metric='euclidean')
+    
     
     """Receive chunks, and process overlapping pairs"""
-    chunk1 = (yield)
+    chunk1, id1 = (yield)
     try:
         while True:
-            chunk2 = (yield)
+            chunk2, id2 = (yield)
             len1 = chunk1.shape[0]
             len2 = chunk2.shape[0]
-            if True: # optional debug switch
-                debugtxt = ''
-                for i in range(chunk1.shape[1]):
-                    debugtxt += "{0:4.2f}, ".format(chunk2[:, i].max() - chunk1[:, i].min())
-                print len1+len2, debugtxt
+            if len2 == 0:
+                conc = chunk1
+                concID = id1
+                chunk2 = chunk1[0:0,:]
+                id2 = id1[0:0]
+            elif len1 == 0:
+                conc = chunk2
+                concID = id2
+                chunk1 = chunk2[0:0,:]
+                id1 = id2[0:0]
+            else:
+                print id1.shape, id2.shape
+                conc = np.vstack((chunk1, chunk2)) 
+                concID = np.concatenate((id1, id2))
                         
             # do stuff with chunk 1 and 2
-            clusters = db.fit(np.vstack((chunk1, chunk2)))
+            
+            db = DBSCAN(eps=1.0, min_samples=min_points, metric='euclidean')
+            clusters = db.fit(conc)
             labels = clusters.labels_.astype(int)
             
             # defer sending these in one bundle ... need to ensure all labels
@@ -43,15 +55,24 @@ def cluster_chunk_pairs(clustered_output_target, min_points=10):
             if -1 in chunk1_labelset:
                 chunk1_labelset.remove(-1) # remove the singleton cluster ID - we want to retain these from chunk 2.
             clustered_in_chunk2 = np.fromiter( ( True if label in chunk1_labelset else False for i,label in enumerate(labels[len1:])) , dtype=bool)
+            clustered_in_chunk1 = np.ones(chunk1.shape[0], dtype = bool)
+            clustered_mask = np.hstack((clustered_in_chunk1, clustered_in_chunk2))
+            bundle_chunks = conc[clustered_mask,:]
+            bundle_IDs = concID[clustered_mask]
             
-            bundle_chunks = np.vstack((chunk1, chunk2[clustered_in_chunk2]))
             bundle_labels = np.concatenate((labels[:len1], labels[len1:][clustered_in_chunk2]))
             assert bundle_chunks.shape[0] == bundle_labels.shape[0]
-            clustered_output_target.send((bundle_chunks, bundle_labels))
+            clustered_output_target.send((bundle_chunks, bundle_labels, bundle_IDs))
             del bundle_chunks, bundle_labels
             # clustered_output_target.send((chunk2[clustered_in_chunk2], labels[len1:][clustered_in_chunk2]))  
-            residuals = chunk2[clustered_in_chunk2==False]
             
+            residuals = conc[clustered_mask==False,:]
+            # Because we pull some points from chunk2 and combine them with
+            # flashes that started in chunk1, the data are now out of their
+            # original order. Therefore, send along the data IDs that go with the
+            # pulled points so that the original order is still tracked.
+            residualIDs = concID[clustered_mask==False]
+
             # optimization TODO: pull clusters out of chunk 2 whose final point is greater 
             # than the distance threshold from the end of the second chunk interval. They're already clustered
             # and don't need to be clustered again.
@@ -59,13 +80,17 @@ def cluster_chunk_pairs(clustered_output_target, min_points=10):
             # prepare for another chunk
             if len(residuals) == 0:
                 residuals = chunk1[0:0,:] # empty array that preserves the number of dimensions in the data vector - no obs.
-            del chunk1
+                residualIDs = id1[0:0]
+            del chunk1, id1
             chunk1 = np.asarray(residuals)
-            del residuals
+            id1 = np.asarray(residualIDs)
+            del residuals, residualIDs
     except GeneratorExit:
-        clusters = db.fit(chunk1)
-        labels = clusters.labels_.astype(int)
-        clustered_output_target.send((chunk1, labels))
+        if chunk1.shape[0] != 0:
+            db = DBSCAN(eps=1.0, min_samples=min_points, metric='euclidean')
+            clusters = db.fit(chunk1)
+            labels = clusters.labels_.astype(int)
+            clustered_output_target.send((chunk1, labels, id1))
         clustered_output_target.close()
         
 # @coroutine
@@ -88,11 +113,12 @@ def aggregate_ids(target):
     unique_labels = set([-1])
     total = 0
     point_labels = []
+    all_IDs = []
     # all_v = []
     try:
         # n_last = 0
         while True:
-            (v, orig_labels) = (yield)
+            (v, orig_labels, IDs) = (yield)
             labels = np.atleast_1d(orig_labels).copy()
             if len(unique_labels) > 0:
                 # Only add those labels that represent valid clusters (nonnegative) to the unique set.
@@ -103,15 +129,17 @@ def aggregate_ids(target):
             for l in set(labels):
                 unique_labels.add(l)
 
+            all_IDs.append(np.asarray(IDs))
             point_labels.append(labels)
             total += v.shape[0]
 
-            del v, orig_labels, labels
+            del v, orig_labels, labels, IDs
     except GeneratorExit:
         print "done with {0} total points".format(total)
         point_labels = np.concatenate(point_labels)
+        all_IDs = np.concatenate(all_IDs)
         print "sending {0} total points".format(total)
-        target.send((unique_labels, point_labels))
+        target.send((unique_labels, point_labels, all_IDs))
         print "sent {0} total points".format(total)
         target.close()
 
@@ -127,18 +155,24 @@ def create_flash_objs(lma, good_data):
     
     try:
         while True:
-            (unique_labels, point_labels) = (yield)
+            (unique_labels, point_labels, all_IDs) = (yield)
             
             # add flash_id column
-            data = append_fields(good_data, ('flash_id',), (point_labels,))
+            empty_labels = np.empty_like(point_labels)
+            data = append_fields(good_data, ('flash_id',), (empty_labels,))
+
+            # all_IDs gives the index in the original data array to
+            # which each point_label corresponds
+            data['flash_id'][all_IDs] = point_labels
             
-            
-            # In the case of no data in the file, lma.data.shape will have length zero, i.e., a 0-d array
+            # In the case of no data in the file, lma.data.shape will have
+            # length zero, i.e., a 0-d array
             if len(data.shape) == 0:
                 # No data
                 flashes = []
             else:
-                # work first with non-singleton flashes to have strictly positive flash ids
+                # work first with non-singleton flashes 
+                # to have strictly positive flash ids
                 print data.shape
                 singles = (data['flash_id'] == -1)
                 non_singleton = data[ np.logical_not(singles) ]
@@ -147,7 +181,10 @@ def create_flash_objs(lma, good_data):
                 
                 ordered_data = non_singleton[order]
                 flid = ordered_data['flash_id']                
-                max_flash_id = flid[-1]
+                if (flid.shape[0]>0):
+                    max_flash_id = flid[-1]
+                else: 
+                    max_flash_id = 0
                 try:
                     assert max_flash_id == max(unique_labels)
                 except AssertionError:
@@ -165,18 +202,19 @@ def create_flash_objs(lma, good_data):
                 
                 print "finished non-singletons"
                 
-                # now deal with the nonsingleton points. Each singleton point will have a high flash_id,
+                # Now deal with the nonsingleton points. 
+                # Each singleton point will have a high flash_id,
                 # starting with the previous maximum flash id.
                 singleton = data[singles]
                 n_singles = singleton.shape[0]
 
-                # this operation works on a view of the original data array, so it modifies the original data array
+                # this operation works on a view of the original data array, 
+                # so it modifies the original data array
                 singleton['flash_id'] += max_flash_id + 1 + np.arange(n_singles, dtype=int)
                 
                 singleton_flashes = [ Flash(singleton[i:i+1]) for i in range(n_singles)]
                 
                 data[singles] = singleton
-                
                 print "finished singletons"
                 
                 flashes += singleton_flashes
@@ -234,9 +272,10 @@ def cluster(a_file, output_path, outfile, params, logger, min_points=1, **kwargs
 
     D_max, t_max = 3.0e3, 0.15 # m, s
 
+    IDs = np.arange(X.shape[0])
     X_vector = np.hstack((X[:,None],Y[:,None],Z[:,None])) / D_max
     T_vector = data['time'][:,None] / t_max
-    XYZT = np.hstack((X_vector, T_vector-T_vector.min()))
+    XYZT = np.hstack((X_vector, T_vector))
     
     lma.sort_status = 'in process'
     
@@ -246,7 +285,8 @@ def cluster(a_file, output_path, outfile, params, logger, min_points=1, **kwargs
     label_aggregator = aggregate_ids(flash_object_maker)
     clusterer = cluster_chunk_pairs(label_aggregator, min_points=min_points)
     chunker = chunk(XYZT[:,-1].min(), 3.0/.15,  clusterer)
-    stream(XYZT.astype('float32'),chunker)
+    stream(XYZT.astype('float64'), IDs,chunker)
+    flash_object_maker.close()
     
     # These are handled by target.close in each coroutine's GeneratorExit handler
     # clusterer.close()

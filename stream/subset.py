@@ -43,9 +43,9 @@ def split_clusters(data,labels):
         print l, t.shape, t.min(), t.max()
 
 
-def stream(vec, target):
-    for v in vec:
-        target.send(v)
+def stream(vec, IDs, target):
+    for v, vi in zip(vec, IDs):
+        target.send((v, vi))
     target.close()
     
 def reset_buffer():
@@ -57,17 +57,20 @@ def chunk(start_time, max_duration, target, t_idx=-1):
     """ Receive points, assumed in order. Send out chunks"""
     next_time = start_time + max_duration
     v_buffer, append = reset_buffer() # slight optimization since attr lookup is avoided
+    i_buffer, append_idx = reset_buffer()
     try:    
         while True:
-            v = (yield)
+            v, vi = (yield)
             append(v)
+            append_idx(vi)
             t = v[t_idx]
             if t >= next_time:
-                target.send(np.asarray(v_buffer))
+                target.send((np.asarray(v_buffer), np.asarray(i_buffer)))
                 v_buffer, append = reset_buffer()
+                i_buffer, append_idx = reset_buffer()
                 next_time = t+max_duration
-            del v
+            del v, vi
     except GeneratorExit:
-        target.send(np.asarray(v_buffer))
+        target.send((np.asarray(v_buffer), np.asarray(i_buffer)))
         target.close()
 

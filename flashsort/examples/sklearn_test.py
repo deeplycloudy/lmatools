@@ -3,7 +3,7 @@
 
 
 
-from lmatools.flashsort.autosort.autorun import run_files_with_params, test_output, logger_setup
+from lmatools.flashsort.autosort.autorun import run_files_with_params, logger_setup
 
 
 outpath = '/Users/ebruning/out/scratch/'
@@ -21,6 +21,7 @@ params = {'stations':(6,13),
           'chi2':(0,1.0),
           'ascii_flashes_out':'flashes_out.dat',
           'ctr_lat':ctrLat, 'ctr_lon':ctrLon,
+          'distance':3000.0, 'thresh_critical_time':0.15
           }
 
 
