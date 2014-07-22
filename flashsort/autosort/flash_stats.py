@@ -58,8 +58,8 @@ def poly_area(x,y):
     
 
 def hull_volume(xyz):
-    """ Calculate the spatial volume of the convex hull of 3D LMA data.
-        xyzt is a (N_points, 3) array of point locations in space. """
+    """ Calculate the volume of the convex hull of 3D (X,Y,Z) LMA data.
+        xyz is a (N_points, 3) array of point locations in space. """
     assert xyz.shape[1] == 3
     
     from scipy.spatial import Delaunay
@@ -77,11 +77,13 @@ def hull_volume(xyz):
     q = vertices[:,:-1,:] - vertices[:,-1,None,:]
     simplex_volumes = (1.0 / factorial(q.shape[-1])) * np.fromiter(
            (np.linalg.det(q[k,:,:]) for k in range(tri.nsimplex)) , dtype=float)
+    # print vertices.shape # number of simplices, points per simplex, coords
+    # print q.shape
 
     # The simplex volumes have negative values since they are oriented 
     # (think surface normal direction for a triangle
     volume=np.sum(np.abs(simplex_volumes))
-    return volume
+    return volume, vertices, simplex_volumes
 
     
 def calculate_flash_stats(flash, min_pts=2):
@@ -135,7 +137,7 @@ def calculate_flash_stats(flash, min_pts=2):
     volume = 0.0
     if flash.pointCount > 3:
         # Need four points to make at least one tetrahedron.
-        volume = hull_volume(np.vstack((x,y,z)).T)
+        volume, vertices, simplex_volumes = hull_volume(np.vstack((x,y,z)).T)
             
     flash.start   = flash.points['time'].min()
     flash.end     = flash.points['time'].max()
