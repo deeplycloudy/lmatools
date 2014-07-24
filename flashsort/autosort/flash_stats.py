@@ -64,22 +64,22 @@ def hull_volume(xyz):
     
     from scipy.spatial import Delaunay
     from scipy.misc import factorial
-
+    
     tri = Delaunay(xyz[:,0:3])
     vertices = tri.points[tri.vertices]
-
+    
     # This is the volume formula in 
     # https://github.com/scipy/scipy/blob/master/scipy/spatial/tests/test_qhull.py#L106
     # Except the formula needs to be divided by ndim! to get the volume, cf., 
     # http://en.wikipedia.org/wiki/Simplex#Geometric_properties
     # Credit Pauli Virtanen, Oct 14, 2012, scipy-user list
-
+    
     q = vertices[:,:-1,:] - vertices[:,-1,None,:]
     simplex_volumes = (1.0 / factorial(q.shape[-1])) * np.fromiter(
            (np.linalg.det(q[k,:,:]) for k in range(tri.nsimplex)) , dtype=float)
     # print vertices.shape # number of simplices, points per simplex, coords
     # print q.shape
-
+    
     # The simplex volumes have negative values since they are oriented 
     # (think surface normal direction for a triangle
     volume=np.sum(np.abs(simplex_volumes))

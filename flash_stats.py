@@ -6,6 +6,65 @@ import numpy as np
 from lmatools.lma_io import read_flashes
 from lmatools.density_to_files import coroutine, Branchpoint
 
+from lmatools.flashsort.autosort.flash_stats import hull_volume
+
+def length_from_area(A,D,b_s):
+    return ( (np.sqrt(A))**D ) / (b_s**(D-1))
+
+def volumetric_length_from_points(x,y,z,D, b_s):
+    xyz = np.vstack((x,y,z)).T
+    
+    volume, vertices, simplex_volumes = hull_volume(xyz)
+    simplex_centroids = np.average(vertices[:,:], axis=1)
+    # The simplex volumes have negative values since they are oriented (think surface normal direction for a triangle)
+
+    vol_len_scale = volume**(1.0/3.0)
+    S_i = np.abs(simplex_volumes)**(1.0/3.0) #S_i
+    P_i = (S_i**D)  / (b_s**(D-1.0)) #P_i
+    L_3 = (vol_len_scale**D)  / (b_s**(D-1.0)) #L_3
+    
+    length_weighted = (S_i / P_i) * L_3
+    sum_weights =  (S_i/P_i).sum()
+    print "The sum of the ratio S_i/P_i is not equal to one, but is {0}".format(sum_weights)
+    
+    # Therefore, divide by the sum of the weights
+    length_weighted =  (S_i / P_i) * L_3 / sum_weights
+    
+    return simplex_centroids, np.abs(simplex_volumes), volume, L_3, length_weighted
+
+def vertical_length_distribution(src_alt, simplex_alt, simplex_lengths, 
+        d_alt=0.5, max_alt=20.0, norm=True):
+    """ given input altitudes and lengths in km, create vertical
+        profiles of source counts and total length.
+        
+        Returns alt_bins, bin_total_src, bin_total_length
+        
+        If norm==True, divide the counts by the bin width, returning
+        km, counts/km and km/km. Otherwise just return km, counts and km.
+        """
+        
+    # Not sure why we're not using histogram here, so that's a TODO
+    # d_alt = 0.5
+    alt_bins = np.arange(0.0,max_alt+d_alt, d_alt)
+    bin_total_length = np.zeros(alt_bins.shape[0]-1, dtype=float)
+    bin_total_src = np.zeros(alt_bins.shape[0]-1, dtype=float)
+    # bin_total_length_sq = np.zeros(alt_bins.shape[0]-1, dtype=float)
+    tri_bin_idx = np.digitize(simplex_alt, alt_bins)
+    src_bin_idx = np.digitize(src_alt,alt_bins)
+    src_bin_idx[src_bin_idx>(bin_total_src.shape[0]-1)]=bin_total_src.shape[0]-1
+
+    for idx in src_bin_idx:
+        bin_total_src[idx] += 1
+
+    for lw,idx in zip(length_weighted,tri_bin_idx):
+        bin_total_length[idx]+=lw
+        # bin_total_length_sq[idx] += lw*lw
+    # bin_total_length[tri_bin_idx] += length_weighted
+    if norm==True:
+        return alt_bins, bin_total_src/d_alt, bin_total_length/d_alt
+    else:
+        return alt_bins, bin_total_src, bin_total_length
+
 
 def bin_center(bins):
     return (bins[:-1] + bins[1:]) / 2.0
