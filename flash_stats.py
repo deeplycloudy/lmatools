@@ -56,7 +56,7 @@ def vertical_length_distribution(src_alt, simplex_alt, simplex_lengths,
     for idx in src_bin_idx:
         bin_total_src[idx] += 1
 
-    for lw,idx in zip(length_weighted,tri_bin_idx):
+    for lw,idx in zip(simplex_lengths,tri_bin_idx):
         bin_total_length[idx]+=lw
         # bin_total_length_sq[idx] += lw*lw
     # bin_total_length[tri_bin_idx] += length_weighted
