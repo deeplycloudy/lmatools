@@ -33,7 +33,7 @@ def volumetric_length_from_points(x,y,z,D, b_s):
     return simplex_centroids, np.abs(simplex_volumes), volume, L_3, length_weighted
 
 def vertical_length_distribution(src_alt, simplex_alt, simplex_lengths, 
-        d_alt=0.5, max_alt=20.0, norm=True):
+        alt_bins, norm=True):
     """ given input altitudes and lengths in km, create vertical
         profiles of source counts and total length.
         
@@ -45,7 +45,8 @@ def vertical_length_distribution(src_alt, simplex_alt, simplex_lengths,
         
     # Not sure why we're not using histogram here, so that's a TODO
     # d_alt = 0.5
-    alt_bins = np.arange(0.0,max_alt+d_alt, d_alt)
+    d_alt = alt_bins[1:]-alt_bins[:-1]
+    # alt_bins = np.arange(0.0,max_alt+d_alt, d_alt)
     bin_total_length = np.zeros(alt_bins.shape[0]-1, dtype=float)
     bin_total_src = np.zeros(alt_bins.shape[0]-1, dtype=float)
     # bin_total_length_sq = np.zeros(alt_bins.shape[0]-1, dtype=float)
