@@ -52,6 +52,7 @@ def vertical_length_distribution(src_alt, simplex_alt, simplex_lengths,
     # bin_total_length_sq = np.zeros(alt_bins.shape[0]-1, dtype=float)
     tri_bin_idx = np.digitize(simplex_alt, alt_bins)
     src_bin_idx = np.digitize(src_alt,alt_bins)
+    tri_bin_idx[tri_bin_idx>(bin_total_length.shape[0]-1)]=bin_total_length.shape[0]-1
     src_bin_idx[src_bin_idx>(bin_total_src.shape[0]-1)]=bin_total_src.shape[0]-1
 
     for idx in src_bin_idx:
