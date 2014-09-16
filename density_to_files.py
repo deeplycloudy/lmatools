@@ -329,7 +329,7 @@ def accumulate_points_on_grid(grid, xedge, yedge, out=None, label=''):
                     grid = count
                     out['out'] = grid
                 else:
-                    grid += count
+                    grid += count.astype(grid.dtype)
                 del count
             del x, y, weights
             gc.collect()
