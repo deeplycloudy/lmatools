@@ -5,8 +5,7 @@ import glob
 from datetime import datetime, timedelta
 import subprocess
 
-from DC3_netcdf import write_cf_netcdf_latlon
-from lmatools.make_grids import grid_h5flashfiles, dlonlat_at_grid_center
+from lmatools.make_grids import grid_h5flashfiles, dlonlat_at_grid_center, write_cf_netcdf_latlon
 from lmatools.flashsort.autosort import autorun
 from lmatools.multiples_nc import make_plot
 
