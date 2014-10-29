@@ -138,16 +138,17 @@ def calculate_flash_stats(flash, min_pts=2):
     if flash.pointCount > 3:
         # Need four points to make at least one tetrahedron.
         volume, vertices, simplex_volumes = hull_volume(np.vstack((x,y,z)).T)
-            
-    flash.start   = flash.points['time'].min()
+    
+    flash_init_idx = np.argmin(flash.points['time'])
+    flash.start   = flash.points[flash_init_idx]['time']
     flash.end     = flash.points['time'].max()
     flash.duration = flash.end - flash.start
-    flash.area    = area / 1e6  # km^2, 1000x1000
-    flash.initLat = lat[0] 
-    flash.initLon = lon[0]
+    flash.area    = area / 1.0e6  # km^2, 1000x1000
+    flash.initLat = lat[flash_init_idx] 
+    flash.initLon = lon[flash_init_idx]
     flash.initStd = 0.0
-    flash.initAlt = alt[0]
-    flash.initPts = (0,)
+    flash.initAlt = alt[flash_init_idx]
+    flash.initPts = (int(flash_init_idx),)
     flash.ctralt  = altavg
     flash.ctrlat  = latavg
     flash.ctrlon  = lonavg
