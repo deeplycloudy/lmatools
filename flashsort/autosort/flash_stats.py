@@ -2,6 +2,11 @@ import numpy as np
 import logging
 import re
 
+from scipy.spatial import Delaunay
+from scipy.misc import factorial
+from scipy.spatial.qhull import QhullError
+
+
 # logger = logging.getLogger('FlashAutorunLogger')
 class Flash(object):
     def __init__(self, points):
@@ -61,10 +66,7 @@ def hull_volume(xyz):
     """ Calculate the volume of the convex hull of 3D (X,Y,Z) LMA data.
         xyz is a (N_points, 3) array of point locations in space. """
     assert xyz.shape[1] == 3
-    
-    from scipy.spatial import Delaunay
-    from scipy.misc import factorial
-    
+        
     tri = Delaunay(xyz[:,0:3])
     vertices = tri.points[tri.vertices]
     
@@ -137,7 +139,20 @@ def calculate_flash_stats(flash, min_pts=2):
     volume = 0.0
     if flash.pointCount > 3:
         # Need four points to make at least one tetrahedron.
-        volume, vertices, simplex_volumes = hull_volume(np.vstack((x,y,z)).T)
+        try:
+            volume, vertices, simplex_volumes = hull_volume(np.vstack((x,y,z)).T)
+        except QhullError:
+            # this can happen with a degenerate first simplex - all points are
+            # coplanar to machine precision. Try again, after adding a tiny amount
+            # to the first point.
+            print "Perturbing one source to help triangulation for flash with {0} points".format(flash.pointCount)
+            # we can tolerate perturbing by no more than 1 m
+            machine_eps = 1.0 # np.finfo(x.dtype).eps
+            perturb = 2*machine_eps*np.random.random(size=3)-machine_eps
+            x[0] += perturb[0]
+            y[0] += perturb[1]
+            z[0] += perturb[2]
+            volume, vertices, simplex_volumes = hull_volume(np.vstack((x,y,z)).T)
     
     flash_init_idx = np.argmin(flash.points['time'])
     flash.start   = flash.points[flash_init_idx]['time']
