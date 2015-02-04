@@ -57,7 +57,7 @@ def poly_area(x,y):
     """
     det = x[:-1]*y[1:] - x[1:]*y[:-1] # determinant
     area = det.sum()
-    area += x[-1]*y[0] - x[-1]*y[0] # wrap-around terms in determinant
+    area += x[-1]*y[0] - x[0]*y[-1] # wrap-around terms in determinant
     area *= 0.5
     return area
     
