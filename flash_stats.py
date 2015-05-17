@@ -23,9 +23,9 @@ def volumetric_length_from_points(x,y,z,D, b_s):
     P_i = (S_i**D)  / (b_s**(D-1.0)) #P_i
     L_3 = (vol_len_scale**D)  / (b_s**(D-1.0)) #L_3
     
-    length_weighted = (S_i / P_i) * L_3
+    # length_weighted = (S_i / P_i) * L_3
     sum_weights =  (S_i/P_i).sum()
-    print "The sum of the ratio S_i/P_i is not equal to one, but is {0}".format(sum_weights)
+    # print "The sum of the ratio S_i/P_i is not equal to one, but is {0}".format(sum_weights)
     
     # Therefore, divide by the sum of the weights
     length_weighted =  (S_i / P_i) * L_3 / sum_weights
