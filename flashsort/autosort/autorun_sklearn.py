@@ -270,7 +270,8 @@ def cluster(a_file, output_path, outfile, params, logger, min_points=1, **kwargs
     
     print "sorting {0} total points".format(data.shape[0])
 
-    D_max, t_max = 3.0e3, 0.15 # m, s
+    D_max, t_max = params['distance'], params['thresh_critical_time'] # m, s
+    duration_max = params['thresh_duration']
 
     IDs = np.arange(X.shape[0])
     X_vector = np.hstack((X[:,None],Y[:,None],Z[:,None])) / D_max
@@ -284,7 +285,7 @@ def cluster(a_file, output_path, outfile, params, logger, min_points=1, **kwargs
     flash_object_maker = create_flash_objs(lma, data)
     label_aggregator = aggregate_ids(flash_object_maker)
     clusterer = cluster_chunk_pairs(label_aggregator, min_points=min_points)
-    chunker = chunk(XYZT[:,-1].min(), 3.0/.15,  clusterer)
+    chunker = chunk(XYZT[:,-1].min(), duration_max/t_max,  clusterer)
     stream(XYZT.astype('float64'), IDs,chunker)
     flash_object_maker.close()
     
