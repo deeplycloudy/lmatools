@@ -112,9 +112,13 @@ class LMAgridFileCollection(object):
         if 'Lambert_Azimuthal_Equal_Area' in f.variables.keys():
             nc_proj = f.variables['Lambert_Azimuthal_Equal_Area']
             proj_name = 'laea'
-            ctrlon, ctrlat, ctralt = (nc_proj.longitude_of_projection_origin,
-                                      nc_proj.latitude_of_projection_origin,
-                                      nc_proj.altitude_of_projection_origin,)
+            ctrlon, ctrlat  = (nc_proj.longitude_of_projection_origin,
+                                      nc_proj.latitude_of_projection_origin,)
+            try:
+                ctralt = nc_proj.altitude_of_projection_origin
+            except AttributeError:
+                print "No altitude attribute in NetCDF projection data, setting to 0.0"
+                ctralt = 0.0
             mapproj = MapProjection(proj_name, ctrLat = ctrlat, ctrLon=ctrlon, 
                                      lat_0=ctrlat, lon_0=ctrlon)
             # print geosys.fromECEF(*mapproj.toECEF((0,0), (0,0), (0,0)))
