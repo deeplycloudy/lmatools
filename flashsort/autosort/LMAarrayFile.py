@@ -60,12 +60,15 @@ def countBits(values):
     
 def mask_to_int(mask):
     """ Convert object array of mask strings to integers"""
-    try:
-        # mask is a plain integer
-        mask_int = np.fromiter((int(v) for v in mask), int)
-    except ValueError:
-        # mask is a string representing a base-16 (hex) number
-        mask_int = np.fromiter((int(v,16) for v in mask), int)
+    if len(mask.shape) == 0:
+        mask_int = np.asarray([], dtype=int)
+    else:
+        try:
+            # mask is a plain integer
+            mask_int = np.fromiter((int(v) for v in mask), int)
+        except ValueError:
+            # mask is a string representing a base-16 (hex) number
+            mask_int = np.fromiter((int(v,16) for v in mask), int)
     return mask_int
 
 class LMAdataFile(object):
@@ -140,7 +143,9 @@ class LMAdataFile(object):
         #   Try getting it from station mask.
         if attrname=='stations': 
             stations = self.hexMaskToStationCount()
-            self.data = append_fields(self.data, ('stations',), (stations,))
+            # placing self.data in a list due to this bug
+            # http://stackoverflow.com/questions/36440557/typeerror-when-appending-fields-to-a-structured-array-of-size-one
+            self.data = append_fields([self.data], ('stations',), (stations,))
             return stations
             
         return None

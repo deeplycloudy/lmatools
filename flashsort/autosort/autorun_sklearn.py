@@ -136,8 +136,12 @@ def aggregate_ids(target):
             del v, orig_labels, labels, IDs
     except GeneratorExit:
         print "done with {0} total points".format(total)
-        point_labels = np.concatenate(point_labels)
-        all_IDs = np.concatenate(all_IDs)
+        if total == 0:
+            point_labels = np.asarray(point_labels, dtype=int)
+            point_labels = np.asarray(all_IDs, dtype=int)
+        else:
+            point_labels = np.concatenate(point_labels)
+            all_IDs = np.concatenate(all_IDs)            
         print "sending {0} total points".format(total)
         target.send((unique_labels, point_labels, all_IDs))
         print "sent {0} total points".format(total)
@@ -159,7 +163,9 @@ def create_flash_objs(lma, good_data):
             
             # add flash_id column
             empty_labels = np.empty_like(point_labels)
-            data = append_fields(good_data, ('flash_id',), (empty_labels,))
+            # placing good_data in a list due to this bug when good_data has length 1
+            # http://stackoverflow.com/questions/36440557/typeerror-when-appending-fields-to-a-structured-array-of-size-one
+            data = append_fields([good_data], ('flash_id',), (empty_labels,))
 
             # all_IDs gives the index in the original data array to
             # which each point_label corresponds
@@ -167,7 +173,8 @@ def create_flash_objs(lma, good_data):
             
             # In the case of no data in the file, lma.data.shape will have
             # length zero, i.e., a 0-d array
-            if len(data.shape) == 0:
+            
+            if (len(data.shape) == 0) | (data.shape[0] == 0):
                 # No data
                 flashes = []
             else:
@@ -285,7 +292,12 @@ def cluster(a_file, output_path, outfile, params, logger, min_points=1, **kwargs
     flash_object_maker = create_flash_objs(lma, data)
     label_aggregator = aggregate_ids(flash_object_maker)
     clusterer = cluster_chunk_pairs(label_aggregator, min_points=min_points)
-    chunker = chunk(XYZT[:,-1].min(), duration_max/t_max,  clusterer)
+    if XYZT.shape[0] < 1:
+        # no data, so minimum time is zero. Assume nothing is done with the data,
+        # so that time doesn't matter. No flashes can result.
+        chunker = chunk(0, duration_max/t_max,  clusterer)
+    else:
+        chunker = chunk(XYZT[:,-1].min(), duration_max/t_max,  clusterer)
     stream(XYZT.astype('float64'), IDs,chunker)
     flash_object_maker.close()
     
