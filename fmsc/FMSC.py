@@ -4,13 +4,17 @@ Kushnir et al 2006 (K06)
 
 
 """
+from __future__ import absolute_import
+from __future__ import print_function
 import itertools
 
 import numpy as np
 from scipy.spatial import cKDTree as KDTree
 from scipy import sparse
 
-from InterpolationMatrix import interpolation_matrix
+from .InterpolationMatrix import interpolation_matrix
+from six.moves import range
+from six.moves import zip
     
 def initial_weights(data, k, min_dist=None):
     """ Calculate a matrix of weights for the k nearest points.
@@ -58,7 +62,7 @@ def dilute_weights(W, conn, dilution_gamma=0.1):
     # sum weights for the k neareast neighbors of each point
     ik_totals = W.sum(axis=1) 
     
-    print "Diluting ..."
+    print("Diluting ...")
     dilution_counter = 0
     for w, k in zip(W, conn):
         # loop over each point, looking at all d distances for k connections
@@ -71,7 +75,7 @@ def dilute_weights(W, conn, dilution_gamma=0.1):
                 dilution_counter += 1
                 diluted_weights[i, second_index+1] = 0.0
     
-    print "           ... {0} points".format(dilution_counter)
+    print("           ... {0} points".format(dilution_counter))
     return diluted_weights        
     
 def sparsify(W,conn):
@@ -86,37 +90,37 @@ def sparsify(W,conn):
     return W_sparse
     
 def fmsc(data, neighbors_to_find=10):
-    print "Finding {0} nearest neighbors".format(neighbors_to_find)
+    print("Finding {0} nearest neighbors".format(neighbors_to_find))
 
     W_knn, conn = initial_weights(data, neighbors_to_find)
     W_dilute = dilute_weights(W_knn, conn)
-    print "Making sparse array"
+    print("Making sparse array")
     W = sparsify(W_dilute, conn)
     V = np.arange(W.shape[0], dtype=int) # every point
     G = [(V, W)]
     s = 1
-    print "Calculating interpolation matrix"
+    print("Calculating interpolation matrix")
     P, C_idx, F_idx = interpolation_matrix(W, 0.2)
     
     N = P.shape[0]
     W_s1 = sparse.lil_matrix((N,N))
     W_csc = W.tocsc()
     P_csc = P.tocsc()
-    for p_i,q_i in itertools.permutations(range(len(C_idx)),2):
+    for p_i,q_i in itertools.permutations(list(range(len(C_idx))),2):
         p, q = C_idx[p_i], C_idx[q_i]
         w_pq = 0
         for k in range(N):
             this_P_csc = P_csc[k,p_i]
             if this_P_csc > 0: # subscripting the other two is expensive
-                l = range(0,k) + range(k+1,N)
+                l = list(range(0,k)) + list(range(k+1,N))
                 w_pq += (this_P_csc * W_csc[k,l] * P_csc[l,q_i]).sum()
         # print p,q, w_pq
         W_s1[p,q] = w_pq
         
     W_s1_other = P.T * W * P
     
-    print W_s1
-    print W_s1_other
+    print(W_s1)
+    print(W_s1_other)
     
     
     
@@ -141,7 +145,7 @@ if __name__ == '__main__':
     # All points should be either in the coarse or fine array
     assert len(np.intersect1d(F_idx, C_idx)) == 0
     
-    print "Done."
+    print("Done.")
     
     s = 1
     

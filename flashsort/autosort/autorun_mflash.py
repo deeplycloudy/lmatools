@@ -1,3 +1,5 @@
+from __future__ import absolute_import
+from __future__ import print_function
 import os, sys, re
 import glob
 import tempfile
@@ -6,10 +8,11 @@ import subprocess
 import logging, logging.handlers
 import datetime
 
-from flash_stats import calculate_flash_stats, Flash, FlashMetadata
-from LMAarrayFile import cat_LMA, LMAdataFile
+from .flash_stats import calculate_flash_stats, Flash, FlashMetadata
+from .LMAarrayFile import cat_LMA, LMAdataFile
 
-from mflash import write_header
+from .mflash import write_header
+from six.moves import zip
 
 LOG_BASEFILENAME = datetime.datetime.now().strftime('Flash-autosort.log')
 
@@ -127,7 +130,7 @@ def collect_output(datafile, min_points=1, mask_length=4):
         max_idx = len(flid) #- 1
         slice_lower_edges = tuple(boundaries)
         slice_upper_edges = slice_lower_edges[1:] + (max_idx,)
-        slices = zip(slice_lower_edges, slice_upper_edges)
+        slices = list(zip(slice_lower_edges, slice_upper_edges))
         
         flashes = [ Flash(all_data[slice(*sl)]) for sl in slices ]
     
@@ -196,6 +199,6 @@ def test_output():
     big = [fl['flash_id'] for fl in flashes if fl['n_points'] > 100]
     a_flash = big[0]
     points = [ev['lat'] for ev in events if ev['flash_id'] == a_flash]
-    print flashes.cols.init_lon[0:10]
+    print(flashes.cols.init_lon[0:10])
 
 

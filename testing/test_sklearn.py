@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 # <nbformat>3.0</nbformat>
 
+from __future__ import absolute_import
 import sys, os, glob
 from datetime import datetime, timedelta
 import subprocess
@@ -10,6 +11,7 @@ from lmatools.flashsort.autosort.autorun_sklearn import cluster
 
 from lmatools.make_grids import grid_h5flashfiles, dlonlat_at_grid_center, write_cf_netcdf_latlon
 from lmatools.multiples_nc import make_plot
+from six.moves import map
 
 
 def get_sample_data_list():
@@ -22,8 +24,8 @@ def get_sample_data_list():
 
 def tfromfile(name):
     parts = name.split('_')
-    y, m, d = map(int, (parts[-3][0:2], parts[-3][2:4], parts[-3][4:6]))
-    H, M, S = map(int, (parts[-2][0:2], parts[-2][2:4], parts[-2][4:6]))
+    y, m, d = list(map(int, (parts[-3][0:2], parts[-3][2:4], parts[-3][4:6])))
+    H, M, S = list(map(int, (parts[-2][0:2], parts[-2][2:4], parts[-2][4:6])))
     return y+2000,m,d,H,M,S    
 
 def test_sort_and_grid_and_plot(outpath):
@@ -37,6 +39,7 @@ def test_sort_and_grid_and_plot(outpath):
               'chi2':(0,1.0),
               'ctr_lat':ctr_lat, 'ctr_lon':ctr_lon,
               'distance':3000.0, 'thresh_critical_time':0.15,
+              'thresh_duration':3.0,
               'mask_length':6,
               }
     h5_dir = os.path.join(base_sort_dir, 'h5_files')

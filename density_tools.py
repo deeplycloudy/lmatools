@@ -1,3 +1,5 @@
+from __future__ import absolute_import
+from __future__ import print_function
 import numpy as np
 
 def unique_vectors(x_i, y_i, g_id, return_indices_only=True):
@@ -145,4 +147,4 @@ def test_unq_func():
 if __name__ == '__main__':
     test_unq()
     test_extent_density()
-    print "Tests complete."
+    print("Tests complete.")

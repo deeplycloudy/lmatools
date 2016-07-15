@@ -1,3 +1,5 @@
+from __future__ import absolute_import
+from __future__ import print_function
 import logging
 
 import numpy as np
@@ -9,7 +11,9 @@ from lmatools.stream.subset import coroutine, stream, chunk
 from lmatools.flashsort.autosort.LMAarrayFile import LMAdataFile
 from lmatools.coordinateSystems import GeographicSystem
 
-from flash_stats import calculate_flash_stats, Flash, FlashMetadata
+from .flash_stats import calculate_flash_stats, Flash, FlashMetadata
+from six.moves import range
+from six.moves import zip
 
 
 
@@ -36,7 +40,7 @@ def cluster_chunk_pairs(clustered_output_target, min_points=10):
                 chunk1 = chunk2[0:0,:]
                 id1 = id2[0:0]
             else:
-                print id1.shape, id2.shape
+                print(id1.shape, id2.shape)
                 conc = np.vstack((chunk1, chunk2)) 
                 concID = np.concatenate((id1, id2))
                         
@@ -135,16 +139,16 @@ def aggregate_ids(target):
 
             del v, orig_labels, labels, IDs
     except GeneratorExit:
-        print "done with {0} total points".format(total)
+        print("done with {0} total points".format(total))
         if total == 0:
             point_labels = np.asarray(point_labels, dtype=int)
             point_labels = np.asarray(all_IDs, dtype=int)
         else:
             point_labels = np.concatenate(point_labels)
             all_IDs = np.concatenate(all_IDs)            
-        print "sending {0} total points".format(total)
+        print("sending {0} total points".format(total))
         target.send((unique_labels, point_labels, all_IDs))
-        print "sent {0} total points".format(total)
+        print("sent {0} total points".format(total))
         target.close()
 
 @coroutine
@@ -180,10 +184,10 @@ def create_flash_objs(lma, good_data):
             else:
                 # work first with non-singleton flashes 
                 # to have strictly positive flash ids
-                print data.shape
+                print(data.shape)
                 singles = (data['flash_id'] == -1)
                 non_singleton = data[ np.logical_not(singles) ]
-                print non_singleton['flash_id'].shape
+                print(non_singleton['flash_id'].shape)
                 order = np.argsort(non_singleton['flash_id'])
                 
                 ordered_data = non_singleton[order]
@@ -195,7 +199,7 @@ def create_flash_objs(lma, good_data):
                 try:
                     assert max_flash_id == max(unique_labels)
                 except AssertionError:
-                    print "Max flash ID {0} is not as expected from unique labels {1}".format(max_flash_id, max(unique_labels))
+                    print("Max flash ID {0} is not as expected from unique labels {1}".format(max_flash_id, max(unique_labels)))
                     
                 boundaries, = np.where(flid[1:]-flid[:-1])    # where indices are nonzero
                 boundaries = np.hstack(([0], boundaries+1))
@@ -203,11 +207,11 @@ def create_flash_objs(lma, good_data):
                 max_idx = len(flid) #- 1
                 slice_lower_edges = tuple(boundaries)
                 slice_upper_edges = slice_lower_edges[1:] + (max_idx,)
-                slices = zip(slice_lower_edges, slice_upper_edges)
+                slices = list(zip(slice_lower_edges, slice_upper_edges))
 
                 flashes = [ Flash(ordered_data[slice(*sl)]) for sl in slices ]
                 
-                print "finished non-singletons"
+                print("finished non-singletons")
                 
                 # Now deal with the nonsingleton points. 
                 # Each singleton point will have a high flash_id,
@@ -222,7 +226,7 @@ def create_flash_objs(lma, good_data):
                 singleton_flashes = [ Flash(singleton[i:i+1]) for i in range(n_singles)]
                 
                 data[singles] = singleton
-                print "finished singletons"
+                print("finished singletons")
                 
                 flashes += singleton_flashes
                 
@@ -275,7 +279,7 @@ def cluster(a_file, output_path, outfile, params, logger, min_points=1, **kwargs
     Xc, Yc, Zc = geoCS.toECEF( ctr_lon, ctr_lat, ctr_alt)
     X, Y, Z = X-Xc, Y-Yc, Z-Zc
     
-    print "sorting {0} total points".format(data.shape[0])
+    print("sorting {0} total points".format(data.shape[0]))
 
     D_max, t_max = params['distance'], params['thresh_critical_time'] # m, s
     duration_max = params['thresh_duration']
@@ -306,8 +310,8 @@ def cluster(a_file, output_path, outfile, params, logger, min_points=1, **kwargs
     # label_aggregator.close()
     # flash_object_maker.close()
     
-    print lma.sort_status
-    print len(lma.flash_objects)
+    print(lma.sort_status)
+    print(len(lma.flash_objects))
                     
     return lma, lma.flash_objects
     

@@ -1,4 +1,6 @@
-from small_multiples import small_multiples_plot
+from __future__ import absolute_import
+from __future__ import print_function
+from .small_multiples import small_multiples_plot
 
 import os
 import gc
@@ -16,6 +18,7 @@ from matplotlib.dates import mx2num, date2num, DateFormatter
 from matplotlib.backends.backend_agg import FigureCanvasAgg  
 
 from math import ceil
+from six.moves import range
 
 #import pytz
 #tz=pytz.timezone('US/Eastern') # Why, oh, why, is it using my local time zone?
@@ -212,7 +215,7 @@ def make_plot(filename, grid_name, x_name='x', y_name='y', t_name='time',
         density_maxes.append(density.max())
         total_counts.append(density.sum())
         all_t.append(frame_start)
-        print label_string, x.shape, density.max(), density.sum()
+        print(label_string, x.shape, density.max(), density.sum())
         
     color_scale = ColorbarBase(p.colorbar_ax, cmap=density_plot.cmap,
                                        norm=density_plot.norm,
@@ -224,7 +227,7 @@ def make_plot(filename, grid_name, x_name='x', y_name='y', t_name='time',
     view_x = (xedge.min(), xedge.max())
     view_y = (yedge.min(), yedge.max())
     
-    print 'making multiples',
+    print('making multiples', end=' ')
     p.multiples.flat[0].axis(view_x+view_y)
     filename = '%s-%s_%s_%05.2fkm_%05.1fs.%s' % (filename_prefix, grid_name, start_time.strftime('%Y%m%d_%H%M%S'), dx, time_delta.seconds, image_type)
     filename = os.path.join(outpath, filename)
@@ -233,7 +236,7 @@ def make_plot(filename, grid_name, x_name='x', y_name='y', t_name='time',
     
     return fig, p, frame_start_times, filename
     
-    print ' ... done'
+    print(' ... done')
         
 
         

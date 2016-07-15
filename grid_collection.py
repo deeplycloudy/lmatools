@@ -1,3 +1,5 @@
+from __future__ import absolute_import
+from __future__ import print_function
 import glob
 from datetime import datetime, timedelta
 import itertools
@@ -6,6 +8,7 @@ import numpy as np
 
 from lmatools.multiples_nc import centers_to_edges
 import pupynere as nc
+from six.moves import range
         
 class LMAgridFileCollection(object):
     def __init__(self, filenames, grid_name, 
@@ -109,7 +112,7 @@ class LMAgridFileCollection(object):
         
         # Surely someone has written an automated library to parse coordinate 
         # reference data from CF-compliant files.
-        if 'Lambert_Azimuthal_Equal_Area' in f.variables.keys():
+        if 'Lambert_Azimuthal_Equal_Area' in list(f.variables.keys()):
             nc_proj = f.variables['Lambert_Azimuthal_Equal_Area']
             proj_name = 'laea'
             ctrlon, ctrlat  = (nc_proj.longitude_of_projection_origin,
@@ -117,14 +120,14 @@ class LMAgridFileCollection(object):
             try:
                 ctralt = nc_proj.altitude_of_projection_origin
             except AttributeError:
-                print "No altitude attribute in NetCDF projection data, setting to 0.0"
+                print("No altitude attribute in NetCDF projection data, setting to 0.0")
                 ctralt = 0.0
             mapproj = MapProjection(proj_name, ctrLat = ctrlat, ctrLon=ctrlon, 
                                      lat_0=ctrlat, lon_0=ctrlon)
             # print geosys.fromECEF(*mapproj.toECEF((0,0), (0,0), (0,0)))
             return geosys, mapproj
         else:
-            print "projection not found"    
+            print("projection not found")    
             return geosys, None
 
         

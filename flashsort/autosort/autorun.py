@@ -1,3 +1,5 @@
+from __future__ import absolute_import
+from __future__ import print_function
 import os, sys, re
 import glob
 import tempfile
@@ -6,8 +8,8 @@ import subprocess
 import logging, logging.handlers
 import datetime
 
-from flash_stats import calculate_flash_stats, Flash, FlashMetadata
-from LMAarrayFile import cat_LMA
+from .flash_stats import calculate_flash_stats, Flash, FlashMetadata
+from .LMAarrayFile import cat_LMA
 
 
 
@@ -24,7 +26,7 @@ def logger_setup(logpath):
 
 
 def write_output(outfile, flashes, orig_LMA_file, metadata=None):
-    from write_flashes import write_h5
+    from .write_flashes import write_h5
     if metadata is None:
         # use metadata from the first flash as the canonical metadata, 
         #   since all flashes were sorted fromt the same LYLOUT file
@@ -35,8 +37,8 @@ def write_output(outfile, flashes, orig_LMA_file, metadata=None):
 
 def run_files_with_params(files, output_path, params, clusterer=None, min_points=1, retain_ascii_output=True, cleanup_tmp=True):
     if clusterer is None:
-        from autorun_mflash import build, cleanup_build, collect_output
-        from autorun_mflash import cluster
+        from .autorun_mflash import build, cleanup_build, collect_output
+        from .autorun_mflash import cluster
         clusterer = cluster
 
     logger = logging.getLogger('FlashAutorunLogger')
@@ -101,7 +103,7 @@ def test_output():
     big = [fl['flash_id'] for fl in flashes if fl['n_points'] > 100]
     a_flash = big[0]
     points = [ev['lat'] for ev in events if ev['flash_id'] == a_flash]
-    print flashes.cols.init_lon[0:10]
+    print(flashes.cols.init_lon[0:10])
 
 
 if __name__ == '__main__':

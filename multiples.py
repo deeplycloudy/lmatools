@@ -1,4 +1,6 @@
-from small_multiples import small_multiples_plot
+from __future__ import absolute_import
+from __future__ import print_function
+from .small_multiples import small_multiples_plot
 from acuity.data import Bounds, Data, DataTransform, DataSelection
 from acuity.coordinateSystems import MapProjection, GeographicSystem
 from acuity.LMA.LMAdataHDF import LMAdataManagerHDF
@@ -6,7 +8,7 @@ from acuity.LMA.LMAdataHDF import LMAdataManagerHDF
 from acuity.LMA.LMAdata import LMAdataManager
 from acuity.views import AcuityView
 
-from density_tools import extent_density
+from .density_tools import extent_density
 
 from mx.DateTime import DateTime, DateTimeDelta
 import numpy as np
@@ -19,6 +21,8 @@ from matplotlib.dates import mx2num, date2num, DateFormatter
 from math import ceil
 
 import pytz
+from six.moves import range
+from six.moves import zip
 tz=pytz.timezone('US/Eastern') # Why, oh, why, is it using my local time zone?
 time_series_x_fmt = DateFormatter('%H%M:%S', tz=tz)
 
@@ -93,7 +97,7 @@ else:
     LMAtables = []
     for hdffile in LMAfilesHDF:
         h5 = tables.openFile(hdffile)
-        table_name = h5.root.events._v_children.keys()[0]
+        table_name = list(h5.root.events._v_children.keys())[0]
         LMAtables.append('/events/'+table_name)
     
         # events = getattr(h5.root.events, table_name)[:]
@@ -192,8 +196,8 @@ def runtest(lmaManager=None, lma_view=None, HDFmanagers=None):
                                         (fl['start'] <= t1) 
                                     ):
                                     these_events = evs[evs['flash_id'] == fl['flash_id']]
-                                    if len(these_events) <> fl['n_points']:
-                                        print 'not giving all ', fl['n_points'], ' events? ', these_events.shape
+                                    if len(these_events) != fl['n_points']:
+                                        print('not giving all ', fl['n_points'], ' events? ', these_events.shape)
                                     for an_ev in these_events:
                                         yield an_ev
 
@@ -238,7 +242,7 @@ def runtest(lmaManager=None, lma_view=None, HDFmanagers=None):
                 density_maxes.append(density.max())
                 total_counts.append(density.sum())
                 all_t.append(frame_start)
-                print label_string, x.shape, density.max(), density.sum()
+                print(label_string, x.shape, density.max(), density.sum())
 
         color_scale = ColorbarBase(p.colorbar_ax, cmap=density_plot.cmap,
                                            norm=density_plot.norm,
@@ -266,11 +270,11 @@ def runtest(lmaManager=None, lma_view=None, HDFmanagers=None):
         # time_series.savefig(time_filename)
         # print ' ... done'
         
-        print 'making multiples',
+        print('making multiples', end=' ')
         p.multiples.flat[0].axis(view_x+view_y)
         filename = 'out/LMA-density_%s_%5.2fkm_%5.1fs.pdf' % (start_time.strftime('%Y%m%d_%H%M%S'), dx/1000.0, time_delta.seconds)
         f.savefig(filename, dpi=150)
-        print ' ... done'
+        print(' ... done')
         f.clf()
         return events
         

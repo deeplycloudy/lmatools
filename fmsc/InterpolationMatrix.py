@@ -1,7 +1,10 @@
+from __future__ import absolute_import
+from __future__ import print_function
 import itertools
 
 import numpy as np
 from scipy import sparse
+from six.moves import range
 
 def interpolation_matrix(A_in, alpha, ignore_negative=True, should_dilute=True, dilutThresh=0.1, dilutLimit=1.0, is_laplac=True):
     """ Create an interpolation matrix according to the given matrix A and a threshold alpha.
@@ -34,7 +37,7 @@ def interpolation_matrix(A_in, alpha, ignore_negative=True, should_dilute=True, 
     
     if A.sum() == 0:
         # if A is a diagonal matrix, A - diag(A) == 0
-        print "All distances are zero"
+        print("All distances are zero")
         return P, idx_coarse
     
     # Choosing the coarse set variables

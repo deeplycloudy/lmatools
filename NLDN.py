@@ -1,6 +1,8 @@
+from __future__ import absolute_import
 from datetime import datetime
 import numpy as np
 from numpy.lib.recfunctions import drop_fields, append_fields
+from six.moves import zip
 
 class NLDNdataFile(object):
     

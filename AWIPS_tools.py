@@ -1,7 +1,10 @@
+from __future__ import absolute_import
+from __future__ import print_function
 import datetime
 import pupynere as nc
 import glob
-from make_grids import grid_h5flashfiles
+from .make_grids import grid_h5flashfiles
+from six.moves import range
 
 def write_AWIPS_netcdf_grid(outfile, t_start, t, xloc, yloc, lon_for_x, lat_for_y, 
                 ctr_lat, ctr_lon, grid, grid_var_name, grid_description, format='i',
@@ -103,7 +106,7 @@ def make_AWIPS_grid(h5_filenames=None):
     if h5_filenames is None:
         h5_filenames = glob.glob('/data/WTLMA/FirstLightning/processed7stn/thresh-0.15_dist-3000.0/LYL*.flash.h5')
     
-    print h5_filenames
+    print(h5_filenames)
 
     start_time = datetime.datetime(2011,11,21, 14,50,00)
     end_time   = datetime.datetime(2011,11,21, 14,51,00)

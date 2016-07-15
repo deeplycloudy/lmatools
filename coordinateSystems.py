@@ -1,3 +1,4 @@
+from __future__ import absolute_import
 import pyproj as proj4 
 from numpy import *
 from numpy.linalg import norm
