@@ -37,8 +37,11 @@ import threading
 # 
 # source = struct.Struct('f f f f f f f f H H')
 # source_size = 36;
-
-import websocket
+try:
+    import websocket
+except ImportError as ierr:
+    print("Please pip install websocket-client or get it manually from from https://github.com/liris/websocket-client")
+    
 class WebsocketClient(object):
     
     def __init__(self, host=None):
