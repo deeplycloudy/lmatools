@@ -23,28 +23,6 @@ def logger_setup(logpath):
     logger.setLevel(logging.DEBUG)
 
 
-def fetch_gzipdata_from_url(the_url):
-    """ Returns unzipped data inside a gzipped file residing at the_url.
-
-        From http://diveintopython.org/http_web_services/gzip_compression.html
-    """
-    import urllib2, httplib
-    import StringIO
-    import gzip
-
-    httplib.HTTPConnection.debuglevel = 1
-    request = urllib2.Request(the_url)
-    request.add_header('Accept-encoding', 'gzip')
-    opener = urllib2.build_opener()
-    f = opener.open(request)
-    compresseddata = f.read()
-    compressedstream = StringIO.StringIO(compresseddata)
-    gzipper = gzip.GzipFile(fileobj=compressedstream)      
-    data = gzipper.read()
-    gzipper.close()                            
-    return data
-
-
 def write_output(outfile, flashes, orig_LMA_file, metadata=None):
     from write_flashes import write_h5
     if metadata is None:
