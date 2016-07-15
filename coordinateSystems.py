@@ -218,6 +218,7 @@ class RadarCoordinateSystem(CoordinateSystem):
         return lon, lat, z
             
     def toECEF(self, r, az, el):
+        geoSys = GeographicSystem()
         lon, lat, z = self.toLonLatAlt(r, az, el)
         return geoSys.toECEF(lon, lat, z.ravel())
         
