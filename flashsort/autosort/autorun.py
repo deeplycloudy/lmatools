@@ -52,6 +52,7 @@ def run_files_with_params(files, output_path, params, clusterer=None, min_points
     largest_file_index = f_sizes.index(max(f_sizes))
     lma_pipe, command, any_input = cat_LMA(files[largest_file_index])
     lma_text, err = lma_pipe.communicate(input=any_input)
+    lma_text = lma_text.decode()
     isDataLine = r"^.*\*+.*data.*\*+.*" #Search for asterisks, data, and asterisks
     matchDataLine = re.compile(isDataLine, re.IGNORECASE)
     split_lma_text = lma_text.split('\n')
