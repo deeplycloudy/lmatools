@@ -1,3 +1,4 @@
+import sys
 import numpy as np
 from collections import deque
 
@@ -41,6 +42,7 @@ try:
     import websocket
 except ImportError as ierr:
     print("Please pip install websocket-client or get it manually from from https://github.com/liris/websocket-client")
+    raise(ierr)
     
 class WebsocketClient(object):
     
@@ -180,6 +182,13 @@ class LiveLMAController(object):
     
     
 if __name__ == '__main__':
+    try:
+        server = sys.argv[1]
+    except IndexError as e:
+        print("Please provide a URL for the LiveLMA server, which typically begins with ws://\nUsage: python liveLMA.py server_url")
+        raise(e)
+
+    
     liveDataController = LiveLMAController()
 
     printer = LiveLMAprinter()
@@ -197,7 +206,7 @@ if __name__ == '__main__':
     
     # ----- Start a threaded WebSocket Client -----
     # websocket.enableTrace(True)
-    client = WebsocketClient()
+    client = WebsocketClient(host=server)
     # client.connect(on_message=liveDataController.on_message)
     sock_thr = threading.Thread(target=client.connect, kwargs={'on_message':liveDataController.on_message})
     sock_thr.daemon=True
