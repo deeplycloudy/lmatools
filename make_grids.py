@@ -74,7 +74,7 @@ def write_cf_netcdf_latlon(outfile, t_start, t, xloc, yloc, lon_for_x, lat_for_y
         
     """
 
-    import pupynere as nc
+    import scipy.io.netcdf as nc
 
     missing_value = -9999
     
@@ -138,7 +138,7 @@ def write_cf_netcdf(outfile, t_start, t, xloc, yloc, lon_for_x, lat_for_y, ctr_l
         
     """
 
-    import pupynere as nc
+    import scipy.io.netcdf as nc
 
     missing_value = -9999
     

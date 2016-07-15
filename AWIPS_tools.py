@@ -1,7 +1,7 @@
 from __future__ import absolute_import
 from __future__ import print_function
 import datetime
-import pupynere as nc
+import scipy.io.netcdf as nc
 import glob
 from .make_grids import grid_h5flashfiles
 from six.moves import range

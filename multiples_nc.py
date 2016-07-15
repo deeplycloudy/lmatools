@@ -7,7 +7,7 @@ import gc
 
 from datetime import datetime, timedelta
 import numpy as np
-import pupynere as nc
+import scipy.io.netcdf as nc
 
 # from pylab import figure, get_cmap, colorbar
 from matplotlib.figure import figaspect, Figure

@@ -7,7 +7,7 @@ import itertools
 import numpy as np
 
 from lmatools.multiples_nc import centers_to_edges
-import pupynere as nc
+import scipy.io.netcdf as nc
 from six.moves import range
         
 class LMAgridFileCollection(object):
