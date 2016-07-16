@@ -1,3 +1,5 @@
+from __future__ import absolute_import
+from __future__ import print_function
 import glob 
 import os, sys
 from datetime import datetime, timedelta
@@ -5,10 +7,11 @@ from datetime import datetime, timedelta
 import numpy as np
 import tables
 
-import density_to_files
+from . import density_to_files
 from lmatools.lma_io import read_flashes, to_seconds
 
-from coordinateSystems import MapProjection, GeographicSystem
+from .coordinateSystems import MapProjection, GeographicSystem
+from six.moves import range
     
 
 def dlonlat_at_grid_center(ctr_lat, ctr_lon, dx=4.0e3, dy=4.0e3,
@@ -71,7 +74,7 @@ def write_cf_netcdf_latlon(outfile, t_start, t, xloc, yloc, lon_for_x, lat_for_y
         
     """
 
-    import pupynere as nc
+    import scipy.io.netcdf as nc
 
     missing_value = -9999
     
@@ -135,7 +138,7 @@ def write_cf_netcdf(outfile, t_start, t, xloc, yloc, lon_for_x, lat_for_y, ctr_l
         
     """
 
-    import pupynere as nc
+    import scipy.io.netcdf as nc
 
     missing_value = -9999
     
@@ -420,7 +423,7 @@ def grid_h5flashfiles(h5_filenames, start_time, end_time,
                     grid_units=field_units[3],
                     **output_kwargs)
                     
-    print 'max extent is', extent_density_grid.max()
+    print('max extent is', extent_density_grid.max())
 
     return x_coord, y_coord, lons, lats, extent_density_grid, outfiles, field_names
     

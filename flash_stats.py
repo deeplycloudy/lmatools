@@ -1,3 +1,5 @@
+from __future__ import absolute_import
+from __future__ import print_function
 import glob
 import os
 
@@ -7,6 +9,8 @@ from lmatools.lma_io import read_flashes
 from lmatools.density_to_files import coroutine, Branchpoint
 
 from lmatools.flashsort.autosort.flash_stats import hull_volume
+from six.moves import range
+from six.moves import zip
 
 def length_from_area(A,D,b_s):
     return ( (np.sqrt(A))**D ) / (b_s**(D-1))
@@ -319,7 +323,7 @@ if __name__ == '__main__':
             for dt in time_critera:
                 for dx in distance_critera:
                     pattern = filename_template.format(dt,dx)
-                    print pattern
+                    print(pattern)
                     h5_filenames = glob.glob(pattern)
                     for h5_file in h5_filenames:
                         file_basename = os.path.split(h5_file)[-1].split('.')[:-3][0]

@@ -21,6 +21,8 @@ a few more del statements might be needed.
 """
 
 
+from __future__ import absolute_import
+from __future__ import print_function
 import numpy as np
 
 from sklearn.cluster import DBSCAN
@@ -38,7 +40,7 @@ def split_clusters(data,labels):
     for l in set(no_single):
         idx = (labels==l)
         t = data[idx,-1]
-        print l, t.shape, t.min(), t.max()
+        print(l, t.shape, t.min(), t.max())
 
 
 @coroutine
@@ -52,7 +54,7 @@ def cluster_chunk_pairs(clustered_output_target):
             chunk2 = (yield)
             len1 = chunk1.shape[0]
             len2 = chunk2.shape[0]
-            print len1+len2
+            print(len1+len2)
             
             # do stuff with chunk 1 and 2
             clusters = db.fit(np.vstack((chunk1, chunk2)))
@@ -88,11 +90,11 @@ def chunk_printer():
             v = (yield)
             total += v.shape[0]
             n,x = v[:,-1].min(), v[:,-1].max()
-            print v.shape, n,x,x-n_last
+            print(v.shape, n,x,x-n_last)
             n_last=n
             del v
     except GeneratorExit:
-        print total
+        print(total)
         
 @coroutine
 def cluster_printer():
@@ -125,7 +127,7 @@ def cluster_printer():
             #all_v.append(v)
             del v, orig_labels, labels
     except GeneratorExit:
-        print total
+        print(total)
 
 
 

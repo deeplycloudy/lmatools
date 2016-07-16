@@ -1,6 +1,9 @@
+from __future__ import absolute_import
+from __future__ import print_function
 import os
 import glob
 import tables as T
+from six.moves import zip
 
 base_out_dir = '/Users/ebruning/out/flash_sort/'
 params_filename = 'input_params.py'
@@ -8,7 +11,7 @@ params_filename = 'input_params.py'
 analysis_params = ('thresh_critical_time', 'distance')
 counted = 'total_flashes'
 data_lists = [[] for i in analysis_params]
-plot_data = dict(zip(analysis_params, data_lists))
+plot_data = dict(list(zip(analysis_params, data_lists)))
 plot_data[counted] = []
     
 for path, dirnames, filenames in os.walk(base_out_dir):
@@ -16,19 +19,19 @@ for path, dirnames, filenames in os.walk(base_out_dir):
     h5_search = os.path.join(path, '*.h5')
     h5files = glob.glob(h5_search)
     
-    print "Checking directory ", path,
+    print("Checking directory ", path, end=' ')
     
     try:
         params = open(os.path.join(path, params_filename), 'r')
         param_data = params.read()
         params.close()
         params = eval(param_data)
-        print "... found param data"
+        print("... found param data")
         # print type(params), params
     except IOError:
         # Since there is no run-parameters data,
         # this isn't a directory with results of a flash code run
-        print "... nothing"
+        print("... nothing")
         continue
     
     total_flashes = 0
@@ -40,7 +43,7 @@ for path, dirnames, filenames in os.walk(base_out_dir):
             n_flashes = len(flash_pts)
             total_flashes +=n_flashes
             # n_flashes = flash_table.shape[0]
-            print '%s -- %d flashes' % (path, n_flashes,)
+            print('%s -- %d flashes' % (path, n_flashes,))
         h5.close()
     
     for param in analysis_params:

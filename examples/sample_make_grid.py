@@ -1,5 +1,6 @@
 """ The data used to make the grids are LMA data that have been sorted into flashes. The LMA source data and flash metadata are saved into an HDF5 file."""
 
+from __future__ import absolute_import
 import glob
 from datetime import datetime
 
@@ -7,8 +8,8 @@ from LMAtools.make_grids import grid_h5flashfiles
 
 
 h5_filenames = glob.glob('LYL*.flash.h5')
-start_time = datetime(2009,7,24, 1,00,00)
-end_time   = datetime(2009,7,24, 1,04,00)
+start_time = datetime(2009,7,24, 1,0,0)
+end_time   = datetime(2009,7,24, 1,4,0)
 
 frame_interval=60.0
 dx=8.0e3

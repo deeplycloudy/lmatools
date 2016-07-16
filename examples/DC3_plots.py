@@ -1,3 +1,5 @@
+from __future__ import absolute_import
+from __future__ import print_function
 import numpy as np
 import os
 import sys
@@ -8,6 +10,7 @@ import subprocess
 from lmatools.make_grids import grid_h5flashfiles, dlonlat_at_grid_center, write_cf_netcdf_latlon
 from lmatools.flashsort.autosort import autorun
 from lmatools.multiples_nc import make_plot
+from six.moves import map
 
 # Meant to be run on a just one day's worth of processed data
 
@@ -23,8 +26,8 @@ centers = {'WTLMA':{'ctr_lat':33.606968, 'ctr_lon':-101.822625},
 
 def tfromfile(name):
     parts = name.split('_')
-    y, m, d = map(int, (parts[-3][0:2], parts[-3][2:4], parts[-3][4:6]))
-    H, M, S = map(int, (parts[-2][0:2], parts[-2][2:4], parts[-2][4:6]))
+    y, m, d = list(map(int, (parts[-3][0:2], parts[-3][2:4], parts[-3][4:6])))
+    H, M, S = list(map(int, (parts[-2][0:2], parts[-2][2:4], parts[-2][4:6])))
     return y+2000,m,d,H,M,S
 
 autorun.logger_setup(base_sort_dir)
@@ -90,16 +93,16 @@ y_bnd_km = (-200e3, 200e3)
 dx, dy, x_bnd, y_bnd = dlonlat_at_grid_center(ctr_lat, ctr_lon, 
                             dx=dx_km, dy=dy_km,
                             x_bnd = x_bnd_km, y_bnd = y_bnd_km )
-print("dx, dy = {0}, {1} deg".format(dx,dy))
-print("lon_range = {0} deg".format(x_bnd))
-print("lat_range = {0} deg".format(y_bnd))
+print(("dx, dy = {0}, {1} deg".format(dx,dy)))
+print(("lon_range = {0} deg".format(x_bnd)))
+print(("lat_range = {0} deg".format(y_bnd)))
 
 for f in h5_filenames:
     y,m,d,H,M,S = tfromfile(f)
     # print y,m,d,H,M,S
     start_time = datetime(y,m,d, H,M,S)
     end_time   = start_time + timedelta(0,600)
-    print start_time, end_time
+    print(start_time, end_time)
     
 
     outpath = grid_dir+'/20%s' %(date.strftime('%y/%b/%d'))
@@ -130,7 +133,7 @@ if False:
     for f in nc_names:
         gridtype = f.split('dx_')[-1].replace('.nc', '')
         var = mapping[gridtype]
-        print f
+        print(f)
         make_plot(f, var, n_cols=n_cols, outpath = outpath)
     
 # make_plot('/data/rtlma/flash_sort/LMA_20120319_010000_600_10src_4000.0m-dx_flash_extent.nc', 'flash_extent', n_cols=n_cols)

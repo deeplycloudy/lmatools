@@ -1,4 +1,6 @@
 # -*- coding: utf-8 -*-
+from __future__ import absolute_import
+from __future__ import print_function
 import pkg_resources, os
 from lmatools.flashsort.autosort.autorun import run_files_with_params, logger_setup
 
@@ -17,7 +19,7 @@ def sample_data_paths():
         yield template
 
 files = [f for f in sample_data_paths()]
-print files
+print(files)
 
 ctrLat = 35.23833
 ctrLon = -97.46028

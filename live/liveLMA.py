@@ -1,7 +1,11 @@
+from __future__ import absolute_import
+from __future__ import print_function
+import sys
 import numpy as np
 from collections import deque
 
 import threading
+import six
 
 # 
 # # Header data is packed in a structure:
@@ -37,8 +41,12 @@ import threading
 # 
 # source = struct.Struct('f f f f f f f f H H')
 # source_size = 36;
-
-import websocket
+try:
+    import websocket
+except ImportError as ierr:
+    print("Please pip install websocket-client or get it manually from from https://github.com/liris/websocket-client")
+    raise(ierr)
+    
 class WebsocketClient(object):
     
     def __init__(self, host=None):
@@ -46,10 +54,10 @@ class WebsocketClient(object):
         self.ws=None
     
     def on_error(self, ws, error):
-        print error
+        print(error)
 
     def on_close(self, ws):
-        print "### closed ###"
+        print("### closed ###")
         self.ws = None
         
     def connect(self, on_message=None):
@@ -91,7 +99,7 @@ class LiveLMAprinter(object):
         """docstring for show"""
         for v in data:
             # print("{0}: {1}, {2}".format(data['t'], data['lat'], data['lon']))
-            print("{1}, {2}".format(data['t'], data['lat'], data['lon']))
+            print(("{1}, {2}".format(data['t'], data['lat'], data['lon'])))
 
 def redraw(canvas):
     canvas.draw()
@@ -167,7 +175,7 @@ class LiveLMAController(object):
         # See time handling in archive_to_LiveLMA for examples
         data['t'] = sources['t'].astype('f8')+header['header_second'].astype('f8')
         
-        for k, v in self.dtype_mapping.iteritems():
+        for k, v in six.iteritems(self.dtype_mapping):
             data[v] = sources[k]
             
         for view in self.views:
@@ -177,6 +185,13 @@ class LiveLMAController(object):
     
     
 if __name__ == '__main__':
+    try:
+        server = sys.argv[1]
+    except IndexError as e:
+        print("Please provide a URL for the LiveLMA server, which typically begins with ws://\nUsage: python liveLMA.py server_url")
+        raise(e)
+
+    
     liveDataController = LiveLMAController()
 
     printer = LiveLMAprinter()
@@ -194,7 +209,7 @@ if __name__ == '__main__':
     
     # ----- Start a threaded WebSocket Client -----
     # websocket.enableTrace(True)
-    client = WebsocketClient()
+    client = WebsocketClient(host=server)
     # client.connect(on_message=liveDataController.on_message)
     sock_thr = threading.Thread(target=client.connect, kwargs={'on_message':liveDataController.on_message})
     sock_thr.daemon=True

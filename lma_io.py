@@ -1,3 +1,5 @@
+from __future__ import absolute_import
+from __future__ import print_function
 import numpy as np
 from datetime import datetime, timedelta
 
@@ -13,7 +15,7 @@ def read_flashes(h5LMAfiles, target, base_date=None, min_points=10):
 
     for filename in h5LMAfiles:
         h5 = tables.openFile(filename)
-        table_name = h5.root.events._v_children.keys()[0]
+        table_name = list(h5.root.events._v_children.keys())[0]
 
         # event_dtype = getattr(h5.root.events, table_name)[0].dtype
         # events_all = getattr(h5.root.events, table_name)[:]
@@ -37,7 +39,7 @@ def read_flashes(h5LMAfiles, target, base_date=None, min_points=10):
         flashes['start'] += extra_dt
 
         n_flashes = len(flashes)
-        print '{0} -- {1} flashes > {2} pts; dt+={3}  '.format(filename, n_flashes, min_points, extra_dt)
+        print('{0} -- {1} flashes > {2} pts; dt+={3}  '.format(filename, n_flashes, min_points, extra_dt))
         
         push_out = (events, flashes)
 

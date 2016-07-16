@@ -1,7 +1,12 @@
+from __future__ import absolute_import
+from __future__ import print_function
 import os, gzip, re
 import numpy as np
 import logging
 import subprocess
+from six.moves import map
+from six.moves import range
+from six.moves import zip
 
 logger = logging.getLogger('FlashAutorunLogger')
 
@@ -10,7 +15,6 @@ from numpy.lib.recfunctions import append_fields
 def cat_LMA(filename):
     """ Returns subprocess pipe with LMA data file on stdout """
     if filename.find('http://') >= 0:
-        # data = fetch_gzipdata_from_url(filename)
         url_copy = subprocess.Popen(['curl', '-s', filename], stdout=subprocess.PIPE)#, stdin=subprocess.PIPE)
         command = ['gunzip', '-c']
         f = subprocess.Popen(command, stdin=url_copy.stdout, stdout=subprocess.PIPE)
@@ -170,7 +174,7 @@ class LMAdataFile(object):
     
     def get_file_obj(self, notify=True):
         if not (self.filename.find('.dat') >= 0):
-            raise "Can only read .dat files"
+            raise IOError("Can only read .dat files")
         
         if notify:
             logger.info("Loading LMA data from " + self.filename)
@@ -181,7 +185,7 @@ class LMAdataFile(object):
             #gzip readlines is slooow ... at least 5x worse.
             #thefile=gzip.GzipFile(self.filename)
         else:
-            thefile=file(self.filename, 'r')
+            thefile=open(self.filename, 'r')
         
         return thefile
     
@@ -248,7 +252,7 @@ class LMAdataFile(object):
                 columns = [columnName.strip() for columnName in columns]
         
         n_columns = len(columns)
-        field_names, types = range(n_columns), range(n_columns)
+        field_names, types = list(range(n_columns)), list(range(n_columns))
         converters = {}
         for column_idx, column in enumerate(columns):
             for field in self.columnNames.keys():
@@ -294,8 +298,8 @@ class LMAdataFile(object):
                 logger.debug('skipping ' + line[0:20])
                 continue
             items = line.split()
-            vals = map(apply_format, items, self.field_formats)
-            record = dict(zip(self.field_names, vals))
+            vals = list(map(apply_format, items, self.field_formats))
+            record = dict(list(zip(self.field_names, vals)))
             if calc_stations:
                 stations = self.hexMaskToStationCount(mask=[record['mask']])
                 record['stations'] = stations[0]
@@ -312,14 +316,14 @@ def runtest():
     # lma = LMAdataFile('/data/2004/LMA/040526/LYLOUT_040526_230000_0600.dat.gz')
     #lma = LMAdataFile('/Users/ericbruning/othercode/LYLOUT_040526_220000_0600.dat')
     
-    print lma.startmonth, lma.startday, lma.startyear
-    print lma.starthour, lma.startminute, lma.startsecond
+    print(lma.startmonth, lma.startday, lma.startyear)
+    print(lma.starthour, lma.startminute, lma.startsecond)
     # keys = lma.data.keys()
     # for key in keys:
     #     print key, len(lma.data[key])
-    print lma.lat
-    print lma.stations
-    print lma.flash_id
+    print(lma.lat)
+    print(lma.stations)
+    print(lma.flash_id)
         
 
 if __name__ == '__main__':

@@ -1,4 +1,6 @@
+from __future__ import absolute_import
 import matplotlib 
+from six.moves import range
 matplotlib.rc('xtick', labelsize=6) 
 matplotlib.rc('ytick', labelsize=6) 
 
@@ -9,7 +11,7 @@ class small_multiples_plot(object):
     
     def __init__(self, fig=None, *args, **kwargs):
         if fig is None:
-            raise AssertionError, "A valid figure must be passed in."
+            raise AssertionError("A valid figure must be passed in.")
             # fig = figure()
         self.fig = fig
         self.fig.subplots_adjust(bottom=0.20, left = 0.1, right=0.9, top=0.9)

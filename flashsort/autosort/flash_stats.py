@@ -1,3 +1,5 @@
+from __future__ import absolute_import
+from __future__ import print_function
 import numpy as np
 import logging
 import re
@@ -5,6 +7,7 @@ import re
 from scipy.spatial import Delaunay
 from scipy.misc import factorial
 from scipy.spatial.qhull import QhullError
+from six.moves import range
 
 
 # logger = logging.getLogger('FlashAutorunLogger')
@@ -145,7 +148,7 @@ def calculate_flash_stats(flash, min_pts=2):
             # this can happen with a degenerate first simplex - all points are
             # coplanar to machine precision. Try again, after adding a tiny amount
             # to the first point.
-            print "Perturbing one source to help triangulation for flash with {0} points".format(flash.pointCount)
+            print("Perturbing one source to help triangulation for flash with {0} points".format(flash.pointCount))
             # we can tolerate perturbing by no more than 1 m
             machine_eps = 1.0 # np.finfo(x.dtype).eps
             perturb = 2*machine_eps*np.random.random(size=3)-machine_eps

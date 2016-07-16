@@ -21,13 +21,16 @@ a few more del statements might be needed.
 """
 
 
+from __future__ import absolute_import
+from __future__ import print_function
 import numpy as np
+from six.moves import zip
 
 
 def coroutine(func):
     def start(*args,**kwargs):
         cr = func(*args,**kwargs)
-        cr.next()
+        next(cr)
         return cr
     return start
 
@@ -40,7 +43,7 @@ def split_clusters(data,labels):
     for l in set(no_single):
         idx = (labels==l)
         t = data[idx,-1]
-        print l, t.shape, t.min(), t.max()
+        print(l, t.shape, t.min(), t.max())
 
 
 def stream(vec, IDs, target):

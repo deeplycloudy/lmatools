@@ -1,8 +1,11 @@
+from __future__ import absolute_import
+from __future__ import print_function
 import glob
 import gc
 import numpy as np
 
-from density_tools import unique_vectors
+from .density_tools import unique_vectors
+from six.moves import zip
 
 # -------------------------------------------------------------------------- 
 # ----- This section could be replaced with stormdrain.pipeline imports ----
@@ -11,7 +14,7 @@ from density_tools import unique_vectors
 def coroutine(func):
     def start(*args,**kwargs):
         cr = func(*args,**kwargs)
-        cr.next()
+        next(cr)
         return cr
     return start
 
@@ -92,7 +95,7 @@ def flash_count_log(logfile, format_string="%s flashes in frame starting at %s")
                 # Key doesn't exist, so can't increment flash count 
                 frame_times[frame_start_time]  = n_flashes
     except GeneratorExit:
-        all_times = frame_times.keys()
+        all_times = list(frame_times.keys())
         all_times.sort()
         for frame_start_time in all_times:
             flash_count_status = format_string % (frame_times[frame_start_time], frame_start_time)
@@ -138,7 +141,7 @@ def flashes_to_frames(time_edges, targets, time_key='start', time_edges_datetime
             # print flash_count_status
             target.send((events, these_flashes))
         del events, flashes, start_times, sort_idx, idx, slices
-    print flash_count_messages
+    print(flash_count_messages)
 
 def event_yielder(evs, fls):
     for fl in fls:
@@ -229,7 +232,7 @@ def footprint_mean(flash_id_key='flash_id', area_key='area'):
         y_i = np.floor( (y-y0)/dy ).astype('int32')
 
         if len(x_i) > 0:
-            footprints = dict(zip(flash[flash_id_key], flash[area_key]))
+            footprints = dict(list(zip(flash[flash_id_key], flash[area_key])))
             # print 'with points numbering', len(x_i)
             unq_idx = unique_vectors(x_i, y_i, events['flash_id'])
             # if x[unq_idx].shape[0] > 1:
@@ -250,7 +253,7 @@ def point_density(target):
         events, flash, x, y, z = (yield)
         # print 'Doing point density',
         if len(x) > 0:
-            print 'with points numbering', len(x)
+            print('with points numbering', len(x))
             target.send((x, y, None))
         del events, flash ,x,y,z
         # else:
@@ -274,11 +277,11 @@ def extent_density(x0, y0, dx, dy, target, flash_id_key='flash_id', weight_key=N
         y_i = np.floor( (y-y0)/dy ).astype('int32')
 
         if len(x_i) > 0:
-            print 'extent with points numbering', len(x_i), ' with weights', weight_key
+            print('extent with points numbering', len(x_i), ' with weights', weight_key)
             unq_idx = unique_vectors(x_i, y_i, events[flash_id_key])
             # if x[unq_idx].shape[0] > 1:
-            if weight_key <> None:
-                weight_lookup = dict(zip(flash[flash_id_key], flash[weight_key]))
+            if weight_key != None:
+                weight_lookup = dict(list(zip(flash[flash_id_key], flash[weight_key])))
                 weights = [weight_lookup[fi] for fi in events[unq_idx]['flash_id']] #puts weights in same order as x[unq_idx], y[unq_idx]
                 del weight_lookup
             else:
@@ -302,10 +305,10 @@ def accumulate_points_on_grid(grid, xedge, yedge, out=None, label=''):
             if len(x) > 0:
                 x = np.atleast_1d(x)
                 y = np.atleast_1d(y)
-                print 'accumulating ', len(x), 'points for ', label
+                print('accumulating ', len(x), 'points for ', label)
                 count, edges = np.histogramdd((x,y), bins=(xedge, yedge), weights=None, normed=False)    
                 
-                if weights <> None:
+                if weights != None:
                     # histogramdd sums up weights in each bin for normed=False
                     total, edges = np.histogramdd((x,y), bins=(xedge, yedge), weights=weights, normed=False)
                     # return the mean of the weights in each bin

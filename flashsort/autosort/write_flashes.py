@@ -1,6 +1,8 @@
+from __future__ import absolute_import
 import tables as T
 import numpy as np
 import logging
+from six.moves import range
 
 # Write this many flashes at a time
 flash_chunk = 100 # was 10000 rows

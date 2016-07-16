@@ -1,3 +1,5 @@
+from __future__ import absolute_import
+from __future__ import print_function
 import numpy as np
 import os
 import datetime
@@ -15,7 +17,7 @@ def recycle_LMA_file(duration, seconds_offset):
     try:
         data = np.load(PRELOADED_DATA)
     except:
-        print "Regenerating preloadable LMA data"
+        print("Regenerating preloadable LMA data")
         preload_some_data()
         data = np.load(PRELOADED_DATA)
         
@@ -78,7 +80,7 @@ def fake_LMA_file(year=2012, month=2, day=28, hour=0, minute=0, second=0,
     header_data['n_points'] = n_points
     header_data['analysis_end'] = datetime.datetime.now().strftime('%c')
     
-    f_out = file(outfile, 'w')
+    f_out = open(outfile, 'w')
     f_out.write(header_template.format(**header_data))
     f_out.write(output_data_string)
     f_out.close()

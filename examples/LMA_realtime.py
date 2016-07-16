@@ -1,3 +1,5 @@
+from __future__ import absolute_import
+from __future__ import print_function
 import datetime
 import os
 import glob
@@ -36,7 +38,7 @@ now = datetime.datetime.now()
 from lmatools.fakeLMA import fake_LMA_file, late2011_header
 LMA_ASCII_outfile = fake_LMA_file(year=now.year, month=now.month, day=now.day, hour=now.hour, minute=now.minute, second=0, 
                 duration=60, header_template=late2011_header, outpath=LMA_DATA_DIR)
-print "Wrote ", LMA_ASCII_outfile
+print("Wrote ", LMA_ASCII_outfile)
 
 # ----- Sort flashes, creating HDF5 LMA data file ----- 
 from lmatools.flashsort.autosort.autorun import run_files_with_params
@@ -89,6 +91,6 @@ call([gzip_command] + list(AWIPS_outfiles))
 LDM_files = [f + '.gz' for f in [LMA_ASCII_outfile]+list(AWIPS_outfiles)]
 for f in LDM_files:
     ldm_command = "sudo -u ldm /home/ldm/bin/pqinsert -v -f EXP -q /home/ldm/var/queues/ldm.pq {0:s}".format(f)
-    print ldm_command
+    print(ldm_command)
     # call(ldm_command.split())
 
