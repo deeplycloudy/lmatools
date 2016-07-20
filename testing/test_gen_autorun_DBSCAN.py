@@ -62,7 +62,7 @@ def test_sort_and_grid_and_plot(outpath):
     info.close()
     
     cluster = DBSCANFlashSorter(params).cluster
-    sort_files(files, outdir, clusterer=cluster)
+    sort_files(files, outdir, cluster)
     # Figure out which HDF5 files were created
     h5_filenames = glob.glob(h5_dir+'/20%s/LYLOUT*.dat.flash.h5' %(date.strftime('%y/%b/%d')))
     h5_filenames.sort()

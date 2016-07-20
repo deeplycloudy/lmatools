@@ -11,7 +11,6 @@ from collections import namedtuple
 
 from .autosort.write_flashes import write_h5
 from .autosort.LMAarrayFile import LMAdataFile
-# from .autosort.flash_stats import FlashMetadata
 
 LOG_BASEFILENAME = datetime.datetime.now().strftime('Flash-autosort.log')
 
@@ -22,17 +21,8 @@ def logger_setup(logpath):
     logger.addHandler(loghandler)
     logger.setLevel(logging.DEBUG)
 
-
-def write_output(outfile, flashes, orig_LMA_file, metadata=None):
-    if metadata is None:
-        # use metadata from the first flash as the canonical metadata,
-        #   since all flashes were sorted fromt the same LYLOUT file
-        # This breaks in the case of empty flashes; in that case the calling function should pass in metadata.
-        metadata = flashes[0].metadata
-    write_h5(outfile, flashes, metadata, orig_LMA_file)
-
     
-def sort_files(files, output_path, clusterer=None):
+def sort_files(files, output_path, clusterer):
     
     logger = logging.getLogger('FlashAutorunLogger')
     now = datetime.datetime.now().strftime('Flash autosort started %Y%m%d-%H%M%S')
@@ -44,19 +34,13 @@ def sort_files(files, output_path, clusterer=None):
             file_base_name = os.path.split(a_file)[-1].replace('.gz', '')
             outfile = os.path.join(output_path, file_base_name+'.flash')
             
-            # clusterer should use the name outfile as the base for any, e.g., ASCII data it would like to save
-            
             lmadata = LMADataset(a_file)
             clusterer(lmadata)
             
-            # header = ''.join(lmadata.header)
-            # fl_metadata = FlashMetadata(header)
             outfile_with_extension = outfile + '.h5'
             h5_outfiles.append(outfile_with_extension)
             
-            # make write_output a method of the dataset, and take dataset instead of a_file.
-            write_output(outfile_with_extension, lmadata.flashes, 
-                a_file, metadata=lmadata.metadata)
+            lmadata.write_h5_output(outfile_with_extension, a_file)
         
         except:
             logger.error("Did not successfully sort %s \n Error was: %s" % (a_file, sys.exc_info()[1]))
@@ -65,16 +49,7 @@ def sort_files(files, output_path, clusterer=None):
     return h5_outfiles
 
 
-class LMADataset(object):
-    """ Things to accomodate:
-    
-        Events data table
-        Flashes data table
-    
-        Read LMA ASCII data (delegate)
-        Write H5 file (delegate)
-    """
-    
+class LMADataset(object):    
     def __init__(self, filename=None, file_mask_length=6, 
                  data=None, basedate=None, sec_analyzed=None, header=''):
         """ Create a new LMA Dataset which can be used in a standardized way 
@@ -247,6 +222,13 @@ class LMADataset(object):
                     )
         
         return self.data[good]
+        
+    def write_h5_output(self, outfile, orig_LMA_file):
+        """ Thin wrapper around common h5 writer; makes use of metadata
+            and flashes already stored as attributes.
+        """
+        write_h5(outfile, self.flashes, self.metadata, orig_LMA_file)
+    
 
 """ Next things to untangle
         

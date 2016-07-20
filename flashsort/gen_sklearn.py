@@ -7,10 +7,9 @@ from numpy.lib.recfunctions import append_fields
             
 from sklearn.cluster import DBSCAN
 
-from lmatools.flashsort.autosort.LMAarrayFile import LMAdataFile
 from lmatools.coordinateSystems import GeographicSystem
 
-from lmatools.flashsort.autosort.flash_stats import calculate_flash_stats, Flash #, FlashMetadata
+from lmatools.flashsort.autosort.flash_stats import calculate_flash_stats, Flash
 from six.moves import range
 from six.moves import zip
 
@@ -52,7 +51,7 @@ class ChunkedFlashSorter(object):
     of points. Allows for algorithms that do not scale efficiently with
     large numbers of points. 
     
-    The __init__, load_data_from_LMAfile, and geo_to_cartesian
+    The __init__ and geo_to_cartesian
     methods are more generally useful, and could be factored out into a
     generic flash sorting class.
     
@@ -74,30 +73,6 @@ class ChunkedFlashSorter(object):
         self.ctr_lat, self.ctr_lon, self.ctr_alt =  (
                             params['ctr_lat'], params['ctr_lon'], 0.0)
         
-    def load_data_from_LMAfile(self, filename):
-        """ Load data from a single LMA file. Filter data using
-            minimum number of stations and maximum chi2 values provided
-            in the flashsort params dictionary.
-        
-            Returns:
-            lma: an LMAdataFile object
-            data: a filtered data array
-        """
-        params = self.params
-        if 'mask_length' in params:
-            mask_length = params['mask_length']
-        else:
-            mask_length = 6
-    
-        lma=LMAdataFile(filename, mask_length = mask_length)
-        
-        # Filter out noisy or otherwise mislocated points
-        good = (lma.stations >= params['stations'][0]) & (lma.chi2 <= params['chi2'][1]) 
-        if 'alt' in params:
-            good = good & (lma.alt < params['alt'][1])
-    
-        data = lma.data[good]
-        return (lma, data)
 
     def geo_to_cartesisan(self, lon, lat, alt):
         """ Convert lat, lon in degrees and altitude in meters to 
@@ -266,7 +241,7 @@ class ChunkedFlashSorter(object):
         # which each point_label corresponds
         data['flash_id'][all_IDs] = point_labels
     
-        # In the case of no data in the file, lma.data.shape will have
+        # In the case of no data, lma.data.shape will have
         # length zero, i.e., a 0-d array
     
         if (len(data.shape) == 0) | (data.shape[0] == 0):
@@ -369,7 +344,6 @@ class ChunkedFlashSorter(object):
             This method modifies dataset as a side effect.
         """
     
-        # lma, data = self.load_data_from_LMAfile(filename)
         data = dataset.filter_data(self.params)
         print("sorting {0} total points".format(data.shape[0]))
         
