@@ -10,7 +10,7 @@ from sklearn.cluster import DBSCAN
 from lmatools.flashsort.autosort.LMAarrayFile import LMAdataFile
 from lmatools.coordinateSystems import GeographicSystem
 
-from lmatools.flashsort.autosort.flash_stats import calculate_flash_stats, Flash, FlashMetadata
+from lmatools.flashsort.autosort.flash_stats import calculate_flash_stats, Flash #, FlashMetadata
 from six.moves import range
 from six.moves import zip
 
@@ -242,12 +242,14 @@ class ChunkedFlashSorter(object):
         return (unique_labels, point_labels, all_IDs)
 
     def create_flash_objs(self, lma, good_data, unique_labels, point_labels, all_IDs):
-        """ lma is an LMAdataFile object. Its data instance gets overwritten with the sorted, qc'd, flash_id'd data.
-    
-            very similar to collect_output in autorun_mflash
+        """ lma is an LMADataset object. Its data instance gets overwritten 
+            with the qc'd, flash_id'd data, and it gains a flashes attribute
+            with a list of flash objects resulting from flash sorting.
         
-            returns flash_objects containing the flash metadata.
-        
+            all_IDs gives the index in the original data array to
+            which each point_label corresponds. 
+            unique_labels is the set of all labels produced by previous stages 
+            in the flash sorting algorithm, including a -1 ID for all singleton flashes.
         """
         logger = self.logger
                 
@@ -255,7 +257,10 @@ class ChunkedFlashSorter(object):
         empty_labels = np.empty_like(point_labels)
         # placing good_data in a list due to this bug when good_data has length 1
         # http://stackoverflow.com/questions/36440557/typeerror-when-appending-fields-to-a-structured-array-of-size-one
-        data = append_fields([good_data], ('flash_id',), (empty_labels,))
+        if 'flash_id' not in good_data.dtype.names:
+            data = append_fields([good_data], ('flash_id',), (empty_labels,))
+        else:
+            data = good_data.copy()
 
         # all_IDs gives the index in the original data array to
         # which each point_label corresponds
@@ -320,8 +325,8 @@ class ChunkedFlashSorter(object):
             logger.info(logtext)
             # print flashes[0].points.dtype
             for fl in flashes:
-                header = ''.join(lma.header)
-                fl.metadata = FlashMetadata(header)
+                # header = ''.join(lma.header)
+                fl.metadata = lma.metadata #FlashMetadata(header)
                 calculate_flash_stats(fl)
                 # logger.info(fl.points.shape[0])
             logger.info('finished setting flash metadata')
@@ -329,9 +334,8 @@ class ChunkedFlashSorter(object):
             lma.raw_data = lma.data
             lma.data = data
             assert (lma.data['flash_id'].min() >=0) # this should be true since the singletons were modified in the original data array above
-            lma.sort_status = 'got some flashes'
-                
-        return flashes
+        
+        lma.flashes = flashes
         
     def perform_chunked_clustering(self, XYZT, ptIDs, chunk_duration):
         """ Perform clustering of a 4D data vector in overlapping chunks of
@@ -356,10 +360,17 @@ class ChunkedFlashSorter(object):
         return unique_labels, point_labels, all_IDs
 
 
-    def cluster(self, filename, **kwargs):
-        """ Much of the config in params needs to be moved to init."""
+    def cluster(self, dataset, **kwargs):
+        """ Cluster an lmatools LMADataset provided in the dataset argument.
+            Basic filtering of the data is performed by calling the filter_data
+            method of the dataset, which returns a filtered data array. The 
+            params are provided by the argument used to initialize this class.
+            
+            This method modifies dataset as a side effect.
+        """
     
-        lma, data = self.load_data_from_LMAfile(filename)
+        # lma, data = self.load_data_from_LMAfile(filename)
+        data = dataset.filter_data(self.params)
         print("sorting {0} total points".format(data.shape[0]))
         
         # Transform to cartesian coordiantes
@@ -376,15 +387,13 @@ class ChunkedFlashSorter(object):
         XYZT = np.hstack((X_vector, T_vector))
     
         # Perform chunked clustering of the data
-        lma.sort_status = 'in process'
         normed_chunk_duration = duration_max/t_max
         unique_labels, point_labels, all_IDs = self.perform_chunked_clustering(XYZT, IDs, normed_chunk_duration)
 
         # Calculate flash metadata and store it in flash objects
         # This should be factored out into somehting that modifies the data table
         # and something that creates the flash objects themselves
-        flash_objects = self.create_flash_objs(lma, data, unique_labels, point_labels, all_IDs)
-        return lma, flash_objects
+        self.create_flash_objs(dataset, data, unique_labels, point_labels, all_IDs)
 
 
 class DBSCANFlashSorter(ChunkedFlashSorter):
