@@ -243,7 +243,6 @@ def create_flash_objs(lma, good_data):
                 lma.raw_data = lma.data
                 lma.data = data
                 assert (lma.data['flash_id'].min() >=0) # this should be true since the singletons were modified in the original data array above
-                lma.sort_status = 'got some flashes'
                 
     except GeneratorExit:
         lma.flash_objects = flashes
@@ -289,7 +288,7 @@ def cluster(a_file, output_path, outfile, params, logger, min_points=1, **kwargs
     T_vector = data['time'][:,None] / t_max
     XYZT = np.hstack((X_vector, T_vector))
     
-    lma.sort_status = 'in process'
+
     
     # Maximum 3 s flash length, normalized to the time separation scale
 
@@ -310,7 +309,6 @@ def cluster(a_file, output_path, outfile, params, logger, min_points=1, **kwargs
     # label_aggregator.close()
     # flash_object_maker.close()
     
-    print(lma.sort_status)
     print(len(lma.flash_objects))
                     
     return lma, lma.flash_objects

@@ -48,10 +48,10 @@ class FlashMetadata(object):
             self.sec_analyzed = int(secAnalyzedMatch.group(1))
 
 
-        formatMatch=matchDataFormatLine.search(headerText)
-        if formatMatch:
-            columns = formatMatch.group(1).split(',')
-            self.columns = [columnName.strip() for columnName in columns]
+        # formatMatch=matchDataFormatLine.search(headerText)
+        # if formatMatch:
+        #     columns = formatMatch.group(1).split(',')
+        #     self.columns = [columnName.strip() for columnName in columns]
 
     
 def poly_area(x,y):
