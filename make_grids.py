@@ -8,7 +8,7 @@ import numpy as np
 import tables
 
 from . import density_to_files
-from lmatools.lma_io import read_flashes, to_seconds
+from lmatools.io.LMA_h5_file import read_flashes, to_seconds
 
 from .coordinateSystems import MapProjection, GeographicSystem
 from six.moves import range

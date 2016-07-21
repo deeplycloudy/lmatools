@@ -8,7 +8,7 @@ from numpy.lib.recfunctions import append_fields
 from sklearn.cluster import DBSCAN
 
 from lmatools.stream.subset import coroutine, stream, chunk
-from lmatools.flashsort.autosort.LMAarrayFile import LMAdataFile
+from lmatools.io.LMAarrayFile import LMAdataFile
 from lmatools.coordinateSystems import GeographicSystem
 
 from .flash_stats import calculate_flash_stats, Flash, FlashMetadata
