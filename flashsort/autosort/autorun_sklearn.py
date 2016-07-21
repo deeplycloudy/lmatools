@@ -11,7 +11,7 @@ from lmatools.stream.subset import coroutine, stream, chunk
 from lmatools.io.LMAarrayFile import LMAdataFile
 from lmatools.coordinateSystems import GeographicSystem
 
-from .flash_stats import calculate_flash_stats, Flash, FlashMetadata
+from lmatools.flashsort.flash_stats import calculate_flash_stats, Flash, FlashMetadata
 from six.moves import range
 from six.moves import zip
 

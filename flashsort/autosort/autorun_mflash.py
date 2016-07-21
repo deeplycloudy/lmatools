@@ -8,7 +8,7 @@ import subprocess
 import logging, logging.handlers
 import datetime
 
-from .flash_stats import calculate_flash_stats, Flash, FlashMetadata
+from lmatools.flashsort.flash_stats import calculate_flash_stats, Flash, FlashMetadata
 from lmatools.io.LMAarrayFile import cat_LMA, LMAdataFile
 
 from .mflash import write_header

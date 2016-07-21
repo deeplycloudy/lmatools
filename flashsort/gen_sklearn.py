@@ -9,7 +9,7 @@ from sklearn.cluster import DBSCAN
 
 from lmatools.coordinateSystems import GeographicSystem
 
-from lmatools.flashsort.autosort.flash_stats import calculate_flash_stats, Flash
+from lmatools.flashsort.flash_stats import calculate_flash_stats, Flash
 from six.moves import range
 from six.moves import zip
 

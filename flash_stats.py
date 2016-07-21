@@ -8,7 +8,7 @@ import numpy as np
 from lmatools.io.LMA_h5_file import read_flashes
 from lmatools.density_to_files import coroutine, Branchpoint
 
-from lmatools.flashsort.autosort.flash_stats import hull_volume
+from lmatools.flashsort.flash_stats import hull_volume
 from six.moves import range
 from six.moves import zip
 
