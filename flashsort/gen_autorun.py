@@ -48,34 +48,3 @@ def sort_files(files, output_path, clusterer):
     return h5_outfiles
 
 
-"""         
-    Write instructions about how to convert an old run_files_with_params to
-        the new gen_flashes script.
-    Update lmaworkshop materials by following the above instructions 
-    
-    
-    Would like to better reflect the three steps of the normal workflow
-        in the structure of the project
-        - sort flashes
-        - calculate flash statistics and
-          produce derived products including gridded data
-        - make plots
-    Reorganize IO stuff outside flashsort directory, maybe including
-        LMADataset model, etc. Also get rid of unnecessary 
-        hierarchy in directory structure overall.
-        
-    Try moving mflash into new infrastructure
-        
-    Redo make_grids to add 3D stuff
-        
-    Add flash stats and time series code 
-    
-    Also TODO:
-    1. figure out how to use this method with old run_files_with_parmas 
-        without rewriting a bunch of driver scripts
-    2. fully decouple from things containing autosort in the input lines.
-        Maybe just pull everything out of that directory.
-    3. Get rid of old use of FlashMetadata class in mflash and autorun_sklearn, 
-        in favor of new style in gen_sklearn. It was never flash metadata anyway,
-        and belonged in an LMA dataset metadata class.
-    """
