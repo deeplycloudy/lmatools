@@ -9,8 +9,8 @@ import subprocess
 from lmatools.flashsort.gen_autorun import logger_setup, sort_files
 from lmatools.flashsort.gen_sklearn import DBSCANFlashSorter
 
-from lmatools.make_grids import grid_h5flashfiles, dlonlat_at_grid_center, write_cf_netcdf_latlon, write_cf_netcdf_3d_latlon
-from lmatools.multiples_nc import make_plot, make_plot_3d, read_file_3d
+from lmatools.grid.make_grids import grid_h5flashfiles, dlonlat_at_grid_center, write_cf_netcdf_latlon, write_cf_netcdf_3d_latlon
+from lmatools.vis.multiples_nc import make_plot, make_plot_3d, read_file_3d
 from six.moves import map
 
 

@@ -9,8 +9,8 @@ import subprocess
 from lmatools.flashsort.autosort.autorun import run_files_with_params, logger_setup
 from lmatools.flashsort.autosort.autorun_sklearn import cluster
 
-from lmatools.make_grids import grid_h5flashfiles, dlonlat_at_grid_center, write_cf_netcdf_latlon
-from lmatools.multiples_nc import make_plot
+from lmatools.grid.make_grids import grid_h5flashfiles, dlonlat_at_grid_center, write_cf_netcdf_latlon
+from lmatools.vis.multiples_nc import make_plot
 from six.moves import map
 
 

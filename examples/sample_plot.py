@@ -1,5 +1,5 @@
 from __future__ import absolute_import
-from LMAtools.multiples_nc import make_plot
+from LMAtools.vis.multiples_nc import make_plot
 
 n_cols=2
 

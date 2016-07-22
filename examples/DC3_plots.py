@@ -7,9 +7,9 @@ import glob
 from datetime import datetime, timedelta
 import subprocess
 
-from lmatools.make_grids import grid_h5flashfiles, dlonlat_at_grid_center, write_cf_netcdf_latlon
+from lmatools.grid.make_grids import grid_h5flashfiles, dlonlat_at_grid_center, write_cf_netcdf_latlon
 from lmatools.flashsort.autosort import autorun
-from lmatools.multiples_nc import make_plot
+from lmatools.vis.multiples_nc import make_plot
 from six.moves import map
 
 # Meant to be run on a just one day's worth of processed data

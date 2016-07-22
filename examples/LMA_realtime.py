@@ -72,8 +72,8 @@ h5_filenames = run_files_with_params([LMA_ASCII_outfile], LMA_DATA_DIR, params, 
 # h5_filenames = glob.glob(h5_path_searcher)
 
 # ----- Create NetCDF grids ----- 
-from lmatools.make_grids import grid_h5flashfiles
-from lmatools.AWIPS_tools import write_AWIPS_netcdf_grid
+from lmatools.grid.make_grids import grid_h5flashfiles
+from lmatools.grid.AWIPS_tools import write_AWIPS_netcdf_grid
 
 x_coord, y_coord, lons, lats, extent_density_grid, AWIPS_outfiles, field_names = grid_h5flashfiles(
             h5_filenames, start_time, end_time, frame_interval=frame_interval, 
