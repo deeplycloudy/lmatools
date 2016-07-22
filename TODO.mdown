@@ -1,3 +1,5 @@
+Plots of 3D grids are oddly populated and color-scaled. 
+
 Write instructions about how to convert an old run_files_with_params to
     the new gen_flashes script.
 Update lmaworkshop materials by following the above instructions 
@@ -19,8 +21,6 @@ Reorganize IO stuff outside flashsort directory, maybe including
     hierarchy in directory structure overall.
     
 Try moving mflash into new infrastructure
-    
-Redo make_grids to add 3D stuff
     
 Add flash stats and time series code 
 
