@@ -35,7 +35,7 @@ y_bnd = (y0-200e3, y0+200e3)
 now = datetime.datetime.now()
 
 # ----- Process raw LMA data every minute into a 1-min-long file ----- 
-from lmatools.fakeLMA import fake_LMA_file, late2011_header
+from lmatools.io.fakeLMA import fake_LMA_file, late2011_header
 LMA_ASCII_outfile = fake_LMA_file(year=now.year, month=now.month, day=now.day, hour=now.hour, minute=now.minute, second=0, 
                 duration=60, header_template=late2011_header, outpath=LMA_DATA_DIR)
 print("Wrote ", LMA_ASCII_outfile)
