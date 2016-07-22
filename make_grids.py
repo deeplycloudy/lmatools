@@ -8,6 +8,7 @@ import numpy as np
 import tables
 
 from . import density_to_files
+from lmatools.stream.subset import broadcast
 from lmatools.io.LMA_h5_file import read_flashes, to_seconds
 
 from .coordinateSystems import MapProjection, GeographicSystem
@@ -513,7 +514,7 @@ def grid_h5flashfiles(h5_filenames, start_time, end_time,
         mean_footprint_target_3d = density_to_files.extent_density_3d(x0, y0, z0, dx, dy, dz, accum_footprint_3d, weight_key='area')
 
 
-        spew_to_density_types = density_to_files.broadcast( ( 
+        spew_to_density_types = broadcast( ( 
                     density_to_files.project('lon', 'lat', 'alt', mapProj, geoProj, event_density_target, use_flashes=False),
                     density_to_files.project('init_lon', 'init_lat', 'init_alt', mapProj, geoProj, init_density_target, use_flashes=True),
                     density_to_files.project('lon', 'lat', 'alt', mapProj, geoProj, extent_density_target, use_flashes=False),
