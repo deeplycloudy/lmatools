@@ -4,7 +4,7 @@ import glob
 import gc
 import numpy as np
 from lmatools.stream.subset import coroutine
-from .density_tools import unique_vectors
+from lmatools.density_tools import unique_vectors
 from six.moves import zip
 
 # -------------------------------------------------------------------------- 

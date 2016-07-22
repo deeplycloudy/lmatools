@@ -11,7 +11,7 @@ from . import density_to_files
 from lmatools.stream.subset import broadcast
 from lmatools.io.LMA_h5_file import read_flashes, to_seconds
 
-from .coordinateSystems import MapProjection, GeographicSystem
+from lmatools.coordinateSystems import MapProjection, GeographicSystem
 from six.moves import range
     
 
