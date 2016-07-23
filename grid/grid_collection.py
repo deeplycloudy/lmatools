@@ -24,7 +24,7 @@ class LMAgridFileCollection(object):
             collection of files:
             
             >>> for t, xedge, yedge, data in NCs:
-            >>>     print t
+            >>>     print(t)
 
             Or, if you know a time accurately, you can do:
             >>> from datetime import datetime

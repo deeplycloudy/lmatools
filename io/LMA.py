@@ -6,7 +6,8 @@ from lmatools.io.LMAarrayFile import LMAdataFile
 
 class LMADataset(object):    
     def __init__(self, filename=None, file_mask_length=6, 
-                 data=None, basedate=None, sec_analyzed=None, header=''):
+                 data=None, basedate=None, startdate=None,
+                 sec_analyzed=None, header=''):
         """ Create a new LMA Dataset which can be used in a standardized way 
             by the clustering routines and written to a standardized HDF5 
             output format.
@@ -17,12 +18,12 @@ class LMADataset(object):
             Data may be loaded in two ways.
         
             1. From an LMA ASCII data file. Use the filename kwarg.
-                If the file has a hexadecimal station mask length
-                that is different than six characters, use the file_mask_length
-                keyword argument.
+               If the file has a hexadecimal station mask length
+               that is different than six characters, use the file_mask_length
+               keyword argument.
         
-            2. Provide data directly using the data, basedate, and sec_analyzed
-               kwargs. data is an array with a named dtype of 
+            2. Provide data directly using the data, basedate, startdate
+               and sec_analyzed kwargs. data is an array with a named dtype of 
                (minimally, see below)
                the_dtype = [('time', '<f8'), ('latitude', '<f8'), 
                            ('longitude', '<f8'), ('altitude', '<f8'), 
@@ -42,6 +43,10 @@ class LMADataset(object):
             Attributes: 
             basedate: datetime object against which the time coordinate in data
                  is measured. UTC year, month, day.
+            startdate: the actual start date of the LMA data, including hour
+                 minute, and second. For a collection of LMAData objects, a list
+                 of startdates should correspond to the starts of the chunks of 
+                 data contained in the LMAdata objects.
             sec_analyzed: the total number of seconds covered by data.
                  May differ from t.max() - t.min(). For example, the standard
                  LMA processing produces ten minute files, which may only contain
@@ -76,6 +81,9 @@ class LMADataset(object):
             if basedate is None:
                 e = "Please provide basedate when manually loading data"
                 raise AttributeError(e)
+            if startdate is None:
+                e = "Please provide startdate when manually loading data"
+                raise AttributeError(e)
             if sec_analyzed is None:
                 e = "Please provide sec_analyzed when manually loading data"
                 raise AttributeError(e)
@@ -88,22 +96,22 @@ class LMADataset(object):
         
     @property
     def startyear(self):
-        return self.basedate.year
+        return self.startdate.year
     @property
     def startmonth(self):
-        return self.basedate.month
+        return self.startdate.month
     @property
     def startday(self):
-        return self.basedate.day
+        return self.startdate.day
     @property
     def starthour(self):
-        return self.basedate.hour
+        return self.startdate.hour
     @property
     def startminute(self):
-        return self.basedate.minute
+        return self.startdate.minute
     @property
     def startsecond(self):
-        return self.basedate.second
+        return self.startdate.second
         
     @property
     def metadata(self):
@@ -145,6 +153,10 @@ class LMADataset(object):
         self.header = ''.join(lma.header)
         self.basedate = datetime.datetime(lma.startyear, 
                             lma.startmonth, lma.startday)
+        self.startdate = datetime.datetime(lma.startyear, 
+                            lma.startmonth, lma.startday, 
+                            lma.starthour, lma.startminute, 
+                            lma.startsecond)
         self.sec_analyzed = lma.sec_analyzed
         self.data = lma.data
         # return (lma, data)

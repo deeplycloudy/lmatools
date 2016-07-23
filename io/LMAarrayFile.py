@@ -1,6 +1,6 @@
 from __future__ import absolute_import
 from __future__ import print_function
-import os, gzip, re
+import os, re #, gzip
 import numpy as np
 import logging
 import subprocess
