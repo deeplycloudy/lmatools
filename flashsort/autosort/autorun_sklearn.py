@@ -1,3 +1,5 @@
+from __future__ import absolute_import
+from __future__ import print_function
 import logging
 
 import numpy as np
@@ -6,10 +8,12 @@ from numpy.lib.recfunctions import append_fields
 from sklearn.cluster import DBSCAN
 
 from lmatools.stream.subset import coroutine, stream, chunk
-from lmatools.flashsort.autosort.LMAarrayFile import LMAdataFile
+from lmatools.io.LMAarrayFile import LMAdataFile
 from lmatools.coordinateSystems import GeographicSystem
 
-from flash_stats import calculate_flash_stats, Flash, FlashMetadata
+from lmatools.flashsort.flash_stats import calculate_flash_stats, Flash, FlashMetadata
+from six.moves import range
+from six.moves import zip
 
 
 
@@ -36,7 +40,7 @@ def cluster_chunk_pairs(clustered_output_target, min_points=10):
                 chunk1 = chunk2[0:0,:]
                 id1 = id2[0:0]
             else:
-                print id1.shape, id2.shape
+                print(id1.shape, id2.shape)
                 conc = np.vstack((chunk1, chunk2)) 
                 concID = np.concatenate((id1, id2))
                         
@@ -135,12 +139,16 @@ def aggregate_ids(target):
 
             del v, orig_labels, labels, IDs
     except GeneratorExit:
-        print "done with {0} total points".format(total)
-        point_labels = np.concatenate(point_labels)
-        all_IDs = np.concatenate(all_IDs)
-        print "sending {0} total points".format(total)
+        print("done with {0} total points".format(total))
+        if total == 0:
+            point_labels = np.asarray(point_labels, dtype=int)
+            point_labels = np.asarray(all_IDs, dtype=int)
+        else:
+            point_labels = np.concatenate(point_labels)
+            all_IDs = np.concatenate(all_IDs)            
+        print("sending {0} total points".format(total))
         target.send((unique_labels, point_labels, all_IDs))
-        print "sent {0} total points".format(total)
+        print("sent {0} total points".format(total))
         target.close()
 
 @coroutine
@@ -159,7 +167,9 @@ def create_flash_objs(lma, good_data):
             
             # add flash_id column
             empty_labels = np.empty_like(point_labels)
-            data = append_fields(good_data, ('flash_id',), (empty_labels,))
+            # placing good_data in a list due to this bug when good_data has length 1
+            # http://stackoverflow.com/questions/36440557/typeerror-when-appending-fields-to-a-structured-array-of-size-one
+            data = append_fields([good_data], ('flash_id',), (empty_labels,))
 
             # all_IDs gives the index in the original data array to
             # which each point_label corresponds
@@ -167,16 +177,17 @@ def create_flash_objs(lma, good_data):
             
             # In the case of no data in the file, lma.data.shape will have
             # length zero, i.e., a 0-d array
-            if len(data.shape) == 0:
+            
+            if (len(data.shape) == 0) | (data.shape[0] == 0):
                 # No data
                 flashes = []
             else:
                 # work first with non-singleton flashes 
                 # to have strictly positive flash ids
-                print data.shape
+                print(data.shape)
                 singles = (data['flash_id'] == -1)
                 non_singleton = data[ np.logical_not(singles) ]
-                print non_singleton['flash_id'].shape
+                print(non_singleton['flash_id'].shape)
                 order = np.argsort(non_singleton['flash_id'])
                 
                 ordered_data = non_singleton[order]
@@ -188,7 +199,7 @@ def create_flash_objs(lma, good_data):
                 try:
                     assert max_flash_id == max(unique_labels)
                 except AssertionError:
-                    print "Max flash ID {0} is not as expected from unique labels {1}".format(max_flash_id, max(unique_labels))
+                    print("Max flash ID {0} is not as expected from unique labels {1}".format(max_flash_id, max(unique_labels)))
                     
                 boundaries, = np.where(flid[1:]-flid[:-1])    # where indices are nonzero
                 boundaries = np.hstack(([0], boundaries+1))
@@ -196,11 +207,11 @@ def create_flash_objs(lma, good_data):
                 max_idx = len(flid) #- 1
                 slice_lower_edges = tuple(boundaries)
                 slice_upper_edges = slice_lower_edges[1:] + (max_idx,)
-                slices = zip(slice_lower_edges, slice_upper_edges)
+                slices = list(zip(slice_lower_edges, slice_upper_edges))
 
                 flashes = [ Flash(ordered_data[slice(*sl)]) for sl in slices ]
                 
-                print "finished non-singletons"
+                print("finished non-singletons")
                 
                 # Now deal with the nonsingleton points. 
                 # Each singleton point will have a high flash_id,
@@ -215,7 +226,7 @@ def create_flash_objs(lma, good_data):
                 singleton_flashes = [ Flash(singleton[i:i+1]) for i in range(n_singles)]
                 
                 data[singles] = singleton
-                print "finished singletons"
+                print("finished singletons")
                 
                 flashes += singleton_flashes
                 
@@ -232,7 +243,6 @@ def create_flash_objs(lma, good_data):
                 lma.raw_data = lma.data
                 lma.data = data
                 assert (lma.data['flash_id'].min() >=0) # this should be true since the singletons were modified in the original data array above
-                lma.sort_status = 'got some flashes'
                 
     except GeneratorExit:
         lma.flash_objects = flashes
@@ -268,23 +278,29 @@ def cluster(a_file, output_path, outfile, params, logger, min_points=1, **kwargs
     Xc, Yc, Zc = geoCS.toECEF( ctr_lon, ctr_lat, ctr_alt)
     X, Y, Z = X-Xc, Y-Yc, Z-Zc
     
-    print "sorting {0} total points".format(data.shape[0])
+    print("sorting {0} total points".format(data.shape[0]))
 
-    D_max, t_max = 3.0e3, 0.15 # m, s
+    D_max, t_max = params['distance'], params['thresh_critical_time'] # m, s
+    duration_max = params['thresh_duration']
 
     IDs = np.arange(X.shape[0])
     X_vector = np.hstack((X[:,None],Y[:,None],Z[:,None])) / D_max
     T_vector = data['time'][:,None] / t_max
     XYZT = np.hstack((X_vector, T_vector))
     
-    lma.sort_status = 'in process'
+
     
     # Maximum 3 s flash length, normalized to the time separation scale
 
     flash_object_maker = create_flash_objs(lma, data)
     label_aggregator = aggregate_ids(flash_object_maker)
     clusterer = cluster_chunk_pairs(label_aggregator, min_points=min_points)
-    chunker = chunk(XYZT[:,-1].min(), 3.0/.15,  clusterer)
+    if XYZT.shape[0] < 1:
+        # no data, so minimum time is zero. Assume nothing is done with the data,
+        # so that time doesn't matter. No flashes can result.
+        chunker = chunk(0, duration_max/t_max,  clusterer)
+    else:
+        chunker = chunk(XYZT[:,-1].min(), duration_max/t_max,  clusterer)
     stream(XYZT.astype('float64'), IDs,chunker)
     flash_object_maker.close()
     
@@ -293,8 +309,7 @@ def cluster(a_file, output_path, outfile, params, logger, min_points=1, **kwargs
     # label_aggregator.close()
     # flash_object_maker.close()
     
-    print lma.sort_status
-    print len(lma.flash_objects)
+    print(len(lma.flash_objects))
                     
     return lma, lma.flash_objects
     

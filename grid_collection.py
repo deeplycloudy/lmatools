@@ -1,8 +1,14 @@
-import numpy as np
+from __future__ import absolute_import
+from __future__ import print_function
+import glob
 from datetime import datetime, timedelta
-from lmatools.multiples_nc import centers_to_edges
-import pupynere as nc
 import itertools
+
+import numpy as np
+
+from lmatools.multiples_nc import centers_to_edges
+import scipy.io.netcdf as nc
+from six.moves import range
         
 class LMAgridFileCollection(object):
     def __init__(self, filenames, grid_name, 
@@ -23,7 +29,7 @@ class LMAgridFileCollection(object):
             Or, if you know a time accurately, you can do:
             >>> from datetime import datetime
             >>> t = datetime(2013,6,6,3,0,0)
-            >>> xedge, yedge, data = NCS.data_for_time(t)
+            >>> xedge, yedge, data = NCs.data_for_time(t)
 
             The data have been oriented such that a call to matplotlib's
             pcolormesh(xedge,yedge,data)
@@ -74,7 +80,7 @@ class LMAgridFileCollection(object):
     def _all_times(self):
         for f in self._filenames:
             for t in self._frame_times_for_file(f):
-                yield t        
+                yield t    
         
     def _frame_times_for_file(self, fname):
         """ Called once by init to set up frame lookup tables and yield 
@@ -92,6 +98,39 @@ class LMAgridFileCollection(object):
             self._time_lookup[frame_start] = (fname, i)
             yield frame_start
         f.close()
+        
+    def get_projection(self):
+        """ Returns GeographicSystem and MapProjection instances from
+            lmatools.coordinateSystems corresponding
+            to the coordinate system specified by the metadata of the
+            first NetCDF file in self._filenames.
+        """
+        from lmatools.coordinateSystems import GeographicSystem, MapProjection
+        geosys = GeographicSystem()
+        
+        f = nc.NetCDFFile(self._filenames[0])
+        
+        # Surely someone has written an automated library to parse coordinate 
+        # reference data from CF-compliant files.
+        if 'Lambert_Azimuthal_Equal_Area' in list(f.variables.keys()):
+            nc_proj = f.variables['Lambert_Azimuthal_Equal_Area']
+            proj_name = 'laea'
+            ctrlon, ctrlat  = (nc_proj.longitude_of_projection_origin,
+                                      nc_proj.latitude_of_projection_origin,)
+            try:
+                ctralt = nc_proj.altitude_of_projection_origin
+            except AttributeError:
+                print("No altitude attribute in NetCDF projection data, setting to 0.0")
+                ctralt = 0.0
+            mapproj = MapProjection(proj_name, ctrLat = ctrlat, ctrLon=ctrlon, 
+                                     lat_0=ctrlat, lon_0=ctrlon)
+            # print geosys.fromECEF(*mapproj.toECEF((0,0), (0,0), (0,0)))
+            return geosys, mapproj
+        else:
+            print("projection not found")    
+            return geosys, None
+
+        
                     
     def __iter__(self):
         for t in self.times:

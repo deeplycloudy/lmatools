@@ -1,3 +1,4 @@
+from __future__ import absolute_import
 import pyproj as proj4 
 from numpy import *
 from numpy.linalg import norm
@@ -94,7 +95,7 @@ class MapProjection(CoordinateSystem):
             cx, cy, cz = self.fromECEF(ex, ey, ez)
         else:
             cx, cy, cz = 0, 0, 0
-        return cx, cy, cz
+        return cx, cy, cz    
     
     def toECEF(self, x, y, z):
         x += self.cx
@@ -202,8 +203,8 @@ class RadarCoordinateSystem(CoordinateSystem):
         el *= 180.0 / pi
         
         return r, el
-            
-    def toECEF(self, r, az, el):
+        
+    def toLonLatAlt(self, r, az, el):
         """Convert slant range r, azimuth az, and elevation el to ECEF system"""
         geoSys = GeographicSystem()
         geodetic = proj4.Geod(ellps='WGS84')
@@ -215,6 +216,11 @@ class RadarCoordinateSystem(CoordinateSystem):
         
         dist, z = self.getGroundRangeHeight(r,el)
         lon, lat, backAz = geodetic.fwd([self.ctrLon]*n, [self.ctrLat]*n, az, dist) 
+        return lon, lat, z
+            
+    def toECEF(self, r, az, el):
+        geoSys = GeographicSystem()
+        lon, lat, z = self.toLonLatAlt(r, az, el)
         return geoSys.toECEF(lon, lat, z.ravel())
         
     def fromECEF(self, x, y, z):
