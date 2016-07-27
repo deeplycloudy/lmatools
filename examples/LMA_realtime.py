@@ -35,7 +35,7 @@ y_bnd = (y0-200e3, y0+200e3)
 now = datetime.datetime.now()
 
 # ----- Process raw LMA data every minute into a 1-min-long file ----- 
-from lmatools.fakeLMA import fake_LMA_file, late2011_header
+from lmatools.io.fakeLMA import fake_LMA_file, late2011_header
 LMA_ASCII_outfile = fake_LMA_file(year=now.year, month=now.month, day=now.day, hour=now.hour, minute=now.minute, second=0, 
                 duration=60, header_template=late2011_header, outpath=LMA_DATA_DIR)
 print("Wrote ", LMA_ASCII_outfile)
@@ -72,8 +72,8 @@ h5_filenames = run_files_with_params([LMA_ASCII_outfile], LMA_DATA_DIR, params, 
 # h5_filenames = glob.glob(h5_path_searcher)
 
 # ----- Create NetCDF grids ----- 
-from lmatools.make_grids import grid_h5flashfiles
-from lmatools.AWIPS_tools import write_AWIPS_netcdf_grid
+from lmatools.grid.make_grids import grid_h5flashfiles
+from lmatools.grid.AWIPS_tools import write_AWIPS_netcdf_grid
 
 x_coord, y_coord, lons, lats, extent_density_grid, AWIPS_outfiles, field_names = grid_h5flashfiles(
             h5_filenames, start_time, end_time, frame_interval=frame_interval, 

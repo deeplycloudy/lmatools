@@ -8,8 +8,8 @@ import subprocess
 import logging, logging.handlers
 import datetime
 
-from .flash_stats import calculate_flash_stats, Flash, FlashMetadata
-from .LMAarrayFile import cat_LMA
+from lmatools.flashsort.flash_stats import calculate_flash_stats, Flash, FlashMetadata
+from lmatools.io.LMAarrayFile import cat_LMA
 
 
 
@@ -26,7 +26,7 @@ def logger_setup(logpath):
 
 
 def write_output(outfile, flashes, orig_LMA_file, metadata=None):
-    from .write_flashes import write_h5
+    from lmatools.io.LMA_h5_write import write_h5
     if metadata is None:
         # use metadata from the first flash as the canonical metadata, 
         #   since all flashes were sorted fromt the same LYLOUT file

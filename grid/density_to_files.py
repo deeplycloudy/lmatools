@@ -3,51 +3,16 @@ from __future__ import print_function
 import glob
 import gc
 import numpy as np
-
-from .density_tools import unique_vectors
+from lmatools.stream.subset import coroutine
+from lmatools.density_tools import unique_vectors
 from six.moves import zip
 
 # -------------------------------------------------------------------------- 
 # ----- This section could be replaced with stormdrain.pipeline imports ----
 # -------------------------------------------------------------------------- 
 
-def coroutine(func):
-    def start(*args,**kwargs):
-        cr = func(*args,**kwargs)
-        next(cr)
-        return cr
-    return start
 
-@coroutine
-def broadcast(targets):
-    while True:
-        stuff = (yield)
-        for target in targets:
-            target.send(stuff)
-        del stuff
 
-class Branchpoint(object):
-    """ Class-based version useful for tracking a changing state or adjusting targets
-        at a later time. Some '.dot' access overhead this way, of course.
-
-        >>> brancher = Branchpoint( [target1, target2, ...] )
-
-        Allows for flexible branching by maintaining a set (in the formal sense) of targets.
-        brancher.targets.append(newtarget)
-        brancher.targets.remove(existingtarget)
-    """
-
-    def __init__(self, targets): 
-        """ Accepts a sequence of targets """
-        self.targets = set(targets) # this perhaps should be a set and not a list, so it remains unique
-
-    @coroutine
-    def broadcast(self):
-        while True:
-            stuff = (yield)
-            for target in self.targets:
-                target.send(stuff)
-            del stuff
             
 # class map_projector(object):
 #     def __init__(self, ctr_lat, ctr_lon, proj_name='eqc'):
@@ -246,6 +211,32 @@ def footprint_mean(flash_id_key='flash_id', area_key='area'):
         del events, flash, x, y, z, x_i, y_i
 
 @coroutine
+def footprint_mean_3d(flash_id_key='flash_id', area_key='area'):
+    """ Takes x, y, z flash locations and gets 
+        Extent density unique pixels, average all flashes 
+    """
+    while True:
+        events, flash, x,y,z = (yield)
+        # print 'Doing extent density',
+        x_i = np.floor( (x-x0)/dx ).astype('int32')
+        y_i = np.floor( (y-y0)/dy ).astype('int32')
+        z_i = np.floor( (z-z0)/dz ).astype('int32')
+        if len(x_i) > 0:
+            footprints = dict(list(zip(flash[flash_id_key], flash[area_key])))
+            # print 'with points numbering', len(x_i)
+            unq_idx = unique_vectors(x_i, y_i, z_i, events['flash_id'])
+            # if x[unq_idx].shape[0] > 1:
+            fl_id = events['flash_id'][unq_idx]
+            areas = [footprints[fi] for fi in fl_id] #puts areas in same order as x[unq_idx], y[unq_idx]
+            # counts normalized by areas 
+            target.send((x[unq_idx],y[unq_idx],z[unq_idx],areas))
+            del footprints, unq_idx, fl_id, areas
+        # else:
+            # print ''
+        del events, flash, x, y, z, x_i, y_i, z_i
+
+
+@coroutine
 def point_density(target):
     """ Sends event x, y, z location directly
     """
@@ -256,8 +247,19 @@ def point_density(target):
             print('with points numbering', len(x))
             target.send((x, y, None))
         del events, flash ,x,y,z
-        # else:
-            # print ''
+
+@coroutine
+def point_density_3d(target):
+    """ Sends event x, y, z location directly
+    """
+    while True:
+        events, flash, x, y, z = (yield)
+        # print 'Doing point density',
+        if len(x) > 0:
+            print('with points numbering', len(x))
+            target.send((x, y, z, None))
+        del events, flash ,x,y,z
+
 
 @coroutine
 def extent_density(x0, y0, dx, dy, target, flash_id_key='flash_id', weight_key=None):
@@ -291,6 +293,42 @@ def extent_density(x0, y0, dx, dy, target, flash_id_key='flash_id', weight_key=N
         # else:
             # print ''
         del events, flash, x, y, z, x_i, y_i
+
+
+@coroutine
+def extent_density_3d(x0, y0, z0, dx, dy, dz, target, flash_id_key='flash_id', weight_key=None):
+    """ This function assumes a regular grid in x and y with spacing dx, dy
+        
+        x0, y0 is the x coordinate of the lower left corner of the lower-left grid cell, 
+        i.e., the lower left node of the grid mesh in cartesian space
+        
+        Eliminates duplicate points in gridded space and sends the reduced
+        set of points to the target.
+    """
+    while True:
+        # assumes x,y,z are in same order as events
+        events, flash, x,y,z = (yield)
+        # print('Doing extent density',)
+        x_i = np.floor( (x-x0)/dx ).astype('int32')
+        y_i = np.floor( (y-y0)/dy ).astype('int32')
+        z_i = np.floor( (z-z0)/dz ).astype('int32')
+        print(len(x_i))
+        if len(x_i) > 0:
+            print('extent with points numbering', len(x_i), ' with weights', weight_key)
+            unq_idx = unique_vectors(x_i, y_i, z_i, events[flash_id_key])
+            # if x[unq_idx].shape[0] > 1:
+            if weight_key <> None:
+                weight_lookup = dict(list(zip(flash[flash_id_key], flash[weight_key])))
+                weights = [weight_lookup[fi] for fi in events[unq_idx]['flash_id']] #puts weights in same order as x[unq_idx], y[unq_idx]
+                del weight_lookup
+            else:
+                weights = None
+            target.send((x[unq_idx], y[unq_idx], z[unq_idx], weights)) 
+            del weights, unq_idx
+        # else:
+            # print ''
+        del events, flash, x, y, z, x_i, y_i, z_i
+
 
 @coroutine
 def accumulate_points_on_grid(grid, xedge, yedge, out=None, label=''):
@@ -338,9 +376,55 @@ def accumulate_points_on_grid(grid, xedge, yedge, out=None, label=''):
             gc.collect()
     except GeneratorExit:
         out['out'] = grid
-        
-        
-    
+
+@coroutine
+def accumulate_points_on_grid_3d(grid, xedge, yedge, zedge, out=None, label=''):
+    assert xedge.shape[0] == grid.shape[0]+1
+    assert yedge.shape[0] == grid.shape[1]+1
+    assert zedge.shape[0] == grid.shape[2]+1
+    if out == None:
+        out = {}
+    # grid = None
+    try:
+        while True:
+            x, y, z, weights = (yield)
+            if len(x) > 0:
+                x = np.atleast_1d(x)
+                y = np.atleast_1d(y)
+                z = np.atleast_1d(z)
+                print('accumulating ', len(x), 'points for ', label)
+                count, edges = np.histogramdd((x,y,z), bins=(xedge, yedge, zedge), weights=None, normed=False)    
+                
+                if weights != None:
+                    # histogramdd sums up weights in each bin for normed=False
+                    total, edges = np.histogramdd((x,y,z), bins=(xedge, yedge, zedge), weights=weights, normed=False)
+                    # return the mean of the weights in each bin
+                    bad = (count <= 0)
+                    count = np.asarray(total, dtype='float32')/count
+                    count[bad] = 0.0 
+                    
+                    del total, edges, bad
+                    
+                # try:
+                    # count, edges = np.histogramdd((x,y), bins=(xedge, yedge), weights=weights)
+                # except AttributeError:
+                #     # if x,y are each scalars, need to make 1D arrays
+                #     x = np.asarray((x,))
+                #     y = np.asarray((y,))
+                #     count, edges = np.histogramdd((x,y), bins=(xedge, yedge), weights=weights)
+                # using += (as opposed to grid = grid + count) is essential
+                # so that the user can retain a reference to the grid object
+                # outside this routine.
+                if grid == None:
+                    grid = count
+                    out['out'] = grid
+                else:
+                    grid += count.astype(grid.dtype)
+                del count
+            del x, y, z, weights
+            gc.collect()
+    except GeneratorExit:
+        out['out'] = grid
         
 # if __name__ == '__main__':
 #     do_profile=False
