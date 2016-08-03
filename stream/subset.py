@@ -33,8 +33,7 @@ def coroutine(func):
         next(cr)
         return cr
     return start
-
-
+    
 
 def split_clusters(data,labels):
     no_single = set(labels)
@@ -77,3 +76,34 @@ def chunk(start_time, max_duration, target, t_idx=-1):
         target.send((np.asarray(v_buffer), np.asarray(i_buffer)))
         target.close()
 
+@coroutine
+def broadcast(targets):
+    while True:
+        stuff = (yield)
+        for target in targets:
+            target.send(stuff)
+        del stuff
+
+
+class Branchpoint(object):
+    """ Class-based version useful for tracking a changing state or adjusting targets
+        at a later time. Some '.dot' access overhead this way, of course.
+
+        >>> brancher = Branchpoint( [target1, target2, ...] )
+
+        Allows for flexible branching by maintaining a set (in the formal sense) of targets.
+        brancher.targets.append(newtarget)
+        brancher.targets.remove(existingtarget)
+    """
+
+    def __init__(self, targets): 
+        """ Accepts a sequence of targets """
+        self.targets = set(targets) # this perhaps should be a set and not a list, so it remains unique
+
+    @coroutine
+    def broadcast(self):
+        while True:
+            stuff = (yield)
+            for target in self.targets:
+                target.send(stuff)
+            del stuff

@@ -4,7 +4,7 @@ from __future__ import absolute_import
 import glob
 from datetime import datetime
 
-from LMAtools.make_grids import grid_h5flashfiles
+from LMAtools.grid.make_grids import grid_h5flashfiles
 
 
 h5_filenames = glob.glob('LYL*.flash.h5')

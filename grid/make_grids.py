@@ -8,9 +8,16 @@ import numpy as np
 import tables
 
 from . import density_to_files
+<<<<<<< HEAD:make_grids.py
 from lmatools.io.LMA_h5_file import read_flashes, to_seconds
 
 from .coordinateSystems import MapProjection, GeographicSystem
+=======
+from lmatools.stream.subset import broadcast
+from lmatools.io.LMA_h5_file import read_flashes, to_seconds
+
+from lmatools.coordinateSystems import MapProjection, GeographicSystem
+>>>>>>> 877fb32c26c34947a91aa3e27f815967bc9a17f2:grid/make_grids.py
 from six.moves import range
     
 
@@ -255,22 +262,34 @@ def write_cf_netcdf_3d(outfile, t_start, t, xloc, yloc, zloc, lon_for_x, lat_for
     times.long_name="time"
     times.units = "seconds since %s" % t_start.strftime('%Y-%m-%d %H:%M:%S')
     
+<<<<<<< HEAD:make_grids.py
     ########################################################################################
     # Data type changed from 'd' to 'f' as there were previuos issues using the original   #
     # format. This hasn't been tested yet with scipy.io.netcdf so any future errors may    #
     # be due to this change, revert if needed.                                             #
     ########################################################################################
     lons = nc_out.createVariable('lons', 'f', ('nx','ny','nz') )#, filters=no_compress)
+=======
+    lons = nc_out.createVariable('lons', 'd', ('nx','ny','nz') )#, filters=no_compress)
+>>>>>>> 877fb32c26c34947a91aa3e27f815967bc9a17f2:grid/make_grids.py
     lons.long_name="longitude"
     lons.standard_name="longitude"
     lons.units = "degrees_east"
     
+<<<<<<< HEAD:make_grids.py
     lats = nc_out.createVariable('lats', 'f', ('nx','ny', 'nz') )#, filters=no_compress)
+=======
+    lats = nc_out.createVariable('lats', 'd', ('nx','ny', 'nz') )#, filters=no_compress)
+>>>>>>> 877fb32c26c34947a91aa3e27f815967bc9a17f2:grid/make_grids.py
     lats.long_name="latitude"
     lats.standard_name="latitude"
     lats.units = "degrees_north"
     
+<<<<<<< HEAD:make_grids.py
     alts = nc_out.createVariable('alts', 'f', ('nx','ny', 'nz') )#, filters=no_compress)
+=======
+    alts = nc_out.createVariable('alts', 'd', ('nx','ny', 'nz') )#, filters=no_compress)
+>>>>>>> 877fb32c26c34947a91aa3e27f815967bc9a17f2:grid/make_grids.py
     alts.long_name="altitude"
     alts.standard_name="altitude"
     alts.units = "meters"
@@ -518,7 +537,11 @@ def grid_h5flashfiles(h5_filenames, start_time, end_time,
         mean_footprint_target_3d = density_to_files.extent_density_3d(x0, y0, z0, dx, dy, dz, accum_footprint_3d, weight_key='area')
 
 
+<<<<<<< HEAD:make_grids.py
         spew_to_density_types = density_to_files.broadcast( ( 
+=======
+        spew_to_density_types = broadcast( ( 
+>>>>>>> 877fb32c26c34947a91aa3e27f815967bc9a17f2:grid/make_grids.py
                     density_to_files.project('lon', 'lat', 'alt', mapProj, geoProj, event_density_target, use_flashes=False),
                     density_to_files.project('init_lon', 'init_lat', 'init_alt', mapProj, geoProj, init_density_target, use_flashes=True),
                     density_to_files.project('lon', 'lat', 'alt', mapProj, geoProj, extent_density_target, use_flashes=False),
