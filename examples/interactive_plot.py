@@ -15,7 +15,6 @@
 """
 
 from __future__ import absolute_import
-from lmatools.multiples_nc import make_plot
 from lmatools.vis.multiples_nc import make_plot
 f,p,start,fname=make_plot('LMA_20040622_052000_600_10src_flash_extent.nc', 'flash_extent', n_cols=1, do_save=False)
 
