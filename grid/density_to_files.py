@@ -3,20 +3,14 @@ from __future__ import print_function
 import glob
 import gc
 import numpy as np
-<<<<<<< HEAD:density_to_files.py
 
 from .density_tools import unique_vectors
-=======
-from lmatools.stream.subset import coroutine
-from lmatools.density_tools import unique_vectors
->>>>>>> 877fb32c26c34947a91aa3e27f815967bc9a17f2:grid/density_to_files.py
 from six.moves import zip
 
 # -------------------------------------------------------------------------- 
 # ----- This section could be replaced with stormdrain.pipeline imports ----
 # -------------------------------------------------------------------------- 
 
-<<<<<<< HEAD:density_to_files.py
 def coroutine(func):
     def start(*args,**kwargs):
         cr = func(*args,**kwargs)
@@ -42,10 +36,18 @@ class Branchpoint(object):
         brancher.targets.append(newtarget)
         brancher.targets.remove(existingtarget)
     """
-=======
->>>>>>> 877fb32c26c34947a91aa3e27f815967bc9a17f2:grid/density_to_files.py
 
+    def __init__(self, targets): 
+        """ Accepts a sequence of targets """
+        self.targets = set(targets) # this perhaps should be a set and not a list, so it remains unique
 
+    @coroutine
+    def broadcast(self):
+        while True:
+            stuff = (yield)
+            for target in self.targets:
+                target.send(stuff)
+            del stuff
             
 # class map_projector(object):
 #     def __init__(self, ctr_lat, ctr_lon, proj_name='eqc'):
@@ -403,10 +405,7 @@ def accumulate_points_on_grid(grid, xedge, yedge, out=None, label=''):
                     grid = count
                     out['out'] = grid
                 else:
-<<<<<<< HEAD:density_to_files.py
                     #Looks like changes here are fine.
-=======
->>>>>>> 877fb32c26c34947a91aa3e27f815967bc9a17f2:grid/density_to_files.py
                     grid += count.astype(grid.dtype)
                 del count
             del x, y, weights
