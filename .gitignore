@@ -1,7 +1,0 @@
-.DS_Store
-*.pyc
-*.bak
-flashsort/autosort/makefile
-flashsort/autosort/mflash.py
-flashsort/autosort/mflashparams.py
-examples/.ipynb_checkpoints/
