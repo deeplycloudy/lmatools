@@ -177,12 +177,13 @@ def write_cf_netcdf(outfile, t_start, t, xloc, yloc, lon_for_x, lat_for_y, ctr_l
     times.long_name="time"
     times.units = "seconds since %s" % t_start.strftime('%Y-%m-%d %H:%M:%S')
     
-    lons = nc_out.createVariable('lons', 'd', ('nx','ny') )#, filters=no_compress)
+    #Dtype change from 'd' to 'f':
+    lons = nc_out.createVariable('lons', 'f', ('nx','ny') )#, filters=no_compress)
     lons.long_name="longitude"
     lons.standard_name="longitude"
     lons.units = "degrees_east"
     
-    lats = nc_out.createVariable('lats', 'd', ('nx','ny') )#, filters=no_compress)
+    lats = nc_out.createVariable('lats', 'f', ('nx','ny') )#, filters=no_compress)
     lats.long_name="latitude"
     lats.standard_name="latitude"
     lats.units = "degrees_north"
@@ -256,17 +257,19 @@ def write_cf_netcdf_3d(outfile, t_start, t, xloc, yloc, zloc, lon_for_x, lat_for
     times.long_name="time"
     times.units = "seconds since %s" % t_start.strftime('%Y-%m-%d %H:%M:%S')
     
-    lons = nc_out.createVariable('lons', 'd', ('nx','ny','nz') )#, filters=no_compress)
+    #Dtype changed due to previous issue with pupynere.
+    #---------------------------------------------------
+    lons = nc_out.createVariable('lons', 'f', ('nx','ny','nz') )#, filters=no_compress)
     lons.long_name="longitude"
     lons.standard_name="longitude"
     lons.units = "degrees_east"
     
-    lats = nc_out.createVariable('lats', 'd', ('nx','ny', 'nz') )#, filters=no_compress)
+    lats = nc_out.createVariable('lats', 'f', ('nx','ny', 'nz') )#, filters=no_compress)
     lats.long_name="latitude"
     lats.standard_name="latitude"
     lats.units = "degrees_north"
     
-    alts = nc_out.createVariable('alts', 'd', ('nx','ny', 'nz') )#, filters=no_compress)
+    alts = nc_out.createVariable('alts', 'f', ('nx','ny', 'nz') )#, filters=no_compress)
     alts.long_name="altitude"
     alts.standard_name="altitude"
     alts.units = "meters"
@@ -422,7 +425,6 @@ def grid_h5flashfiles(h5_filenames, start_time, end_time,
     projection( event_location), projection(flash_init_location), projection(event_location)
     which map respectively to:
     point_density->accum_on_grid(event density), point_density->accum_on_grid(flash init density), extent_density->accum_on_grid(flash_extent_density)
-
     grids are in an HDF5 file. how to handle flushing?
     """
     
