@@ -6,74 +6,7 @@ import os
 import numpy as np
 
 from lmatools.io.LMA_h5_file import read_flashes
-<<<<<<< HEAD
-from lmatools.density_to_files import coroutine, Branchpoint
-=======
 from lmatools.stream.subset import coroutine, Branchpoint
-
-from lmatools.flashsort.flash_stats import hull_volume
-from six.moves import range
-from six.moves import zip
-
-def length_from_area(A,D,b_s):
-    return ( (np.sqrt(A))**D ) / (b_s**(D-1))
-
-def volumetric_length_from_points(x,y,z,D, b_s):
-    xyz = np.vstack((x,y,z)).T
-    
-    volume, vertices, simplex_volumes = hull_volume(xyz)
-    simplex_centroids = np.average(vertices[:,:], axis=1)
-    # The simplex volumes have negative values since they are oriented (think surface normal direction for a triangle)
-
-    vol_len_scale = volume**(1.0/3.0)
-    S_i = np.abs(simplex_volumes)**(1.0/3.0) #S_i
-    P_i = (S_i**D)  / (b_s**(D-1.0)) #P_i
-    L_3 = (vol_len_scale**D)  / (b_s**(D-1.0)) #L_3
-    
-    # length_weighted = (S_i / P_i) * L_3
-    sum_weights =  (S_i/P_i).sum()
-    # print "The sum of the ratio S_i/P_i is not equal to one, but is {0}".format(sum_weights)
-    
-    # Therefore, divide by the sum of the weights
-    length_weighted =  (S_i / P_i) * L_3 / sum_weights
-    
-    return simplex_centroids, np.abs(simplex_volumes), volume, L_3, length_weighted
-
-def vertical_length_distribution(src_alt, simplex_alt, simplex_lengths, 
-        alt_bins, norm=True):
-    """ given input altitudes and lengths in km, create vertical
-        profiles of source counts and total length.
-        
-        Returns alt_bins, bin_total_src, bin_total_length
-        
-        If norm==True, divide the counts by the bin width, returning
-        km, counts/km and km/km. Otherwise just return km, counts and km.
-        """
-        
-    # Not sure why we're not using histogram here, so that's a TODO
-    # d_alt = 0.5
-    d_alt = alt_bins[1:]-alt_bins[:-1]
-    # alt_bins = np.arange(0.0,max_alt+d_alt, d_alt)
-    bin_total_length = np.zeros(alt_bins.shape[0]-1, dtype=float)
-    bin_total_src = np.zeros(alt_bins.shape[0]-1, dtype=float)
-    # bin_total_length_sq = np.zeros(alt_bins.shape[0]-1, dtype=float)
-    tri_bin_idx = np.digitize(simplex_alt, alt_bins)
-    src_bin_idx = np.digitize(src_alt,alt_bins)
-    tri_bin_idx[tri_bin_idx>(bin_total_length.shape[0]-1)]=bin_total_length.shape[0]-1
-    src_bin_idx[src_bin_idx>(bin_total_src.shape[0]-1)]=bin_total_src.shape[0]-1
-
-    for idx in src_bin_idx:
-        bin_total_src[idx] += 1
-
-    for lw,idx in zip(simplex_lengths,tri_bin_idx):
-        bin_total_length[idx]+=lw
-        # bin_total_length_sq[idx] += lw*lw
-    # bin_total_length[tri_bin_idx] += length_weighted
-    if norm==True:
-        return alt_bins, bin_total_src/d_alt, bin_total_length/d_alt
-    else:
-        return alt_bins, bin_total_src, bin_total_length
->>>>>>> 877fb32c26c34947a91aa3e27f815967bc9a17f2
 
 from lmatools.flashsort.flash_stats import hull_volume
 from six.moves import range
@@ -337,11 +270,9 @@ def plot_spectra_for_files(h5_filenames, min_points, time_criteria, distance_cri
                            other_analysis_targets=None, base_date=None, filterer=None):
     """ Make standard plots of the flash energy spectrum. There will be one spectrum created
         for each file in h5_filenames.
-
         min_pts, time_criteria, distance_critera are tuples of point and time-space thresholds, all the same length.
         They will be looped over, used to generate outdir_template which 
         needs {0},{1},{2}, which will be filled in with time, distance, and min_pts criteria
-
         The path in outdir_template will be created if it does not exist.
     """
     import matplotlib.pyplot as plt

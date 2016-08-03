@@ -3,51 +3,16 @@ from __future__ import print_function
 import glob
 import gc
 import numpy as np
-
-from .density_tools import unique_vectors
+from lmatools.stream.subset import coroutine
+from lmatools.density_tools import unique_vectors
 from six.moves import zip
 
 # -------------------------------------------------------------------------- 
 # ----- This section could be replaced with stormdrain.pipeline imports ----
 # -------------------------------------------------------------------------- 
 
-def coroutine(func):
-    def start(*args,**kwargs):
-        cr = func(*args,**kwargs)
-        next(cr)
-        return cr
-    return start
 
-@coroutine
-def broadcast(targets):
-    while True:
-        stuff = (yield)
-        for target in targets:
-            target.send(stuff)
-        del stuff
 
-class Branchpoint(object):
-    """ Class-based version useful for tracking a changing state or adjusting targets
-        at a later time. Some '.dot' access overhead this way, of course.
-
-        >>> brancher = Branchpoint( [target1, target2, ...] )
-
-        Allows for flexible branching by maintaining a set (in the formal sense) of targets.
-        brancher.targets.append(newtarget)
-        brancher.targets.remove(existingtarget)
-    """
-
-    def __init__(self, targets): 
-        """ Accepts a sequence of targets """
-        self.targets = set(targets) # this perhaps should be a set and not a list, so it remains unique
-
-    @coroutine
-    def broadcast(self):
-        while True:
-            stuff = (yield)
-            for target in self.targets:
-                target.send(stuff)
-            del stuff
             
 # class map_projector(object):
 #     def __init__(self, ctr_lat, ctr_lon, proj_name='eqc'):
@@ -405,7 +370,6 @@ def accumulate_points_on_grid(grid, xedge, yedge, out=None, label=''):
                     grid = count
                     out['out'] = grid
                 else:
-                    #Looks like changes here are fine.
                     grid += count.astype(grid.dtype)
                 del count
             del x, y, weights
@@ -474,4 +438,3 @@ def accumulate_points_on_grid_3d(grid, xedge, yedge, zedge, out=None, label=''):
 #         s.sort_stats("time").print_stats()
 #     else:
 #         x_coord, y_coord, lons, lats, test_grid = example()
-

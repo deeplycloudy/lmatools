@@ -8,10 +8,9 @@ import numpy as np
 import tables
 
 from . import density_to_files
-from lmatools.stream.subset import broadcast
 from lmatools.io.LMA_h5_file import read_flashes, to_seconds
 
-from lmatools.coordinateSystems import MapProjection, GeographicSystem
+from .coordinateSystems import MapProjection, GeographicSystem
 from six.moves import range
     
 
@@ -177,13 +176,12 @@ def write_cf_netcdf(outfile, t_start, t, xloc, yloc, lon_for_x, lat_for_y, ctr_l
     times.long_name="time"
     times.units = "seconds since %s" % t_start.strftime('%Y-%m-%d %H:%M:%S')
     
-    #Dtype change from 'd' to 'f':
-    lons = nc_out.createVariable('lons', 'f', ('nx','ny') )#, filters=no_compress)
+    lons = nc_out.createVariable('lons', 'd', ('nx','ny') )#, filters=no_compress)
     lons.long_name="longitude"
     lons.standard_name="longitude"
     lons.units = "degrees_east"
     
-    lats = nc_out.createVariable('lats', 'f', ('nx','ny') )#, filters=no_compress)
+    lats = nc_out.createVariable('lats', 'd', ('nx','ny') )#, filters=no_compress)
     lats.long_name="latitude"
     lats.standard_name="latitude"
     lats.units = "degrees_north"
@@ -257,8 +255,11 @@ def write_cf_netcdf_3d(outfile, t_start, t, xloc, yloc, zloc, lon_for_x, lat_for
     times.long_name="time"
     times.units = "seconds since %s" % t_start.strftime('%Y-%m-%d %H:%M:%S')
     
-    #Dtype changed due to previous issue with pupynere.
-    #---------------------------------------------------
+    ########################################################################################
+    # Data type changed from 'd' to 'f' as there were previuos issues using the original   #
+    # format. This hasn't been tested yet with scipy.io.netcdf so any future errors may    #
+    # be due to this change, revert if needed.                                             #
+    ########################################################################################
     lons = nc_out.createVariable('lons', 'f', ('nx','ny','nz') )#, filters=no_compress)
     lons.long_name="longitude"
     lons.standard_name="longitude"
@@ -425,6 +426,7 @@ def grid_h5flashfiles(h5_filenames, start_time, end_time,
     projection( event_location), projection(flash_init_location), projection(event_location)
     which map respectively to:
     point_density->accum_on_grid(event density), point_density->accum_on_grid(flash init density), extent_density->accum_on_grid(flash_extent_density)
+
     grids are in an HDF5 file. how to handle flushing?
     """
     
@@ -516,7 +518,7 @@ def grid_h5flashfiles(h5_filenames, start_time, end_time,
         mean_footprint_target_3d = density_to_files.extent_density_3d(x0, y0, z0, dx, dy, dz, accum_footprint_3d, weight_key='area')
 
 
-        spew_to_density_types = broadcast( ( 
+        spew_to_density_types = density_to_files.broadcast( ( 
                     density_to_files.project('lon', 'lat', 'alt', mapProj, geoProj, event_density_target, use_flashes=False),
                     density_to_files.project('init_lon', 'init_lat', 'init_alt', mapProj, geoProj, init_density_target, use_flashes=True),
                     density_to_files.project('lon', 'lat', 'alt', mapProj, geoProj, extent_density_target, use_flashes=False),
