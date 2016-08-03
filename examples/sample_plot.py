@@ -1,5 +1,9 @@
 from __future__ import absolute_import
+<<<<<<< HEAD
 from LMAtools.multiples_nc import make_plot
+=======
+from LMAtools.vis.multiples_nc import make_plot
+>>>>>>> 877fb32c26c34947a91aa3e27f815967bc9a17f2
 
 n_cols=2
 
