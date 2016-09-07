@@ -511,4 +511,3 @@ def accumulate_points_on_grid_3d(grid, xedge, yedge, zedge, out=None, label=''):
 #         s.sort_stats("time").print_stats()
 #     else:
 #         x_coord, y_coord, lons, lats, test_grid = example()
-

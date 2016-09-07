@@ -291,11 +291,9 @@ def plot_spectra_for_files(h5_filenames, min_points, time_criteria, distance_cri
                            other_analysis_targets=None, base_date=None, filterer=None):
     """ Make standard plots of the flash energy spectrum. There will be one spectrum created
         for each file in h5_filenames.
-
         min_pts, time_criteria, distance_critera are tuples of point and time-space thresholds, all the same length.
         They will be looped over, used to generate outdir_template which 
         needs {0},{1},{2}, which will be filled in with time, distance, and min_pts criteria
-
         The path in outdir_template will be created if it does not exist.
     """
     import matplotlib.pyplot as plt
