@@ -12,6 +12,15 @@ from lmatools.flashsort.flash_stats import hull_volume
 from six.moves import range
 from six.moves import zip
 
+def gen_flash_events(events, flashes):
+    """ Given events and flashes tables, generate
+        events for each flash as (events, flash)
+    """
+    for fl in flashes:
+        fl_id=fl['flash_id']
+        this_flash = (events['flash_id']==fl_id)
+        yield events[this_flash], fl
+
 def length_from_area(A,D,b_s):
     return ( (np.sqrt(A))**D ) / (b_s**(D-1))
 
@@ -214,7 +223,16 @@ def raw_moments_for_parameter(parameter, preprocess=None, n_moments=5, output_ta
         sample_raw_moments[1:] /= sample_raw_moments[0]
         if output_target is not None:
             output_target.send(sample_raw_moments)
-        
+
+def raw_moments(a, n_moments=5):
+    """ Given data in array a, return the raw moments,
+        sum(a^m) where m is 0...(n_moments-1).
+        Return is an array of shape (n_moments,).
+    """
+    sample_raw_moments = np.zeros(n_moments, dtype='f8')
+    for i in range(n_moments):
+        sample_raw_moments[i] = (a**i).sum()
+    return sample_raw_moments
 
 def central_moments_from_raw(raw):
     """ Returns ctr, std where
@@ -233,6 +251,12 @@ def central_moments_from_raw(raw):
     std = raw[0], raw[1], ctr[2], ctr[3]/(ctr[2]**1.5), (ctr[4]/(ctr[2]*ctr[2]) - 3)
     return ctr, std
     
+def get_energy_spectrum_bins(min_pwr=-2, max_pwr = 4, delta_pwr=0.1):
+    #defaults are 1e-2 to 1e4
+    powers = np.arange(min_pwr, max_pwr+delta_pwr, delta_pwr)
+    footprint_bin_edges = 10**powers
+    return footprint_bin_edges
+    
 def footprint_stats(h5_filenames, save=False, fig=None, min_points=10, 
                     base_date=None, other_analysis_targets=None, filterer=None):
     """ filter should be a non-running coroutine that receives the (events, flashes)
@@ -242,11 +266,7 @@ def footprint_stats(h5_filenames, save=False, fig=None, min_points=10,
     """
 
     #1e-2 to 1e4
-    min_pwr = -2
-    max_pwr = 4
-    delta_pwr = 0.1
-    powers = np.arange(min_pwr, max_pwr+delta_pwr, delta_pwr)
-    footprint_bin_edges = 10**powers
+    footprint_bin_edges = get_energy_spectrum_bins()
 
     plotter = plot_energy_from_area_histogram
     

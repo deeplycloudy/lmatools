@@ -76,7 +76,80 @@ def filter_flash(target, min_points=10):
         if (flash['n_points'] >= 10):
             target.send((evs, flash))
         del evs, flash
+
+def stack_chopped_arrays(chop_sequence):
+    """ Given a sequence of lists of arrays, return an equal length sequence 
+        where the arrays have been combined by position in the original sequence.
+        The lists of arrays must each be of the same length. This is useful when
+        there is a list of arrays corresponding to data subdivided into time
+        series chunks.
+        
+        In the example below, each row is data from a different file (letters)
+        and each column is a different time window in a time series. By stacking
+        the columns, a combined time series is generated.
+        
+        ([a0, a1, a2, a3], 
+         [b0, b1, b2, b3],
+         [c0, c1, c2, c3],)
+        becomes
+        [a0+b0+c0, a1+b1+c1, a2+b2+c2, a3+b3+b3]
+        where plus indicates concatenation        
+    """
+    combined = [np.hstack(a) for a in zip(*chop_sequence)]
+    return combined
+
+
+class ArrayChopper(object):
+    """ Initialized with an array of N_+1 edges corresponding to N
+        windows. The edges are assumed to be sorted.
     
+        Methods
+        window_masks(data, edge_key=None): given an array of data with a named dtype,
+            return a list of boolean masks that can be used to index data,
+            giving the subset of data which corresponds to each window.
+            If an edge_key is provided, it is assumed to reference a named array 
+            and masking is performed on data[edge_key] 
+    
+        chop(data, edge_key=None): Returns a list of arrays where the
+            masks described above have been applied to chop the data
+    
+        Generator functions for each of the above are also available
+        gen_window_masks, gen_chop
+    
+    """
+    def __init__(self, edges):
+        self.edges = edges
+        
+    def _apply_edge_key(self, data, edge_key):
+        if edge_key is not None: 
+            d = data[edge_key]
+        else:
+            d = data
+        return d
+        
+    def gen_edge_pairs(self):
+        for l, r in zip(self.edges[:-1], self.edges[1:]):
+            yield l, r
+        
+    def window_masks(self, data, edge_key=None):
+        masks = [w for w in self.gen_window_masks(self, data, edge_key)]
+        return masks
+        
+    def gen_window_masks(self, data, edge_key=None):
+        d = self._apply_edge_key(data, edge_key)
+        for l, r in self.gen_edge_pairs():
+            # make sure this is only one-side inclusive to eliminate double-counting
+            within = (d >= l) & (d < r)
+            yield within
+    
+    def chop(self, data, edge_key=None):
+        chopped = [d for d in self.gen_chop(data, edge_key)]
+        return chopped
+        
+    def gen_chop(self, data, edge_key=None):
+        # d = self._apply_edge_key(data, edge_key)
+        for mask in self.gen_window_masks(data, edge_key):
+            yield data[mask]
 
 @coroutine
 def flashes_to_frames(time_edges, targets, time_key='start', time_edges_datetime=None, flash_counter=None):

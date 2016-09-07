@@ -8,14 +8,44 @@ def to_seconds(dt):
     'convert datetime.timedelta object to float seconds'
     return dt.days * 86400 + dt.seconds + dt.microseconds/1.0e6
     
-
+def filter_on_limits(data, limits):
+    fl_good = np.ones(data.shape, dtype=bool)
+    for k, (v_min, v_max) in limits.items():
+        if k in data.dtype.names:
+            fl_good &= (data[k] >= v_min) & (data[k] <= v_max)
+    return data[fl_good]
+    
+def filter_events_flashes(events, flashes, limits):
+    """ Limits is a dictionary with keys matching column names in flashes
+        and giving a (min, max) tuple to be used to filter that column.
+        The limits are applied inclusively (>= min, <= max).
+        
+        After initial filtering of on limits, all events not belonging
+        to that flash are removed.
+    """
+    
+    flashes_filt = filter_on_limits(flashes, limits)
+    flash_ids = set(flashes['flash_id'])
+    events = np.fromiter(
+        (ev for ev in events if ev['flash_id'] in flash_ids),
+        dtype=events.dtype)
+    return events, flashes
 
 class LMAh5Collection(object):
     def __init__(self, filenames, base_date=None, min_points=1):
         """ Load multiple HDF5 files given by filenames. 
-            
-            h5s = LMAh5Collection(filenames)
         
+            base_date is taken as given by the kwarg or taken
+            to be the first date in the filenames provided by default.
+            
+            min_points removes flashes from the flash table which are
+            comprised of fewer than min_points events.
+            
+            It is possible to loop over the collection of all files
+            and get a sequence of event, flash tables. 
+            In this case, the flash ids are modified to remain unique
+            across the whole dataset.
+            >>> h5s = LMAh5Collection(filenames)
             >>> for events, flashes in h5s:
             >>>     print(events.shape, flashes.shape)
 
@@ -88,8 +118,18 @@ class LMAh5Collection(object):
         pass
         
     def __iter__(self):
+        last_flash_id = 0
         for t in self.times:
             events, flashes = self.data_for_time(t)
+            
+            # renumber the flash ids so they remain
+            # unique across the entire dataset
+            flash_increment = last_flash_id + 1
+            events['flash_id'] += flash_increment
+            flashes['flash_id'] += flash_increment
+            
+            last_flash_id = max(events['flash_id'].max(),
+                                flashes['flash_id'].max())            
             yield events, flashes
         
         
