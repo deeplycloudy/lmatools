@@ -232,6 +232,7 @@ def raw_moments(a, n_moments=5):
     sample_raw_moments = np.zeros(n_moments, dtype='f8')
     for i in range(n_moments):
         sample_raw_moments[i] = (a**i).sum()
+    sample_raw_moments[1:] /= sample_raw_moments[0]    
     return sample_raw_moments
 
 def central_moments_from_raw(raw):
