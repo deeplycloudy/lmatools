@@ -10,10 +10,20 @@ six
 Gridded Flash Products using lmatools
 =====================================
 
+Usage
+-----
+See examples/README for an example of how to
+
+1. Turn LMA ASCII data into HDF5 flash files.
+2. Turn the HDF5 flash data into 2D and 3D grids of flash properties
+3. Make some quick-look plots of the grids.
+4. Use an interactive interface to manually identify cells
+5. Use a log of the cells identified above to calculate flash statistics
+
 Configuration
 -------------
 
-VHF sources are grouped into flashes by first filtering out noise sources by using the reduced chi-squared value and number of contributing stations for each VHF source. Chi-squared of less than 5.0 is typical; 1.0 is the most stringent threshold in wide use. For all but the worst-performing networks, a minimum of six stations should be used; where available, seven or more will give the most noise-free results. These values should be determined by examining the source data for time periods of interest on a case-by-case basis. This step is especially important for networks with frequent station drop-outs, where the network is asymmetric, or where the network has poor sensitivity.
+VHF sources are grouped into flashes by first filtering out noise sources by using the reduced chi-squared value and number of contributing stations for each VHF source. Chi-squared of less than 5.0 is typical; 1.0 is one threshold in wide use. For all but the worst-performing networks, a minimum of six stations should be used; where available, seven or more will give the most noise-free results. These values should be determined by examining the source data for time periods of interest on a case-by-case basis. This step is especially important for networks with frequent station drop-outs, where the network is asymmetric, or where the network has poor sensitivity.
 
 Sources are grouped into flashes using space and time criteria. These default to 3 km spatial and 0.15 second temporal thresholds, with a maximum duration of 3 s. At the moment, the McCaul et al. (2009, Weather and Forecasting) flash sorting algorithm is the only one integrated into this codebase. (Prototype sorting using the clustering features in Python's scikits-learn is now in the repository in lmatools/flashsort/examples/, but is not yet integrated.)
 
