@@ -82,11 +82,11 @@ def write_h5(outfile, flashes, metadata, orig_LMA_file):
                                 m.starthour, m.startminute, m.startsecond, m.sec_analyzed)
     # orig_columns_LYLOUT = m.columns
     
-    h5file = T.openFile(outfile, mode='w', title='Flash-sorted New Mexico Tech LMA Data')
-    group  = h5file.createGroup('/', 'events', 'Analyzed detected events')
-    table  = h5file.createTable(group, time_code, Event, time_code)
-    fl_group = h5file.createGroup('/', 'flashes', 'Sorted LMA flash data')
-    fl_table  = h5file.createTable(fl_group, time_code, Flash, time_code)
+    h5file = T.open_file(outfile, mode='w', title='Flash-sorted New Mexico Tech LMA Data')
+    group  = h5file.create_group('/', 'events', 'Analyzed detected events')
+    table  = h5file.create_table(group, time_code, Event, time_code)
+    fl_group = h5file.create_group('/', 'flashes', 'Sorted LMA flash data')
+    fl_table  = h5file.create_table(fl_group, time_code, Flash, time_code)
     
     table.attrs.header = m.header
     table.attrs.filename = orig_LMA_file
