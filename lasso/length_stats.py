@@ -25,7 +25,7 @@ from numpy.lib.recfunctions import stack_arrays #, append_fields
 
 from lmatools import coordinateSystems
 from lmatools.flash_stats import length_from_area, volumetric_length_from_points, vertical_length_distribution, gen_flash_events
-from lmatools.make_grids import time_edges, seconds_since_start_of_day
+from lmatools.grid.make_grids import time_edges, seconds_since_start_of_day
 
 from stormdrain.pipeline import coroutine, Branchpoint
 from stormdrain.support.matplotlib.formatters import SecDayFormatter
