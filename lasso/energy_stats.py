@@ -16,7 +16,7 @@ from stormdrain.bounds import Bounds, BoundsFilter
 from stormdrain.support.matplotlib.formatters import SecDayFormatter
 from matplotlib.ticker import MultipleLocator
 from lmatools.flash_stats import raw_moments, raw_moments_for_parameter, central_moments_from_raw, events_flashes_receiver
-from lmatools.make_grids import time_edges, seconds_since_start_of_day
+from lmatools.grid.make_grids import time_edges, seconds_since_start_of_day
 import matplotlib.pyplot as plt
 
 def summary_stat_line(start_t, end_t, moments):

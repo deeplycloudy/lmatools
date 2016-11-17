@@ -1,4 +1,4 @@
-import pupynere as netCDF4
+import scipy.io.netcdf as netCDF4
 import numpy as np
 import pandas as pd
 import scipy as sci
