@@ -6,7 +6,7 @@ import itertools
 
 import numpy as np
 
-from lmatools.multiples_nc import centers_to_edges
+from lmatools.vis.multiples_nc import centers_to_edges
 import scipy.io.netcdf as nc
 from six.moves import range
         
