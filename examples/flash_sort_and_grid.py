@@ -75,7 +75,7 @@ def sort_flashes(files, base_sort_dir, params):
 def grid_and_plot(h5_filenames, base_sort_dir, dx=1.0e3, dy=1.0e3, dz=1.0e3, frame_interval=60.0,
                   x_bnd=(-200.0e3, 200.0e3), y_bnd=(-200.0e3, 200.0e3), z_bnd=(0.0e3, 20.0e3),
                   ctr_lat=33.5, ctr_lon=-101.5, center_ID='WTLMA',
-                  n_cols=2, 
+                  n_cols=2, base_date=None
                   ):
     """ Given a list of HDF5 filenames (sorted by time order) in h5_filenames, 
         create 2D and 3D NetCDF grids with spacing dx, dy, dz in meters, 
@@ -88,6 +88,8 @@ def grid_and_plot(h5_filenames, base_sort_dir, dx=1.0e3, dy=1.0e3, dz=1.0e3, fra
         n_cols controls how many columns are plotted on each page.
                   
         Grids and plots are written to base_sort_dir/grid_files/ and  base_sort_dir/plots/
+				  
+		base_date is used to optionally set a common reference time for each of the NetCDF grids.
     """              
     # not really in km, just a different name to distinguish from similar variables below.
     dx_km=dx
@@ -121,7 +123,8 @@ def grid_and_plot(h5_filenames, base_sort_dir, dx=1.0e3, dy=1.0e3, dz=1.0e3, fra
             subprocess.call(['chmod', 'a+w', outpath, grid_dir+'/20%s' %(date.strftime('%y/%b')), grid_dir+'/20%s' %(date.strftime('%y'))])
         if True:
             grid_h5flashfiles(h5_filenames, start_time, end_time, frame_interval=frame_interval, proj_name='latlong',
-                    dx=dx, dy=dy, x_bnd=x_bnd, y_bnd=y_bnd, z_bnd=z_bnd_km,
+                    base_date = base_date,
+					dx=dx, dy=dy, x_bnd=x_bnd, y_bnd=y_bnd, z_bnd=z_bnd_km,
                     ctr_lon=ctr_lon, ctr_lat=ctr_lat, outpath = outpath,
                     output_writer = write_cf_netcdf_latlon, output_writer_3d = write_cf_netcdf_3d_latlon,
                     output_filename_prefix=center_ID, spatial_scale_factor=1.0
@@ -178,5 +181,5 @@ if __name__ == '__main__':
     h5_filenames = sort_flashes(filenames, data_out, params)
     
     # other keyword arguments control the grid spacing ... see the function definition
-    nc_names_2d, nc_names_3d = grid_and_plot(h5_filenames, data_out, 
+    nc_names_2d, nc_names_3d = grid_and_plot(h5_filenames, data_out, base_date=datetime(2012, 1, 1)
         ctr_lat=params['ctr_lat'], ctr_lon=params['ctr_lon'], center_ID=center_ID)

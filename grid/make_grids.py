@@ -384,6 +384,7 @@ def seconds_since_start_of_day(start_time, t):
 
 def grid_h5flashfiles(h5_filenames, start_time, end_time, 
                         frame_interval=120.0, dx=4.0e3, dy=4.0e3, dz=1.0e3,
+						base_date = None,
                         x_bnd = (-100e3, 100e3),
                         y_bnd = (-100e3, 100e3),
                         z_bnd = (0e3, 20e3),
@@ -431,10 +432,12 @@ def grid_h5flashfiles(h5_filenames, start_time, end_time,
     if flash_count_logfile is None:
         flash_count_logfile = sys.stdout
     
-    # reference time is the date part of the start_time
-
     t_edges, duration = time_edges(start_time, end_time, frame_interval)
-    t_ref, t_edges_seconds = seconds_since_start_of_day(start_time, t_edges)
+    # reference time is the date part of the start_time, unless the user provides a different date.
+    if base_date is None:
+        t_ref, t_edges_seconds = seconds_since_start_of_day(start_time, t_edges)
+    else:
+        t_ref, t_edges_seconds = seconds_since_start_of_day(base_date, t_edges)
     n_frames = len(t_edges)-1
     
     xedge=np.arange(x_bnd[0], x_bnd[1]+dx, dx)
