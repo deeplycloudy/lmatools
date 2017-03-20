@@ -24,7 +24,7 @@ class LMAgridFileCollection(object):
             collection of files:
             
             >>> for t, xedge, yedge, data in NCs:
-            >>>     print t
+            >>>     print(t)
 
             Or, if you know a time accurately, you can do:
             >>> from datetime import datetime
@@ -127,8 +127,9 @@ class LMAgridFileCollection(object):
             # print geosys.fromECEF(*mapproj.toECEF((0,0), (0,0), (0,0)))
             return geosys, mapproj
         else:
-            print("projection not found")    
-            return geosys, None
+            print("projection not found, assuming lat, lon grid")    
+            return geosys, geosys
+        f.close()
 
         
                     
