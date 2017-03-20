@@ -160,16 +160,16 @@ def grid_and_plot(h5_filenames, base_sort_dir, dx=1.0e3, dy=1.0e3, dz=1.0e3, fra
         var = mapping[gridtype]
         make_plot(f, var, n_cols=n_cols, x_name='longitude', y_name='latitude', outpath = outpath)
     
-    # for f in nc_names_3d:
-    #     gridtype = f.split('dx_')[-1].replace('.nc', '').replace('_3d', '')
-    #     var = mapping[gridtype]
-    #     # grid_range = range_mapping[gridtype]
-    #
-    #     ###Read grid files, then plot in either 2d or 3d space###
-    #     grid, grid_name, x, y, z, t, grid_t_idx, grid_x_idx, grid_z_idx = read_file_3d(f, var, x_name='longitude', y_name='latitude', z_name='altitude')
-    #     make_plot_3d(grid, grid_name, x, y, z, t,
-    #                  grid_t_idx, grid_x_idx, grid_z_idx,
-    #                  n_cols = n_cols, outpath = outpath)
+    for f in nc_names_3d:
+        gridtype = f.split('dx_')[-1].replace('.nc', '').replace('_3d', '')
+        var = mapping[gridtype]
+        # grid_range = range_mapping[gridtype]
+
+        ###Read grid files, then plot in either 2d or 3d space###
+        grid, grid_name, x, y, z, t, grid_t_idx, grid_x_idx, grid_z_idx = read_file_3d(f, var, x_name='longitude', y_name='latitude', z_name='altitude')
+        make_plot_3d(grid, grid_name, x, y, z, t,
+                     grid_t_idx, grid_x_idx, grid_z_idx,
+                     n_cols = n_cols, outpath = outpath)
         #, grid_range=grid_range)
         
     return nc_names_2d, nc_names_3d
@@ -187,8 +187,8 @@ if __name__ == '__main__':
     
     data_out = sys.argv[1]
     filenames = sys.argv[2:]
-    # h5_filenames = sort_flashes(filenames, data_out, params) #Turn off when .h5 files are made to make grid files!!
-    h5_filenames=filenames
+    h5_filenames = sort_flashes(filenames, data_out, params) #Turn off when .h5 files are made to make grid files!!
+    #h5_filenames=filenames
     # other keyword arguments control the grid spacing ... see the function definition
 
     nc_names_2d, nc_names_3d = grid_and_plot(h5_filenames, data_out, base_date=datetime(2012, 1, 1)
