@@ -334,7 +334,6 @@ def point_density_3d(target):
             target.send((x, y, z, None))
         del events, flash ,x,y,z
 
-
 @coroutine
 def flash_std(x0, y0, dx, dy, target, flash_id_key='flash_id', weight_key=None):
     """ This function assumes a regular grid in x and y with spacing dx, dy

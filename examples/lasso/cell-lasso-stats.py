@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 """
 USAGE
 python cell-lasso-stats.py path_to_lasso_log.txt path_to_sort_results outdir
@@ -139,14 +138,12 @@ max_alt, d_alt = 20.0, 0.5
 alt_bins = np.arange(0.0,max_alt+d_alt, d_alt)
 length_profiler = FractalLengthProfileCalculator(D, b_s, alt_bins)
 
-#ADDED
+
 def write_flash_volume(outfile, field):
     import xray as xr
     import pandas as pd
     print field.shape
     dat = pd.DataFrame(field).T
-    # dat.columns = [field_name]
-
     dat.to_csv(outfile)
 
 def gen_flash_summary_time_series(events_series, flashes_series, length_profiler):
@@ -172,7 +169,6 @@ iso_start, iso_end = flashes_in_poly.t_edges_to_isoformat(as_start_end=True)
 size_stats = append_fields(size_stats, ('start_isoformat','end_isoformat'),
                                          data=(iso_start, iso_end), usemask=False)
 
-
 # =====
 # Write flash size stats data (see harvest_flash_timeseries) and plot moment time series
 # =====
@@ -197,7 +193,6 @@ write_size_stat_data(stats_filename, size_stats)
 fig = plot_flash_stat_time_series(flashes_in_poly.base_date, flashes_in_poly.t_edges, size_stats)
 fig.savefig(stats_figure)
 
-###ADDED: #############
 energy_fig = plot_energy_stats(size_stats['specific_energy'], flashes_in_poly.base_date, flashes_in_poly.t_edges, outdir)
 energy_figure_name = os.path.join(outdir,'specific_energy.pdf')
 energy_fig.savefig(energy_figure_name)
@@ -205,7 +200,6 @@ energy_fig.savefig(energy_figure_name)
 tot_energy_fig = plot_tot_energy_stats(size_stats['total_energy'], flashes_in_poly.base_date, flashes_in_poly.t_edges, outdir)
 tot_energy_figure_name = os.path.join(outdir,'total_energy.pdf')
 tot_energy_fig.savefig(tot_energy_figure_name)
-
 
 # # # =====
 # # # Write profile data to file and plot profile time series
@@ -242,7 +236,6 @@ else:
 # # =====
 # # Energy spectrum plots
 # # ====
-
 footprint_bin_edges = get_energy_spectrum_bins()
 spectrum_save_file_base = os.path.join(outdir, 'energy_spectrum_{0}_{1}.pdf')
 for flashes, t0, t1 in zip(flashes_series, flashes_in_poly.t_edges[:-1], flashes_in_poly.t_edges[1:]):
@@ -251,9 +244,9 @@ for flashes, t0, t1 in zip(flashes_series, flashes_in_poly.t_edges[:-1], flashes
                                                         t1.strftime('%y%m%d%H%M%S'))
     plot_energy_from_area_histogram(histo, edges,
                     save=spectrum_save_file, duration=(t1-t0).total_seconds())
-#
+
 # # =========================================#
-# # Energy Spectrum from charge density:     # ADDED 161121 #EDIT using plotting function instead!----works
+# # Energy Spectrum from charge density:     # 
 # # =========================================#
 import matplotlib.pyplot as plt
 import matplotlib

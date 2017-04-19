@@ -208,7 +208,6 @@ def plot_energies(footprint_bin_edges,time_array,scalar_map,flashes_series,
     
 
     cbar = plt.colorbar(s_m)
-    # cbar.set_clim(200000,235000)
     ax_energy.loglog(flash_1d_extent, inertialsubrange,'k-',alpha=0.5);
     ax_energy.set_title('Estimated {0} Spectra for Cell Selection'.format(title),fontsize=15)
     ax_energy.set_xlabel(r'Flash width ($\sqrt{A_h}$, $km$)',fontsize=15)

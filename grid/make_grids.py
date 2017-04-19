@@ -472,12 +472,12 @@ def grid_h5flashfiles(h5_filenames, start_time, end_time,
     init_density_grid_3d   = np.zeros((xedge.shape[0]-1, yedge.shape[0]-1, zedge.shape[0]-1, n_frames), dtype='int32')
     extent_density_grid_3d = np.zeros((xedge.shape[0]-1, yedge.shape[0]-1, zedge.shape[0]-1, n_frames), dtype='int32')
     footprint_grid_3d      = np.zeros((xedge.shape[0]-1, yedge.shape[0]-1, zedge.shape[0]-1, n_frames), dtype='float32')
+    
     #-----
     specific_energy_grid_3d = np.zeros((xedge.shape[0]-1, yedge.shape[0]-1, zedge.shape[0]-1, n_frames), dtype='float32')
     total_energy_grid_3d    = np.zeros((xedge.shape[0]-1, yedge.shape[0]-1, zedge.shape[0]-1, n_frames), dtype='float32')
     flashsize_std_grid_3d   = np.zeros((xedge.shape[0]-1, yedge.shape[0]-1, zedge.shape[0]-1, n_frames), dtype='float32')
-    
-        
+         
     all_frames = []
     # extent_frames = []
     # init_frames = []
@@ -542,6 +542,7 @@ def grid_h5flashfiles(h5_filenames, start_time, end_time,
         init_density_target_3d   = density_to_files.point_density_3d(accum_init_density_3d)
         extent_density_target_3d = density_to_files.extent_density_3d(x0, y0, z0, dx, dy, dz, accum_extent_density_3d)
         mean_footprint_target_3d = density_to_files.extent_density_3d(x0, y0, z0, dx, dy, dz, accum_footprint_3d, weight_key='area')
+        
         #------
         mean_energy_target_3d    = density_to_files.extent_density_3d(x0, y0, z0, dx, dy, dz, accum_specific_energy_3d, weight_key='specific_energy') #tot_energy
         mean_total_energy_target_3d = density_to_files.extent_density_3d(x0, y0, z0, dx, dy, dz, accum_total_energy_3d, weight_key='total_energy')     #Energy
@@ -654,7 +655,7 @@ def grid_h5flashfiles(h5_filenames, start_time, end_time,
                 total_energy_grid_3d
                 )
                 
-                
+                            
     field_names = ('flash_extent', 'flash_initiation', 'lma_source', 'flash_footprint', 'specific_energy', 'flashsize_std','total_energy')
     
     field_descriptions = ('LMA flash extent density',
