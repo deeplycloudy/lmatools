@@ -35,6 +35,7 @@ from lmatools.lasso.energy_stats import flash_size_stats, plot_flash_stat_time_s
 from lmatools.lasso.length_stats import FractalLengthProfileCalculator
 from lmatools.lasso.cell_lasso_util import read_poly_log_file, polys_to_bounding_box, h5_files_from_standard_path, nc_files_from_standard_path
 from lmatools.lasso.cell_lasso_timeseries import TimeSeriesPolygonFlashSubset
+
 from lmatools.lasso import empirical_charge_density as cd ###NEW
 
 # =====
@@ -54,7 +55,6 @@ except OSError as exc:
     if exc.errno == errno.EEXIST and os.path.isdir(outdir):
         pass
 
-print path_to_sort_results
 # =====
 # Load data from HDF5 files into a time series of events and flashes
 # =====
@@ -130,7 +130,7 @@ flash_location_plotter.fig.savefig(os.path.join(outdir, flash_ctr_filename))
 # # Loop over each window in the time series and calculate some
 # # aggregate flash statistical properties
 # # =======================================
-#
+
 # # Set up fractal length calcuations and channel height profiles
 D = 1.5
 b_s = 200.0
@@ -153,22 +153,19 @@ def gen_flash_summary_time_series(events_series, flashes_series, length_profiler
         # for each flash, get a dictionary with 2D and 3D fractal lengths.
         # also includes the volume and point triangulation data.
         per_flash_data, IC_profile, CG_profile = length_profiler.process_events_flashes(events, flashes)
-    
         yield size_stats, IC_profile, CG_profile
+
 
 time_series = gen_flash_summary_time_series(events_series, flashes_series,
                                             length_profiler)
 size_stats, IC_profiles, CG_profiles = zip(*time_series)
-
-
 
 size_stats = stack_arrays(size_stats)
 iso_start, iso_end = flashes_in_poly.t_edges_to_isoformat(as_start_end=True)
 # assume here that iso_start and iso_end are identical-length strings,
 # as they should be if the iso format is worth anything.
 size_stats = append_fields(size_stats, ('start_isoformat','end_isoformat'),
-                                         data=(iso_start, iso_end), usemask=False)
-
+                                         data=(iso_start, iso_end), usemask=False)                                      
 # =====
 # Write flash size stats data (see harvest_flash_timeseries) and plot moment time series
 # =====
@@ -201,9 +198,9 @@ tot_energy_fig = plot_tot_energy_stats(size_stats['total_energy'], flashes_in_po
 tot_energy_figure_name = os.path.join(outdir,'total_energy.pdf')
 tot_energy_fig.savefig(tot_energy_figure_name)
 
-# # # =====
-# # # Write profile data to file and plot profile time series
-# # # =====
+# =====
+# Write profile data to file and plot profile time series
+# =====
 durations_min = (flashes_in_poly.t_edges_seconds[1:] - flashes_in_poly.t_edges_seconds[:-1])/60.0 #minutes
 fig_kwargs = dict(label_t_every=1800.)
 
@@ -233,9 +230,9 @@ else:
                 outfile_base, *IC_norm_profiles, partition_kind='total')
     IC_fig.savefig(outfile_base+'_total.pdf')
 
-# # =====
-# # Energy spectrum plots
-# # ====
+# =====
+# Energy spectrum plots
+# ====
 footprint_bin_edges = get_energy_spectrum_bins()
 spectrum_save_file_base = os.path.join(outdir, 'energy_spectrum_{0}_{1}.pdf')
 for flashes, t0, t1 in zip(flashes_series, flashes_in_poly.t_edges[:-1], flashes_in_poly.t_edges[1:]):
@@ -245,9 +242,9 @@ for flashes, t0, t1 in zip(flashes_series, flashes_in_poly.t_edges[:-1], flashes
     plot_energy_from_area_histogram(histo, edges,
                     save=spectrum_save_file, duration=(t1-t0).total_seconds())
 
-# # =========================================#
-# # Energy Spectrum from charge density:     # 
-# # =========================================#
+# =========================================#
+# Energy Spectrum from charge density:     # 
+# =========================================#
 import matplotlib.pyplot as plt
 import matplotlib
 ##Sets color bar for energy spectra plot:
@@ -354,7 +351,6 @@ def plot_lasso_grid_subset(fig,datalog, t,xedge,yedge,data,grid_lassos,field_nam
     else:
         row = map(str, (t, 0 , 0, 0.0, 0.0, 0.0))
     datalog.write(', '.join(row)+'\n')
-
 
 
 for field_id in field_ids_to_run:
