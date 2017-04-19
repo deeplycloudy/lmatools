@@ -307,14 +307,15 @@ def make_plot(filename, grid_name, x_name='x', y_name='y', t_name='time',
     # w, h = figaspect(float(n_rows)/n_cols) # breaks for large numbers of frames - has a hard-coded max figure size
     w, h, n_rows_perpage, n_pages = multiples_figaspect(n_rows, n_cols, x_range, y_range, fig_width=8.5, max_height=None)
     
+    
     # count_scale_factor = dx # / 1000.0
     # max_count_baseline = 450 * count_scale_factor #/ 10.0
     min_count, max_count = 1, grid[:].max() #max_count_baseline*(t[1]-t[0])
     if (max_count == 0) | (max_count == 1 ):
         max_count = min_count+1
     f.close()
-    
-    default_vmin = -0.2
+
+    default_vmin = -1.0#0.2
     if np.log10(max_count) <= default_vmin:
         vmin_count = np.log10(max_count) + default_vmin
     else:

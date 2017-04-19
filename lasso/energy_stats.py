@@ -61,6 +61,7 @@ def plot_flash_stat_time_series(basedate, t_edges, stats, major_tick_every=1800)
     ax_higher.plot(t, kurt, label='Kurtosis')
     ax_higher.set_ylim(-2,10)
     ax_higher.legend()
+    
 
     for ax in fig.get_axes():
         ax.xaxis.set_major_formatter(SecDayFormatter(basedate, ax.xaxis))  
@@ -224,6 +225,8 @@ def flash_size_stats(flashes):
         ('kurtosis', 'f4'),
         ('energy', 'f4'),
         ('energy_per_flash', 'f4'),
+        ('specific_energy', 'f4'),
+        ('total_energy', 'f4'),
        ]
     result = np.zeros((1,), dtype=result_dtype)
      
@@ -240,7 +243,57 @@ def flash_size_stats(flashes):
     result['energy'] = energy
     result['energy_per_flash'] = energy/number
     
+    #Moments for energy:
+    result['specific_energy'] = flashes['specific_energy'].sum()
+    result['total_energy']  = flashes['total_energy'].sum()
     return result
+
+####ADDED FUNCTION:   
+def plot_energy_stats(size_stats, basedate, t_edges, outdir):
+    t_start, t_end = t_edges[:-1], t_edges[1:]
+    starts = np.fromiter( ((s - basedate).total_seconds() for s in t_start), dtype=float )
+    ends = np.fromiter( ((e - basedate).total_seconds() for e in t_end), dtype=float )
+    t = (starts+ends) / 2.0
+    
+    specific_energy = size_stats
+    
+    figure = plt.figure(figsize=(15,10))
+    ax     = figure.add_subplot(111)
+    ax.plot(t,specific_energy,'k-',label='Specific Energy',alpha=0.6)
+    plt.legend()
+    # ax.set_xlabel('Time UTC')
+    ax.set_ylabel('Specific Energy (J/kg)')
+    
+    for axs in figure.get_axes():
+        axs.xaxis.set_major_formatter(SecDayFormatter(basedate, axs.xaxis))  
+        axs.set_xlabel('Time (UTC)')
+        axs.xaxis.set_major_locator(MultipleLocator(1800))
+        axs.xaxis.set_minor_locator(MultipleLocator(1800/2))
+    
+    return figure
+
+def plot_tot_energy_stats(size_stats, basedate, t_edges, outdir):
+    t_start, t_end = t_edges[:-1], t_edges[1:]
+    starts = np.fromiter( ((s - basedate).total_seconds() for s in t_start), dtype=float )
+    ends = np.fromiter( ((e - basedate).total_seconds() for e in t_end), dtype=float )
+    t = (starts+ends) / 2.0
+    
+    specific_energy = np.abs(size_stats)
+    
+    figure = plt.figure(figsize=(15,10))
+    ax     = figure.add_subplot(111)
+    ax.plot(t,specific_energy,'k-',label='Total Energy',alpha=0.6)
+    plt.legend()
+    # ax.set_xlabel('Time UTC')
+    ax.set_ylabel('Total Energy (J)')
+    
+    for axs in figure.get_axes():
+        axs.xaxis.set_major_formatter(SecDayFormatter(basedate, axs.xaxis))  
+        axs.set_xlabel('Time (UTC)')
+        axs.xaxis.set_major_locator(MultipleLocator(1800))
+        axs.xaxis.set_minor_locator(MultipleLocator(1800/2))
+    
+    return figure
     
 # In[6]:
 

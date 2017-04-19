@@ -95,6 +95,7 @@ def stack_chopped_arrays(chop_sequence):
         [a0+b0+c0, a1+b1+c1, a2+b2+c2, a3+b3+b3]
         where plus indicates concatenation        
     """
+         
     combined = [np.hstack(a) for a in zip(*chop_sequence)]
     return combined
 
@@ -335,6 +336,76 @@ def point_density_3d(target):
 
 
 @coroutine
+def flash_std(x0, y0, dx, dy, target, flash_id_key='flash_id', weight_key=None):
+    """ This function assumes a regular grid in x and y with spacing dx, dy
+        
+        x0, y0 is the x coordinate of the lower left corner of the lower-left grid cell, 
+        i.e., the lower left node of the grid mesh in cartesian space
+        
+        Eliminates duplicate points in gridded space and sends the reduced
+        set of points to the target.
+    
+        NOTE: Use of this function is to only find the standard deviation of flash size.
+    """
+    while True:
+        # assumes x,y,z are in same order as events
+        events, flash, x,y,z = (yield)
+        # print 'Doing extent density',
+        x_i = np.floor( (x-x0)/dx ).astype('int32')
+        y_i = np.floor( (y-y0)/dy ).astype('int32')
+
+        if len(x_i) > 0:
+            print('extent with points numbering', len(x_i), ' with weights', weight_key)
+            unq_idx = unique_vectors(x_i, y_i, events[flash_id_key])
+            # if x[unq_idx].shape[0] > 1:
+            if weight_key != None:
+                weight_lookup = dict(list(zip(flash[flash_id_key], flash[weight_key]**2.)))
+                weights = [weight_lookup[fi] for fi in events[unq_idx]['flash_id']] #puts weights in same order as x[unq_idx], y[unq_idx]
+                del weight_lookup
+            else:
+                weights = None
+            target.send((x[unq_idx], y[unq_idx], weights))
+            del weights, unq_idx
+        # else:
+            # print ''
+        del events, flash, x, y, z, x_i, y_i
+        
+@coroutine
+def flash_std_3d(x0, y0, z0, dx, dy, dz, target, flash_id_key='flash_id', weight_key=None):
+    """ This function assumes a regular grid in x and y with spacing dx, dy
+        
+        x0, y0 is the x coordinate of the lower left corner of the lower-left grid cell, 
+        i.e., the lower left node of the grid mesh in cartesian space
+        
+        Eliminates duplicate points in gridded space and sends the reduced
+        set of points to the target.
+    """
+    while True:
+        # assumes x,y,z are in same order as events
+        events, flash, x,y,z = (yield)
+        # print('Doing extent density',)
+        x_i = np.floor( (x-x0)/dx ).astype('int32')
+        y_i = np.floor( (y-y0)/dy ).astype('int32')
+        z_i = np.floor( (z-z0)/dz ).astype('int32')
+        print(len(x_i))
+        if len(x_i) > 0:
+            print('extent with points numbering', len(x_i), ' with weights', weight_key)
+            unq_idx = unique_vectors(x_i, y_i, z_i, events[flash_id_key])
+            # if x[unq_idx].shape[0] > 1:
+            if weight_key <> None:
+                weight_lookup = dict(list(zip(flash[flash_id_key], flash[weight_key]**2.)))
+                weights = [weight_lookup[fi] for fi in events[unq_idx]['flash_id']] #puts weights in same order as x[unq_idx], y[unq_idx]
+                del weight_lookup
+            else:
+                weights = None
+            target.send((x[unq_idx], y[unq_idx], z[unq_idx], weights)) 
+            del weights, unq_idx
+        # else:
+            # print ''
+        del events, flash, x, y, z, x_i, y_i, z_i
+
+
+@coroutine
 def extent_density(x0, y0, dx, dy, target, flash_id_key='flash_id', weight_key=None):
     """ This function assumes a regular grid in x and y with spacing dx, dy
         
@@ -355,12 +426,14 @@ def extent_density(x0, y0, dx, dy, target, flash_id_key='flash_id', weight_key=N
             print('extent with points numbering', len(x_i), ' with weights', weight_key)
             unq_idx = unique_vectors(x_i, y_i, events[flash_id_key])
             # if x[unq_idx].shape[0] > 1:
-            if weight_key != None:
+            if weight_key <> None:
                 weight_lookup = dict(list(zip(flash[flash_id_key], flash[weight_key])))
                 weights = [weight_lookup[fi] for fi in events[unq_idx]['flash_id']] #puts weights in same order as x[unq_idx], y[unq_idx]
                 del weight_lookup
             else:
                 weights = None
+                
+
             target.send((x[unq_idx], y[unq_idx], weights))
             del weights, unq_idx
         # else:
@@ -474,6 +547,181 @@ def accumulate_points_on_grid_3d(grid, xedge, yedge, zedge, out=None, label=''):
                     # return the mean of the weights in each bin
                     bad = (count <= 0)
                     count = np.asarray(total, dtype='float32')/count
+                    count[bad] = 0.0 
+                    
+                    del total, edges, bad
+        
+                # using += (as opposed to grid = grid + count) is essential
+                # so that the user can retain a reference to the grid object
+                # outside this routine.
+                if grid == None:
+                    grid = count
+                    out['out'] = grid
+                else:
+                    grid += count.astype(grid.dtype)
+                del count
+            del x, y, z, weights
+            gc.collect()
+    except GeneratorExit:
+        out['out'] = grid
+        
+##Repetition of functions below can probably be reduced to the original functions, however
+##remain as this was the only way to get new gridded fields that were no the mean.
+        
+####FOR STANDARD DEVIATION OF A SINGLE FIELD:
+@coroutine
+def accumulate_points_on_grid_sdev(grid, grid2, xedge, yedge, out=None, label=''):
+    assert xedge.shape[0] == grid.shape[0]+1
+    assert yedge.shape[0] == grid.shape[1]+1
+    if out == None:
+        out = {}
+    # grid = None
+    try:
+        while True:
+            x, y, weights = (yield)
+            if len(x) > 0:
+                x = np.atleast_1d(x)
+                y = np.atleast_1d(y)
+                print('accumulating ', len(x), 'points for ', label)
+                count, edges = np.histogramdd((x,y), bins=(xedge, yedge), weights=None, normed=False)    
+                
+                if weights != None:
+                    # histogramdd sums up weights in each bin for normed=False
+                    total, edges = np.histogramdd((x,y), bins=(xedge, yedge), weights=np.asarray(weights)**2., normed=False)
+                    
+                    # return the mean of the weights in each bin
+                    bad = (count <= 0)
+                    count = np.asarray(total, dtype='float32')/count 
+                    count[bad] = 0.0 
+                    
+                    del total, edges, bad
+                    
+                # using += (as opposed to grid = grid + count) is essential
+                # so that the user can retain a reference to the grid object
+                # outside this routine.
+                if grid == None:
+                    grid = count
+                    out['out'] = grid
+                else:
+                    grid += count.astype(grid.dtype) 
+                    grid = np.sqrt(grid - (grid2)**2.)
+                del count
+            del x, y, weights
+            gc.collect()
+    except GeneratorExit:
+        out['out'] = grid
+
+@coroutine
+def accumulate_points_on_grid_sdev_3d(grid, grid2, xedge, yedge, zedge, out=None, label=''):
+    assert xedge.shape[0] == grid.shape[0]+1
+    assert yedge.shape[0] == grid.shape[1]+1
+    assert zedge.shape[0] == grid.shape[2]+1
+    if out == None:
+        out = {}
+    # grid = None
+    try:
+        while True:
+            x, y, z, weights = (yield)
+            if len(x) > 0:
+                x = np.atleast_1d(x)
+                y = np.atleast_1d(y)
+                z = np.atleast_1d(z)
+                print('accumulating ', len(x), 'points for ', label)
+                count, edges = np.histogramdd((x,y,z), bins=(xedge, yedge, zedge), weights=None, normed=False)    
+                
+                if weights != None:
+                    # histogramdd sums up weights in each bin for normed=False
+                    total, edges = np.histogramdd((x,y,z), bins=(xedge, yedge, zedge), weights=np.asarray(weights)**2., normed=False)
+                    
+                    # return the mean of the weights in each bin
+                    bad = (count <= 0)
+                    count = np.asarray(total, dtype='float32')/count 
+                    count[bad] = 0.0 
+                    
+                    del total, edges, bad
+                    
+                # using += (as opposed to grid = grid + count) is essential
+                # so that the user can retain a reference to the grid object
+                # outside this routine.
+                if grid == None:
+                    grid = count
+                    out['out'] = grid
+                else:
+                    grid += count.astype(grid.dtype)
+                    grid = np.sqrt(grid - (grid2)**2.)
+                del count
+            del x, y, z, weights
+            gc.collect()
+    except GeneratorExit:
+        out['out'] = grid
+        
+#####FOR TOTAL ENERGY:
+@coroutine
+def accumulate_energy_on_grid(grid, xedge, yedge, out=None, label=''):
+    assert xedge.shape[0] == grid.shape[0]+1
+    assert yedge.shape[0] == grid.shape[1]+1
+    if out == None:
+        out = {}
+    # grid = None
+    try:
+        while True:
+            x, y, weights = (yield)
+            if len(x) > 0:
+                x = np.atleast_1d(x)
+                y = np.atleast_1d(y)
+                print('accumulating ', len(x), 'points for ', label)
+                count, edges = np.histogramdd((x,y), bins=(xedge, yedge), weights=None, normed=False)    
+                
+                if weights != None:
+                    # histogramdd sums up weights in each bin for normed=False
+                    total, edges = np.histogramdd((x,y), bins=(xedge, yedge), weights=np.abs(weights), normed=False)
+                    # return the mean of the weights in each bin
+                    bad = (count <= 0)
+                  
+                    count = np.asarray(total, dtype='float32')#/count 
+                    count[bad] = 0.0 
+                    
+                    del total, edges, bad
+    
+                # using += (as opposed to grid = grid + count) is essential
+                # so that the user can retain a reference to the grid object
+                # outside this routine.
+                if grid == None:
+                    grid = count
+                    out['out'] = grid
+                else:
+                    grid += count.astype(grid.dtype)
+                del count
+            del x, y, weights
+            gc.collect()
+    except GeneratorExit:
+        out['out'] = grid
+
+@coroutine
+def accumulate_energy_on_grid_3d(grid, xedge, yedge, zedge, out=None, label=''):
+    assert xedge.shape[0] == grid.shape[0]+1
+    assert yedge.shape[0] == grid.shape[1]+1
+    assert zedge.shape[0] == grid.shape[2]+1
+    if out == None:
+        out = {}
+    # grid = None
+    try:
+        while True:
+            x, y, z, weights = (yield)
+            if len(x) > 0:
+                x = np.atleast_1d(x)
+                y = np.atleast_1d(y)
+                z = np.atleast_1d(z)
+                print('accumulating ', len(x), 'points for ', label)
+                count, edges = np.histogramdd((x,y,z), bins=(xedge, yedge, zedge), weights=None, normed=False)    
+                
+                if weights != None:
+                    # histogramdd sums up weights in each bin for normed=False
+                    total, edges = np.histogramdd((x,y,z), bins=(xedge, yedge, zedge), weights=np.abs(weights), normed=False)
+                    
+                    # return the mean of the weights in each bin
+                    bad = (count <= 0)
+                    count = np.asarray(total, dtype='float32')#/count 
                     count[bad] = 0.0 
                     
                     del total, edges, bad

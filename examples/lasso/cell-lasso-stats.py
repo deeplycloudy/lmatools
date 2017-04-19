@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 """
 USAGE
 python cell-lasso-stats.py path_to_lasso_log.txt path_to_sort_results outdir
@@ -29,13 +30,13 @@ from numpy.lib.recfunctions import append_fields, stack_arrays
 import matplotlib.pyplot as plt
 
 from lmatools.grid.grid_collection import LMAgridFileCollection
-from lmatools.flash_stats import plot_energy_from_area_histogram, get_energy_spectrum_bins
+from lmatools.flash_stats import plot_energy_from_area_histogram, get_energy_spectrum_bins,  bin_center, plot_energies
 
-from lmatools.lasso.energy_stats import flash_size_stats, plot_flash_stat_time_series
+from lmatools.lasso.energy_stats import flash_size_stats, plot_flash_stat_time_series, plot_energy_stats, plot_tot_energy_stats
 from lmatools.lasso.length_stats import FractalLengthProfileCalculator
 from lmatools.lasso.cell_lasso_util import read_poly_log_file, polys_to_bounding_box, h5_files_from_standard_path, nc_files_from_standard_path
 from lmatools.lasso.cell_lasso_timeseries import TimeSeriesPolygonFlashSubset
-    
+from lmatools.lasso import empirical_charge_density as cd ###NEW
 
 # =====
 # Read polygon data and configure output directories
@@ -54,7 +55,7 @@ except OSError as exc:
     if exc.errno == errno.EEXIST and os.path.isdir(outdir):
         pass
 
-
+print path_to_sort_results
 # =====
 # Load data from HDF5 files into a time series of events and flashes
 # =====
@@ -62,6 +63,13 @@ h5_filenames = h5_files_from_standard_path(path_to_sort_results, t_start, t_end)
 flashes_in_poly = TimeSeriesPolygonFlashSubset(h5_filenames, t_start, t_end, dt, 
                         min_points=10, polys=polys, t_edges_polys=t_edges_polys)
 events_series, flashes_series = flashes_in_poly.get_event_flash_time_series()
+
+#-----
+find_number_events = []
+for events in events_series:
+    find_number_events.append(events.shape[0])
+number_events = np.asarray(find_number_events).shape[0]
+#-----
 
 # filter out flashes based on non-space-time criteria
 # filter out events not part of flashes - NOT IMPLEMENTED
@@ -78,8 +86,9 @@ def gen_filtered_time_series(events_series, flashes_series, bounds):
         events_filt, flashes_filt = (events[ev_good], flashes[fl_good])
         
         yield (events_filt, flashes_filt)
-        
-bounds={'area':(0.0, 1.0e10)} # used to remove flashes not meeting certain critera
+ 
+max_area = 1.0e10#4.0**2.0 #km^2       
+bounds={'area':(0.0, max_area)}#1.0e10)} # used to remove flashes not meeting certain critera
 filtered_time_series = gen_filtered_time_series(events_series, flashes_series, bounds)
 events_series, flashes_series = zip(*filtered_time_series)
 
@@ -102,7 +111,7 @@ class FlashCentroidPlotter(object):
         self.scatters = []
 
     def plot(self, flashes):
-        scart = self.evax.scatter(flashes['init_lon'], flashes['init_lat'], 
+        scart = self.evax.scatter(flashes['init_lon'], flashes['init_lat'],
                       c=flashes['start'], s=4, cmap='viridis',
                       vmin=self.t_sec_min, vmax=self.t_sec_max, edgecolor='none')
         if self.colorbar is None:
@@ -118,17 +127,27 @@ flash_ctr_filename = 'flash_ctr_{0}_{1}.png'.format(t_start.strftime('%y%m%d%H%M
 flash_location_plotter.fig.savefig(os.path.join(outdir, flash_ctr_filename))
 
 
-# =======================================
-# Loop over each window in the time series and calculate some
-# aggregate flash statistical properties
-# =======================================
-
-# Set up fractal length calcuations and channel height profiles
+# # =======================================
+# # Loop over each window in the time series and calculate some
+# # aggregate flash statistical properties
+# # =======================================
+#
+# # Set up fractal length calcuations and channel height profiles
 D = 1.5
 b_s = 200.0
 max_alt, d_alt = 20.0, 0.5
 alt_bins = np.arange(0.0,max_alt+d_alt, d_alt)
 length_profiler = FractalLengthProfileCalculator(D, b_s, alt_bins)
+
+#ADDED
+def write_flash_volume(outfile, field):
+    import xray as xr
+    import pandas as pd
+    print field.shape
+    dat = pd.DataFrame(field).T
+    # dat.columns = [field_name]
+
+    dat.to_csv(outfile)
 
 def gen_flash_summary_time_series(events_series, flashes_series, length_profiler):
     for events, flashes in zip(events_series, flashes_series):
@@ -137,25 +156,28 @@ def gen_flash_summary_time_series(events_series, flashes_series, length_profiler
         # for each flash, get a dictionary with 2D and 3D fractal lengths.
         # also includes the volume and point triangulation data.
         per_flash_data, IC_profile, CG_profile = length_profiler.process_events_flashes(events, flashes)
+    
         yield size_stats, IC_profile, CG_profile
 
-
-time_series = gen_flash_summary_time_series(events_series, flashes_series, 
+time_series = gen_flash_summary_time_series(events_series, flashes_series,
                                             length_profiler)
 size_stats, IC_profiles, CG_profiles = zip(*time_series)
 
+
+
 size_stats = stack_arrays(size_stats)
 iso_start, iso_end = flashes_in_poly.t_edges_to_isoformat(as_start_end=True)
-# assume here that iso_start and iso_end are identical-length strings, 
+# assume here that iso_start and iso_end are identical-length strings,
 # as they should be if the iso format is worth anything.
 size_stats = append_fields(size_stats, ('start_isoformat','end_isoformat'),
                                          data=(iso_start, iso_end), usemask=False)
-   
+
+
 # =====
 # Write flash size stats data (see harvest_flash_timeseries) and plot moment time series
 # =====
 def write_size_stat_data(outfile, size_stats):
-    stat_keys = ('start_isoformat','end_isoformat', 'number', 'mean', 'variance', 
+    stat_keys = ('start_isoformat','end_isoformat', 'number', 'mean', 'variance',
                  'skewness', 'kurtosis', 'energy', 'energy_per_flash')
     header = "# start_isoformat, end_isoformat, number, mean, variance, skewness, kurtosis, energy, energy_per_flash\n"
     line_template = "{0}, {1}, {2}, {3}, {4}, {5}, {6}, {7}, {8}\n"
@@ -166,20 +188,30 @@ def write_size_stat_data(outfile, size_stats):
         stat_vals = [stats[k] for k in stat_keys]
         line = line_template.format(*stat_vals)
         f.write(line)
-    f.close()    
-    
+    f.close()
+
 stats_filename = os.path.join(outdir,'flash_stats.csv')
 stats_figure = os.path.join(outdir,'flash_stats_{0}_{1}.pdf'.format(t_start.strftime('%y%m%d%H%M%S'),
                                                     t_end.strftime('%y%m%d%H%M%S')))
 write_size_stat_data(stats_filename, size_stats)
 fig = plot_flash_stat_time_series(flashes_in_poly.base_date, flashes_in_poly.t_edges, size_stats)
 fig.savefig(stats_figure)
-    
-# =====
-# Write profile data to file and plot profile time series
-# =====
+
+###ADDED: #############
+energy_fig = plot_energy_stats(size_stats['specific_energy'], flashes_in_poly.base_date, flashes_in_poly.t_edges, outdir)
+energy_figure_name = os.path.join(outdir,'specific_energy.pdf')
+energy_fig.savefig(energy_figure_name)
+
+tot_energy_fig = plot_tot_energy_stats(size_stats['total_energy'], flashes_in_poly.base_date, flashes_in_poly.t_edges, outdir)
+tot_energy_figure_name = os.path.join(outdir,'total_energy.pdf')
+tot_energy_fig.savefig(tot_energy_figure_name)
+
+
+# # # =====
+# # # Write profile data to file and plot profile time series
+# # # =====
 durations_min = (flashes_in_poly.t_edges_seconds[1:] - flashes_in_poly.t_edges_seconds[:-1])/60.0 #minutes
-fig_kwargs = dict(label_t_every=1800.)            
+fig_kwargs = dict(label_t_every=1800.)
 
 IC_norm_profiles = length_profiler.normalize_profiles(IC_profiles, durations_min)
 CG_norm_profiles = length_profiler.normalize_profiles(CG_profiles, durations_min)
@@ -187,7 +219,7 @@ CG_norm_profiles = length_profiler.normalize_profiles(CG_profiles, durations_min
 outfile_base = os.path.join(outdir,
                 'D-{0:3.1f}_b-{1:4.2f}_length-profiles'.format(D,b_s)
                 )
-            
+
 IC_fig = length_profiler.make_time_series_plot(flashes_in_poly.base_date,
             flashes_in_poly.t_edges_seconds,
             *IC_norm_profiles, **fig_kwargs)
@@ -195,39 +227,85 @@ CG_fig = length_profiler.make_time_series_plot(flashes_in_poly.base_date,
             flashes_in_poly.t_edges_seconds,
             *CG_norm_profiles, **fig_kwargs)
 if 'CG' in flashes_series[0].dtype.names:
-    length_profiler.write_profile_data(flashes_in_poly.base_date, flashes_in_poly.t_edges_seconds, 
+    length_profiler.write_profile_data(flashes_in_poly.base_date, flashes_in_poly.t_edges_seconds,
                 outfile_base, *IC_norm_profiles, partition_kind='IC')
-    length_profiler.write_profile_data(flashes_in_poly.base_date, flashes_in_poly.t_edges_seconds, 
+    length_profiler.write_profile_data(flashes_in_poly.base_date, flashes_in_poly.t_edges_seconds,
                 outfile_base, *CG_norm_profiles, partition_kind='CG')
     CG_fig.savefig(outfile_base+'_CG.pdf')
     IC_fig.savefig(outfile_base+'_IC.pdf')
 else:
     # no CG data and so the CG profiles should be empty. No need to save them
-    length_profiler.write_profile_data(flashes_in_poly.base_date, flashes_in_poly.t_edges_seconds, 
+    length_profiler.write_profile_data(flashes_in_poly.base_date, flashes_in_poly.t_edges_seconds,
                 outfile_base, *IC_norm_profiles, partition_kind='total')
     IC_fig.savefig(outfile_base+'_total.pdf')
 
-# =====
-# Energy spectrum plots
-# ====
+# # =====
+# # Energy spectrum plots
+# # ====
+
 footprint_bin_edges = get_energy_spectrum_bins()
 spectrum_save_file_base = os.path.join(outdir, 'energy_spectrum_{0}_{1}.pdf')
 for flashes, t0, t1 in zip(flashes_series, flashes_in_poly.t_edges[:-1], flashes_in_poly.t_edges[1:]):
     histo, edges = np.histogram(flashes['area'], bins=footprint_bin_edges)
     spectrum_save_file = spectrum_save_file_base.format(t0.strftime('%y%m%d%H%M%S'),
                                                         t1.strftime('%y%m%d%H%M%S'))
-    plot_energy_from_area_histogram(histo, edges, 
+    plot_energy_from_area_histogram(histo, edges,
                     save=spectrum_save_file, duration=(t1-t0).total_seconds())
+#
+# # =========================================#
+# # Energy Spectrum from charge density:     # ADDED 161121 #EDIT using plotting function instead!----works
+# # =========================================#
+import matplotlib.pyplot as plt
+import matplotlib
+##Sets color bar for energy spectra plot:
+time_array = []
+for t in flashes_in_poly.t_edges:
+    time_array.append(str(t)[11:].replace(':',''))
+time_array = np.asarray(time_array).astype(float)
 
+norm = matplotlib.colors.Normalize(
+     vmin=time_array.min(),
+     vmax=time_array.max())
+
+#ENERGY SPECTRA FOR TOTAL ENERGY:
+cmap_en = plt.cm.gist_heat
+s_m = plt.cm.ScalarMappable(cmap=cmap_en,norm=norm)
+s_m.set_array([])
+
+spectrum_save_file_base_en = os.path.join(outdir, 'energy_spectrum_estimate_{0}_{1}_new.pdf')
+which_energy = 'total_energy'
+title        = 'Total Energy'
+plot_energies(footprint_bin_edges, 
+              time_array, s_m, flashes_series,
+              flashes_in_poly.t_edges, 
+              spectrum_save_file_base_en,
+              which_energy, 
+              title)
+
+#ENERGY SPECTRA FOR SPECIFIC ENERGY:
+cmap_specific_en = plt.cm.cubehelix
+s_m2 = plt.cm.ScalarMappable(cmap=cmap_specific_en,norm=norm)
+s_m2.set_array([])
+
+spectrum_save_file_base_specific = os.path.join(outdir, 'specific_energy_spectrum_estimate_{0}_{1}_new.pdf')
+which_energy = 'specific_energy'
+title        = 'Specific Energy'
+plot_energies(footprint_bin_edges, 
+              time_array, s_m2, flashes_series,
+              flashes_in_poly.t_edges, 
+              spectrum_save_file_base_specific,
+              which_energy, 
+              title)
 
 # =====
 # NetCDF grid processing
 # =====
-field_file = ('flash_extent', 'flash_init', 'source', 'footprint')
-field_names = ('flash_extent', 'flash_initiation', 'lma_source', 'flash_footprint')
-field_labels = ('Flash coverage (count per pixel)', 'Flash initation (count per pixel)', 'VHF Sources (count per pixel)', 'Average area (km^2)' )
-grid_ranges = ((1, 1000), (1,100), (1, 100000),  (1, 100000.0))
-field_ids_to_run = (0, 1, 2, 3)
+field_file = ('flash_extent', 'flash_init', 'source', 'footprint', 'specific_energy', 'flashsize_std','total_energy')
+field_names = ('flash_extent', 'flash_initiation', 'lma_source', 'flash_footprint', 'specific_energy', 'flashsize_std', 'total_energy')
+field_labels = ('Flash coverage (count per pixel)', 'Flash initation (count per pixel)', 'VHF Sources (count per pixel)',
+                'Average area (km^2)', 'Average Energy J/kg' 'Flash size standard deviation (count per pixel)', 'Average Total Energy (J)')
+grid_ranges = ((1, 1000), (1,100), (1, 100000),  (1, 100000.0), (1,1000), (1, 100000), (1e6, 1e12))
+field_ids_to_run = (0, 1, 2, 3, 4, 5, 6)
 
 def plot_lasso_grid_subset(fig,datalog, t,xedge,yedge,data,grid_lassos,field_name,basedate,grid_range, axis_range):
     from scipy.stats import scoreatpercentile
@@ -235,7 +313,7 @@ def plot_lasso_grid_subset(fig,datalog, t,xedge,yedge,data,grid_lassos,field_nam
     import matplotlib.colors
     cmap = get_cmap('cubehelix')
     norm=matplotlib.colors.LogNorm()
-    
+
     x = (xedge[1:]+xedge[:-1])/2.0
     y = (yedge[1:]+yedge[:-1])/2.0
 
@@ -264,10 +342,14 @@ def plot_lasso_grid_subset(fig,datalog, t,xedge,yedge,data,grid_lassos,field_nam
 
     ax=fig.add_subplot(111)
     ax.set_title(str(t))
+    
+
     art = ax.pcolormesh(xedge, yedge,
-                        masked_nonzero_filtered[field_name], 
-                        vmin=grid_range[0], vmax=grid_range[1], 
-                        cmap=cmap, norm=norm)
+                        masked_nonzero_filtered[field_name],
+                        vmin=grid_range[0], vmax=grid_range[1],
+                        cmap=cmap, norm=norm,alpha=0.6)
+
+    # ax.plot(lon_range,lat_range,'ok--',alpha=0.5)
     fig.colorbar(art)
     ax.axis(axis_range)
 
@@ -280,16 +362,16 @@ def plot_lasso_grid_subset(fig,datalog, t,xedge,yedge,data,grid_lassos,field_nam
         row = map(str, (t, 0 , 0, 0.0, 0.0, 0.0))
     datalog.write(', '.join(row)+'\n')
 
-    
+
 
 for field_id in field_ids_to_run:
-    nc_filenames = nc_files_from_standard_path(path_to_sort_results, 
-                        field_file[field_id], 
-                        min(flashes_in_poly.t_edges), 
+    nc_filenames = nc_files_from_standard_path(path_to_sort_results,
+                        field_file[field_id],
+                        min(flashes_in_poly.t_edges),
                         max(flashes_in_poly.t_edges))
 
     field_name = field_names[field_id]
-    grid_range=grid_ranges[field_id]
+    grid_range = grid_ranges[field_id]
 
     fig_outdir = os.path.join(outdir,'grids_{0}'.format(field_name))
     try:
@@ -301,15 +383,16 @@ for field_id in field_ids_to_run:
     GC = LMAgridFileCollection(nc_filenames, field_name, x_name='longitude', y_name='latitude')
     grid_lassos = flashes_in_poly.grid_lassos
     basedate = flashes_in_poly.base_date
-    
+
     datalog_name = os.path.join(fig_outdir, '{0}_{1}.csv'.format(field_name, basedate.strftime('%Y%m%d')))
     datalog = open(datalog_name,'w')
     datalog.write('time (ISO), max count per grid box, sum of all grid boxes, 5th percentile, 50th percentile, 95th percentile\n')
-    
-    fig=plt.figure()
+
+    fig=plt.figure(figsize=(12,10))
     lon_range, lat_range = polys_to_bounding_box(flashes_in_poly.polys)
+    print lon_range,lat_range
     axis_range = lon_range+lat_range
-    
+
     for t, xedge, yedge, data in GC:
         if (t >= t_start) & (t <= t_end):
             plot_lasso_grid_subset(fig,datalog,t,xedge,yedge,data,grid_lassos,field_name,basedate,grid_range, axis_range)

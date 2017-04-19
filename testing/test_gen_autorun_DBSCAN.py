@@ -108,7 +108,11 @@ def test_sort_and_grid_and_plot(outpath):
     mapping = { 'source':'lma_source',
                 'flash_extent':'flash_extent',
                 'flash_init':'flash_initiation',
-                'footprint':'flash_footprint'}
+                'footprint':'flash_footprint',
+                'specific_energy':'specific_energy',
+                'flashsize_std':'flashsize_std',
+                'total_energy': 'total_energy'
+               }
     
     nc_names = glob.glob(grid_dir+'/20%s/*.nc' %(date.strftime('%y/%b/%d')))
     nc_names_3d = glob.glob(grid_dir+'/20%s/*_3d.nc' %(date.strftime('%y/%b/%d')))

@@ -1,7 +1,4 @@
-.DS_Store
+radarscan/
+*/*.pyc
 *.pyc
-*.bak
-flashsort/autosort/makefile
-flashsort/autosort/mflash.py
-flashsort/autosort/mflashparams.py
-examples/.ipynb_checkpoints/
+*.DS_Store

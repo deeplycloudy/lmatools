@@ -457,16 +457,26 @@ def grid_h5flashfiles(h5_filenames, start_time, end_time,
                             lon_0=ctr_lon, lat_0=ctr_lat, lat_1=ctr_lat, ellipse=proj_ellipse, datum=proj_datum)
     geoProj = GeographicSystem()
     
+    #####ADDING NEW FIELD BELOW:      ######################################
+    
     event_density_grid  = np.zeros((xedge.shape[0]-1, yedge.shape[0]-1, n_frames), dtype='int32')
     init_density_grid   = np.zeros((xedge.shape[0]-1, yedge.shape[0]-1, n_frames), dtype='int32')
     extent_density_grid = np.zeros((xedge.shape[0]-1, yedge.shape[0]-1, n_frames), dtype='int32')
     footprint_grid      = np.zeros((xedge.shape[0]-1, yedge.shape[0]-1, n_frames), dtype='float32')
+    #-----
+    specific_energy_grid = np.zeros((xedge.shape[0]-1, yedge.shape[0]-1, n_frames), dtype='float32')
+    total_energy_grid = np.zeros((xedge.shape[0]-1, yedge.shape[0]-1, n_frames), dtype='float32')
+    flashsize_std_grid  = np.zeros((xedge.shape[0]-1, yedge.shape[0]-1, n_frames), dtype='float32')
 
     event_density_grid_3d  = np.zeros((xedge.shape[0]-1, yedge.shape[0]-1, zedge.shape[0]-1, n_frames), dtype='int32')
     init_density_grid_3d   = np.zeros((xedge.shape[0]-1, yedge.shape[0]-1, zedge.shape[0]-1, n_frames), dtype='int32')
     extent_density_grid_3d = np.zeros((xedge.shape[0]-1, yedge.shape[0]-1, zedge.shape[0]-1, n_frames), dtype='int32')
     footprint_grid_3d      = np.zeros((xedge.shape[0]-1, yedge.shape[0]-1, zedge.shape[0]-1, n_frames), dtype='float32')
-
+    #-----
+    specific_energy_grid_3d = np.zeros((xedge.shape[0]-1, yedge.shape[0]-1, zedge.shape[0]-1, n_frames), dtype='float32')
+    total_energy_grid_3d    = np.zeros((xedge.shape[0]-1, yedge.shape[0]-1, zedge.shape[0]-1, n_frames), dtype='float32')
+    flashsize_std_grid_3d   = np.zeros((xedge.shape[0]-1, yedge.shape[0]-1, zedge.shape[0]-1, n_frames), dtype='float32')
+    
         
     all_frames = []
     # extent_frames = []
@@ -479,20 +489,30 @@ def grid_h5flashfiles(h5_filenames, start_time, end_time,
         extent_out = {'name':'extent'}
         init_out   = {'name':'init'}
         event_out  = {'name':'event'}
+        std_out    = {'name':'std'}
         
         extent_out_3d = {'name':'extent_3d'}
         init_out_3d   = {'name':'init_3d'}
         event_out_3d  = {'name':'event_3d'}
+        std_out_3d    = {'name':'std_3d'}
         
         accum_event_density  = density_to_files.accumulate_points_on_grid(event_density_grid[:,:,i], xedge, yedge,  out=event_out, label='event')
         accum_init_density   = density_to_files.accumulate_points_on_grid(init_density_grid[:,:,i], xedge, yedge,   out=init_out,  label='init')
         accum_extent_density = density_to_files.accumulate_points_on_grid(extent_density_grid[:,:,i], xedge, yedge, out=extent_out,label='extent')
         accum_footprint      = density_to_files.accumulate_points_on_grid(footprint_grid[:,:,i], xedge, yedge, label='footprint')
+        #-----
+        accum_specific_energy = density_to_files.accumulate_energy_on_grid(specific_energy_grid[:,:,i], xedge, yedge, out=extent_out, label='specific_energy')
+        accum_flashstd       = density_to_files.accumulate_points_on_grid_sdev(flashsize_std_grid[:,:,i], footprint_grid[:,:,i], xedge, yedge, out=extent_out, label='flashsize_std')
+        accum_total_energy   = density_to_files.accumulate_energy_on_grid(total_energy_grid[:,:,i], xedge, yedge, out=extent_out, label='total_energy')
 
         accum_event_density_3d  = density_to_files.accumulate_points_on_grid_3d(event_density_grid_3d[:,:,:,i], xedge, yedge, zedge,  out=event_out_3d, label='event_3d')
         accum_init_density_3d   = density_to_files.accumulate_points_on_grid_3d(init_density_grid_3d[:,:,:,i], xedge, yedge, zedge,   out=init_out_3d,  label='init_3d')
         accum_extent_density_3d = density_to_files.accumulate_points_on_grid_3d(extent_density_grid_3d[:,:,:,i], xedge, yedge, zedge, out=extent_out_3d,label='extent_3d')
         accum_footprint_3d      = density_to_files.accumulate_points_on_grid_3d(footprint_grid_3d[:,:,:,i], xedge, yedge, zedge, label='footprint_3d')
+        #-----
+        accum_specific_energy_3d = density_to_files.accumulate_energy_on_grid_3d(specific_energy_grid_3d[:,:,:,i], xedge, yedge, zedge, out=extent_out_3d,label='specific_energy_3d')
+        accum_flashstd_3d       = density_to_files.accumulate_points_on_grid_sdev_3d(flashsize_std_grid_3d[:,:,:,i], footprint_grid_3d[:,:,:,i], xedge, yedge, zedge, out=extent_out_3d,label='flashsize_std_3d')
+        accum_total_energy_3d   = density_to_files.accumulate_energy_on_grid_3d(total_energy_grid_3d[:,:,:,i], xedge, yedge, zedge, out=extent_out_3d,label='total_energy_3d')
 
         extent_out['func'] = accum_extent_density
         init_out['func'] = accum_init_density
@@ -508,27 +528,46 @@ def grid_h5flashfiles(h5_filenames, start_time, end_time,
         # init_frames_3d.append(init_out_3d)
         # event_frames_3d.append(event_out_3d)
         
+        
         event_density_target  = density_to_files.point_density(accum_event_density)
         init_density_target   = density_to_files.point_density(accum_init_density)
         extent_density_target = density_to_files.extent_density(x0, y0, dx, dy, accum_extent_density)
         mean_footprint_target = density_to_files.extent_density(x0, y0, dx, dy, accum_footprint, weight_key='area')
+        #------
+        mean_energy_target    = density_to_files.extent_density(x0, y0, dx, dy, accum_specific_energy, weight_key='specific_energy') #tot_energy
+        mean_total_energy_target = density_to_files.extent_density(x0, y0, dx, dy, accum_total_energy, weight_key='total_energy')    #Energy
+        std_flashsize_target  = density_to_files.extent_density(x0, y0, dx, dy, accum_flashstd, weight_key='area')
 
         event_density_target_3d  = density_to_files.point_density_3d(accum_event_density_3d)
         init_density_target_3d   = density_to_files.point_density_3d(accum_init_density_3d)
         extent_density_target_3d = density_to_files.extent_density_3d(x0, y0, z0, dx, dy, dz, accum_extent_density_3d)
         mean_footprint_target_3d = density_to_files.extent_density_3d(x0, y0, z0, dx, dy, dz, accum_footprint_3d, weight_key='area')
-
+        #------
+        mean_energy_target_3d    = density_to_files.extent_density_3d(x0, y0, z0, dx, dy, dz, accum_specific_energy_3d, weight_key='specific_energy') #tot_energy
+        mean_total_energy_target_3d = density_to_files.extent_density_3d(x0, y0, z0, dx, dy, dz, accum_total_energy_3d, weight_key='total_energy')     #Energy
+        std_flashsize_target_3d  = density_to_files.extent_density_3d(x0, y0, z0, dx, dy, dz, accum_flashstd_3d, weight_key='area')
+           
+           
+        # ######FIND THE STANDARD DEVIATION OF FLASH SIZES: ########
+#         flashsize_std = np.sqrt(tuple(std_flashsize_target)/tuple(extent_density_target) - tuple(mean_footprint_target)**2.)
+#         flashsize_std_3d = np.sqrt(tuple(std_flashsize_target_3d)/tuple(extent_density_target_3d) - tuple(mean_footprint_target_3d)**2.)
 
         spew_to_density_types = broadcast( ( 
                     density_to_files.project('lon', 'lat', 'alt', mapProj, geoProj, event_density_target, use_flashes=False),
                     density_to_files.project('init_lon', 'init_lat', 'init_alt', mapProj, geoProj, init_density_target, use_flashes=True),
                     density_to_files.project('lon', 'lat', 'alt', mapProj, geoProj, extent_density_target, use_flashes=False),
                     density_to_files.project('lon', 'lat', 'alt', mapProj, geoProj, mean_footprint_target, use_flashes=False),
+                    density_to_files.project('lon', 'lat', 'alt', mapProj, geoProj, mean_energy_target, use_flashes=False),
+                    density_to_files.project('lon', 'lat', 'alt', mapProj, geoProj, std_flashsize_target, use_flashes=False),
+                    density_to_files.project('lon', 'lat', 'alt', mapProj, geoProj, mean_total_energy_target, use_flashes=False),
                     
                     density_to_files.project('lon', 'lat', 'alt', mapProj, geoProj, event_density_target_3d, use_flashes=False),
                     density_to_files.project('init_lon', 'init_lat', 'init_alt', mapProj, geoProj, init_density_target_3d, use_flashes=True),
                     density_to_files.project('lon', 'lat', 'alt', mapProj, geoProj, extent_density_target_3d, use_flashes=False),
                     density_to_files.project('lon', 'lat', 'alt', mapProj, geoProj, mean_footprint_target_3d, use_flashes=False),
+                    density_to_files.project('lon', 'lat', 'alt', mapProj, geoProj, mean_energy_target_3d, use_flashes=False),
+                    density_to_files.project('lon', 'lat', 'alt', mapProj, geoProj, std_flashsize_target_3d, use_flashes=False),
+                    density_to_files.project('lon', 'lat', 'alt', mapProj, geoProj, mean_total_energy_target_3d, use_flashes=False),
                     ) )
 
         all_frames.append( density_to_files.extract_events_for_flashes( spew_to_density_types ) )
@@ -584,31 +623,47 @@ def grid_h5flashfiles(h5_filenames, start_time, end_time,
                 outflile_basename+'flash_init.nc',
                 outflile_basename+'source.nc',
                 outflile_basename+'footprint.nc',
+                outflile_basename+'specific_energy.nc',
+                outflile_basename+'flashsize_std.nc',
+                outflile_basename+'total_energy.nc'
                 )
     outfiles_3d = (outflile_basename+'flash_extent_3d.nc',
                 outflile_basename+'flash_init_3d.nc',
                 outflile_basename+'source_3d.nc',
                 outflile_basename+'footprint_3d.nc',
+                outflile_basename+'specific_energy_3d.nc',
+                outflile_basename+'flashsize_std_3d.nc',
+                outflile_basename+'total_energy_3d.nc'
                 )
                 
     outgrids = (extent_density_grid, 
                 init_density_grid,   
                 event_density_grid,  
                 footprint_grid,
+                specific_energy_grid,
+                flashsize_std_grid,
+                total_energy_grid,
                 )
                 
     outgrids_3d = (extent_density_grid_3d,
                 init_density_grid_3d,
                 event_density_grid_3d,
-                footprint_grid_3d,)
+                footprint_grid_3d,
+                specific_energy_grid_3d,
+                flashsize_std_grid_3d,
+                total_energy_grid_3d
+                )
                 
                 
-    field_names = ('flash_extent', 'flash_initiation', 'lma_source', 'flash_footprint')
+    field_names = ('flash_extent', 'flash_initiation', 'lma_source', 'flash_footprint', 'specific_energy', 'flashsize_std','total_energy')
     
     field_descriptions = ('LMA flash extent density',
                         'LMA flash initiation density',
                         'LMA source density',
-                        'LMA local mean flash area')
+                        'LMA local mean flash area',
+                        'LMA flash specific energy (approx)',
+                        'LMA local standard deviation of flash size',
+                        'LMA flash total energy (approx)')
     
     if proj_name=='latlong':
         density_units = "grid"
@@ -624,11 +679,17 @@ def grid_h5flashfiles(h5_filenames, start_time, end_time,
                     density_label,
                     density_label,
                     "km^2 per flash",
+                    "J/kg per flash",
+                    density_label,
+                    "J per flash",
                      )
     field_units_3d = ( density_label_3d,
                     density_label_3d,
                     density_label_3d,
                     "km^2 per flash",
+                    "J/kg per flash",
+                    density_label_3d,
+                    "J per flash",
                      )
     
     output_writer(outfiles[0], t_ref, np.asarray(t_edges_seconds[:-1]),
@@ -655,7 +716,26 @@ def grid_h5flashfiles(h5_filenames, start_time, end_time,
                     outgrids[3], field_names[3], field_descriptions[3], format='f', 
                     grid_units=field_units[3],
                     **output_kwargs)
-                    
+    output_writer(outfiles[4], t_ref, np.asarray(t_edges_seconds[:-1]),
+                    x_coord*spatial_scale_factor, y_coord*spatial_scale_factor, 
+                    lons, lats, ctr_lat, ctr_lon, 
+                    outgrids[4], field_names[4], field_descriptions[4], format='f', 
+                    grid_units=field_units[4],
+                    **output_kwargs)
+    output_writer(outfiles[5], t_ref, np.asarray(t_edges_seconds[:-1]),
+                    x_coord*spatial_scale_factor, y_coord*spatial_scale_factor, 
+                    lons, lats, ctr_lat, ctr_lon, 
+                    outgrids[5], field_names[5], field_descriptions[5], format='f', 
+                    grid_units=field_units[5],
+                    **output_kwargs)
+    output_writer(outfiles[6], t_ref, np.asarray(t_edges_seconds[:-1]),
+                    x_coord*spatial_scale_factor, y_coord*spatial_scale_factor, 
+                    lons, lats, ctr_lat, ctr_lon, 
+                    outgrids[6], field_names[6], field_descriptions[6], format='f', 
+                    grid_units=field_units[6],
+                    **output_kwargs)
+    
+    ########3D:
     output_writer_3d(outfiles_3d[0], t_ref, np.asarray(t_edges_seconds[:-1]),
                     x_coord*spatial_scale_factor, y_coord*spatial_scale_factor,
                     z_coord*spatial_scale_factor, 
@@ -684,8 +764,28 @@ def grid_h5flashfiles(h5_filenames, start_time, end_time,
                     outgrids_3d[3], field_names[3], field_descriptions[3], format='f', 
                     grid_units=field_units_3d[3],
                     **output_kwargs)
-                        
-                    
+    output_writer_3d(outfiles_3d[4], t_ref, np.asarray(t_edges_seconds[:-1]),
+                    x_coord*spatial_scale_factor, y_coord*spatial_scale_factor,
+                    z_coord*spatial_scale_factor, 
+                    lons_3d, lats_3d, alts_3d, ctr_lat, ctr_lon, ctr_alt,
+                    outgrids_3d[4], field_names[4], field_descriptions[4], format='f', 
+                    grid_units=field_units_3d[4],
+                    **output_kwargs)    
+    output_writer_3d(outfiles_3d[5], t_ref, np.asarray(t_edges_seconds[:-1]),
+                    x_coord*spatial_scale_factor, y_coord*spatial_scale_factor,
+                    z_coord*spatial_scale_factor, 
+                    lons_3d, lats_3d, alts_3d, ctr_lat, ctr_lon, ctr_alt,
+                    outgrids_3d[5], field_names[5], field_descriptions[5], format='f', 
+                    grid_units=field_units_3d[5],
+                    **output_kwargs)                
+    output_writer_3d(outfiles_3d[6], t_ref, np.asarray(t_edges_seconds[:-1]),
+                    x_coord*spatial_scale_factor, y_coord*spatial_scale_factor,
+                    z_coord*spatial_scale_factor, 
+                    lons_3d, lats_3d, alts_3d, ctr_lat, ctr_lon, ctr_alt,
+                    outgrids_3d[6], field_names[6], field_descriptions[6], format='f', 
+                    grid_units=field_units_3d[6],
+                    **output_kwargs)                
+    
     print('max extent is', extent_density_grid.max())
 
     return x_coord, y_coord, z_coord, lons, lats, alts, extent_density_grid, outfiles, field_names
