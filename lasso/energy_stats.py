@@ -243,15 +243,9 @@ def flash_size_stats(flashes):
     result['energy'] = energy
     result['energy_per_flash'] = energy/number
     
-    
     #Moments for energy:
-    central_energy, standard_energy = central_moments_from_raw(raw_moments(flashes['tot_energy'], n_moments=5))
-    eng_number, eng_mean, eng_variance, eng_skewness, eng_kurtosis = standard_energy
-    result['specific_energy'] = eng_mean * eng_number#flashes['tot_energy'].mean()
-    
-    central_totenergy, standard_totenergy = central_moments_from_raw(raw_moments(flashes['Energy'], n_moments=5))
-    teng_number, teng_mean, teng_variance, teng_skewness, teng_kurtosis = standard_totenergy
-    result['total_energy']  = teng_mean * teng_number
+    result['specific_energy'] = flashes['specific_energy'].sum()
+    result['total_energy']  = flashes['total_energy'].sum()
     return result
 
 ####ADDED FUNCTION:   

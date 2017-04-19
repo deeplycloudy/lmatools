@@ -180,7 +180,7 @@ if __name__ == '__main__':
               'chi2':(0,1.0),    # range of allowable chi-sq values
               'distance':3000.0, 'thresh_critical_time':0.15, # space and time grouping thresholds
               'thresh_duration':3.0, # maximum expected flash duration
-              'ctr_lat':33.56, 'ctr_lon':-101.88, #center lat/lon to use for flash sorting, gridding
+              'ctr_lat':33.5, 'ctr_lon':-101.5, #center lat/lon to use for flash sorting, gridding
               'mask_length':6, # length of the hexadecimal station mask column in the LMA ASCII files
               }
     center_ID='WTLMA'
@@ -188,7 +188,6 @@ if __name__ == '__main__':
     data_out = sys.argv[1]
     filenames = sys.argv[2:]
     h5_filenames = sort_flashes(filenames, data_out, params) #Turn off when .h5 files are made to make grid files!!
-    #h5_filenames=filenames
     # other keyword arguments control the grid spacing ... see the function definition
 
     nc_names_2d, nc_names_3d = grid_and_plot(h5_filenames, data_out, base_date=datetime(2012, 1, 1)

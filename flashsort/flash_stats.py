@@ -9,6 +9,7 @@ from scipy.misc import factorial
 from scipy.spatial.qhull import QhullError
 from six.moves import range
 
+from lmatools.lasso import empirical_charge_density as cd
 
 # logger = logging.getLogger('FlashAutorunLogger')
 class Flash(object):
@@ -97,7 +98,6 @@ def hull_volume(xyz):
 
 ##############ADDED 01/05/2017 ###############
 def energy(area,constant=False):
-    from lmatools.lasso import EmpericalChargeDensity as cd
     # for f, (flashes, t0, t1) in enumerate(zip(flashes_series, flashes_in_poly.t_edges[:-1], flashes_in_poly.t_edges[1:])):
         ###Now for charge densities approximated: #####
         

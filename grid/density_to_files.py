@@ -95,6 +95,7 @@ def stack_chopped_arrays(chop_sequence):
         [a0+b0+c0, a1+b1+c1, a2+b2+c2, a3+b3+b3]
         where plus indicates concatenation        
     """
+         
     combined = [np.hstack(a) for a in zip(*chop_sequence)]
     return combined
 

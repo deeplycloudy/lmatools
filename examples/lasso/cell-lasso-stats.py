@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 """
 USAGE
 python cell-lasso-stats.py path_to_lasso_log.txt path_to_sort_results outdir
@@ -29,13 +30,13 @@ from numpy.lib.recfunctions import append_fields, stack_arrays
 import matplotlib.pyplot as plt
 
 from lmatools.grid.grid_collection import LMAgridFileCollection
-from lmatools.flash_stats import plot_energy_from_area_histogram, get_energy_spectrum_bins,  bin_center
+from lmatools.flash_stats import plot_energy_from_area_histogram, get_energy_spectrum_bins,  bin_center, plot_energies
 
 from lmatools.lasso.energy_stats import flash_size_stats, plot_flash_stat_time_series, plot_energy_stats, plot_tot_energy_stats
 from lmatools.lasso.length_stats import FractalLengthProfileCalculator
 from lmatools.lasso.cell_lasso_util import read_poly_log_file, polys_to_bounding_box, h5_files_from_standard_path, nc_files_from_standard_path
 from lmatools.lasso.cell_lasso_timeseries import TimeSeriesPolygonFlashSubset
-from lmatools.lasso import EmpericalChargeDensity as cd ###NEW
+from lmatools.lasso import empirical_charge_density as cd ###NEW
 
 # =====
 # Read polygon data and configure output directories
@@ -43,7 +44,7 @@ from lmatools.lasso import EmpericalChargeDensity as cd ###NEW
 polylog = sys.argv[1]
 polys, t_edges_polys = read_poly_log_file(polylog)
 t_start, t_end = min(t_edges_polys), max(t_edges_polys)
-dt = timedelta(minutes=10)
+dt = timedelta(minutes=1)
 
 path_to_sort_results = sys.argv[2]  
 outdir_name_from_user = sys.argv[3]      
@@ -148,34 +149,6 @@ def write_flash_volume(outfile, field):
 
     dat.to_csv(outfile)
 
-#Below is not used, but can be used to write the volumes into separate .csv files:
-# def gen_flash_summary_time_series_for_vol(events_series, flashes_series, length_profiler):
-#     volume = []
-#     for i, (events, flashes) in enumerate(zip(events_series, flashes_series)):
-#         # reduce all flashes in this time interval to representative moments
-#         size_stats = flash_size_stats(flashes)
-#         # for each flash, get a dictionary with 2D and 3D fractal lengths.
-#         # also includes the volume and point triangulation data.
-#         for f in range(40):#flashes['flash_id'].shape[0]):
-#             per_flash_data, IC_profile, CG_profile = length_profiler.process_events_flashes(events, flashes)
-#
-#             volume.append(np.asarray(per_flash_data[f]['3D']['volume']))
-#
-#     return volume
-
-
-# def gen_flash_summary_time_series_for_vol(events_series, flashes_series, length_profiler):
-#     volume = np.zeros([number_events, 15000])
-#     print number_events
-#     for i, (events, flashes) in enumerate(zip(events_series, flashes_series)):
-#         # size_stats = flash_size_stats(flashes)
-#         per_flash_data, IC_profile, CG_profile = length_profiler.process_events_flashes(events, flashes)
-#         for f in np.arange(flashes['flash_id'].shape[0]-1):
-#             print (i,f)
-#             volume[i,f] = np.asarray(per_flash_data[f]['3D']['volume'])
-#
-#     return volume
-
 def gen_flash_summary_time_series(events_series, flashes_series, length_profiler):
     for events, flashes in zip(events_series, flashes_series):
         # reduce all flashes in this time interval to representative moments
@@ -190,11 +163,7 @@ time_series = gen_flash_summary_time_series(events_series, flashes_series,
                                             length_profiler)
 size_stats, IC_profiles, CG_profiles = zip(*time_series)
 
-####ADDITIONAL:
-# time_series2 = gen_flash_summary_time_series_for_vol(events_series, flashes_series,
-#                                             length_profiler)
-# volume = time_series2
-##############
+
 
 size_stats = stack_arrays(size_stats)
 iso_start, iso_end = flashes_in_poly.t_edges_to_isoformat(as_start_end=True)
@@ -276,123 +245,57 @@ else:
 
 footprint_bin_edges = get_energy_spectrum_bins()
 spectrum_save_file_base = os.path.join(outdir, 'energy_spectrum_{0}_{1}.pdf')
-# for flashes, t0, t1 in zip(flashes_series, flashes_in_poly.t_edges[:-1], flashes_in_poly.t_edges[1:]):
-#     histo, edges = np.histogram(flashes['area'], bins=footprint_bin_edges)
-#     spectrum_save_file = spectrum_save_file_base.format(t0.strftime('%y%m%d%H%M%S'),
-#                                                         t1.strftime('%y%m%d%H%M%S'))
-#     plot_energy_from_area_histogram(histo, edges,
-#                     save=spectrum_save_file, duration=(t1-t0).total_seconds())
+for flashes, t0, t1 in zip(flashes_series, flashes_in_poly.t_edges[:-1], flashes_in_poly.t_edges[1:]):
+    histo, edges = np.histogram(flashes['area'], bins=footprint_bin_edges)
+    spectrum_save_file = spectrum_save_file_base.format(t0.strftime('%y%m%d%H%M%S'),
+                                                        t1.strftime('%y%m%d%H%M%S'))
+    plot_energy_from_area_histogram(histo, edges,
+                    save=spectrum_save_file, duration=(t1-t0).total_seconds())
 #
 # # =========================================#
-# # Energy Spectrum from charge density:     # ADDED 161121
+# # Energy Spectrum from charge density:     # ADDED 161121 #EDIT using plotting function instead!----works
 # # =========================================#
 import matplotlib.pyplot as plt
 import matplotlib
-cmap_en = plt.cm.gist_heat
-
+##Sets color bar for energy spectra plot:
 time_array = []
 for t in flashes_in_poly.t_edges:
     time_array.append(str(t)[11:].replace(':',''))
 time_array = np.asarray(time_array).astype(float)
-# print time_array
 
 norm = matplotlib.colors.Normalize(
      vmin=time_array.min(),
      vmax=time_array.max())
 
+#ENERGY SPECTRA FOR TOTAL ENERGY:
+cmap_en = plt.cm.gist_heat
 s_m = plt.cm.ScalarMappable(cmap=cmap_en,norm=norm)
 s_m.set_array([])
 
-energy = []
-init_alt = []
-
-plt.figure(figsize=(14,9))
-cmap = plt.cm.Reds_r
 spectrum_save_file_base_en = os.path.join(outdir, 'energy_spectrum_estimate_{0}_{1}_new.pdf')
-
-for f, (flashes, t0, t1) in enumerate(zip(flashes_series, flashes_in_poly.t_edges[:-1], flashes_in_poly.t_edges[1:])):
-    ###Now for charge densities approximated: #####
-    random = np.random.randn(flashes['area'].shape[0])*0.8e3 + 4.1e3#3.5e3
-    distance = np.abs(random) #Generates random distance between capacitor plates.
-    density = cd.rho_retrieve(np.abs(flashes['area']), distance)
-    rho,w = density.calculate()
-    flash_1d_extent = bin_center(np.sqrt(footprint_bin_edges))
-    histo_cd, edges_cd = np.histogram(np.sqrt(flashes['area']), bins=np.sqrt(footprint_bin_edges), weights=np.abs(np.nan_to_num(w)))
-    # plot_energy_from_charge(histo_cd, edges_cd, w,
-    #                 save=spectrum_save_file)
-    spectrum_save_file_en = spectrum_save_file_base_en.format(t0.strftime('%y%m%d%H%M%S'),
-                                                        t1.strftime('%y%m%d%H%M%S'))
-
-    estimated, = plt.loglog(flash_1d_extent[:],(histo_cd)/np.sqrt(flash_1d_extent),color=s_m.to_rgba(time_array[f]),alpha=0.5);
-    plt.ylim(1e7,1e13)
-    # plt.xlim(plt.xlim()[::-1])
-    plt.xlim(1e2,1e-1)
-    
-    #ADDED: GET ENERGY AND INIT_ALTS:
-    events = events_series[f]
-    alts = np.asarray(flashes['init_alt'])
-    
-    energy.append(w)
-    init_alt.append(alts)
-
-
-wavenumber = (2.*np.pi)/flash_1d_extent
-inertialsubrange = 10**6 * (wavenumber*0.0002)**(-5.0/3.0)
-cbar = plt.colorbar(s_m)
-# cbar.set_clim(200000,235000)
-plt.loglog(flash_1d_extent, inertialsubrange,'k-',alpha=0.5);
-plt.title('Estimated Energy Spectra for Cell Selection',fontsize=15)
-plt.xlabel(r'Flash width ($\sqrt{A_h}$, $km$)',fontsize=15)
-plt.ylabel(r'Energy ($J$)',fontsize=15)
-cbar.ax.tick_params(labelsize=15)
-estimated.axes.tick_params(labelsize=15)
-plt.savefig(spectrum_save_file_en)
-plt.close()
-
+which_energy = 'total_energy'
+title        = 'Total Energy'
+plot_energies(footprint_bin_edges, 
+              time_array, s_m, flashes_series,
+              flashes_in_poly.t_edges, 
+              spectrum_save_file_base_en,
+              which_energy, 
+              title)
 
 #ENERGY SPECTRA FOR SPECIFIC ENERGY:
 cmap_specific_en = plt.cm.cubehelix
-scalar_map = plt.cm.ScalarMappable(cmap=cmap_specific_en,norm=norm)
-scalar_map.set_array([])
+s_m2 = plt.cm.ScalarMappable(cmap=cmap_specific_en,norm=norm)
+s_m2.set_array([])
 
-plt.figure(figsize=(14,9))
 spectrum_save_file_base_specific = os.path.join(outdir, 'specific_energy_spectrum_estimate_{0}_{1}_new.pdf')
-
-for f, (flashes, t0, t1) in enumerate(zip(flashes_series, flashes_in_poly.t_edges[:-1], flashes_in_poly.t_edges[1:])):
-    ###Now for charge densities approximated: #####
-    specific_energies = flashes['tot_energy']
-    flash_1d_extent = bin_center(np.sqrt(footprint_bin_edges))
-    histo_specific, edges_specific = np.histogram(np.sqrt(flashes['area']), bins=np.sqrt(footprint_bin_edges), weights=np.nan_to_num(specific_energies))
-    # plot_energy_from_charge(histo_cd, edges_cd, w,
-    #                 save=spectrum_save_file)
-    spectrum_save_file_specific = spectrum_save_file_base_specific.format(t0.strftime('%y%m%d%H%M%S'),
-                                                        t1.strftime('%y%m%d%H%M%S'))
-
-    estimated_specific_eng, = plt.loglog(flash_1d_extent[:],histo_specific/np.sqrt(flash_1d_extent),color=scalar_map.to_rgba(time_array[f]),alpha=0.5);
-    # plt.ylim(1e7,1e13)
-    # # plt.xlim(plt.xlim()[::-1])
-    # plt.xlim(1e2,1e-1)
-    
-
-wavenumber = (2.*np.pi)/flash_1d_extent
-inertialsubrange_se = 10**1 * (wavenumber)**(5.0/3.0)
-colorbar = plt.colorbar(scalar_map)
-# cbar.set_clim(200000,235000)
-plt.loglog(flash_1d_extent, inertialsubrange_se,'k-',alpha=0.5);
-plt.title('Estimated Specific Energy Spectra for Cell Selection',fontsize=15)
-plt.xlabel(r'Flash width ($\sqrt{A_h}$, $km$)',fontsize=15)
-plt.ylabel(r'Specific Energy ($J/kg$)',fontsize=15)
-colorbar.ax.tick_params(labelsize=15)
-estimated_specific_eng.axes.tick_params(labelsize=15)
-plt.savefig(spectrum_save_file_specific)
-plt.close()
-
-
-
-#ADDED
-# write_flash_volume(os.path.join(outdir, 'Flash_Volume_Table.csv'), np.asarray(volume))
-# write_flash_volume(os.path.join(outdir, 'Flash_Energy_Table.csv'), np.asarray(energy))
-# write_flash_volume(os.path.join(outdir, 'Flash_Init_Alt.csv'), np.asarray(init_alt))
+which_energy = 'specific_energy'
+title        = 'Specific Energy'
+plot_energies(footprint_bin_edges, 
+              time_array, s_m2, flashes_series,
+              flashes_in_poly.t_edges, 
+              spectrum_save_file_base_specific,
+              which_energy, 
+              title)
 
 # =====
 # NetCDF grid processing

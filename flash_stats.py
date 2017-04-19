@@ -156,44 +156,68 @@ def plot_energy_from_area_histogram(histo, bin_edges, bin_unit='km', save=False,
         fig.clf()
 
 #######ADDED ESTIMATED ENERGY ####################
-# def energy_plot_setup_estimated(bin_unit='km'):
-#     import matplotlib.pyplot as plt
-#     fig = plt.figure(figsize=(14,9))
-#
-#     spectrum_ax = fig.add_subplot(111)
-#     spectrum_ax.set_xlabel('Flash width ($\sqrt{A_h}$, %s)' % (bin_unit,))
-#     spectrum_ax.set_ylabel('$Electrostatic Energy J$')
-#     spectrum_ax.set_xlim(10**-1, 10**2)
-#     spectrum_ax.set_ylim(10**7, 10**13)
-#     spectrum_ax.set_yscale('log')
-#     spectrum_ax.set_xscale('log')
-#
-#     #1e-2 to 1e4
-#     min_pwr = -2
-#     max_pwr = 4
-#     delta_pwr = 0.1
-#     powers = np.arange(min_pwr, max_pwr+delta_pwr, delta_pwr)
-#     flash_1d_extent = 10**powers
-#     wavenumber = (2*np.pi)/flash_1d_extent
-#     inertialsubrange = 10**6 * (wavenumber*0.0002)**(-5.0/3.0)
-#
-#     spectrum_line_artist = spectrum_ax.loglog(flash_1d_extent, inertialsubrange, 'r')[0]
-#     fivethirds_line_artist = spectrum_ax.loglog(flash_1d_extent, inertialsubrange, 'k')[0]
-#
-#     return fig, spectrum_ax, fivethirds_line_artist, spectrum_line_artist
-#
-# def plot_energy_from_charge(histo, bin_edges, bin_unit='km', save=False, fig=None):
-#     # cmap = plt.cm.Reds_r
-#     import matplotlib.pyplot as plt
-#     flash_1d_extent = bin_center(np.sqrt(bin_edges))
-#     fig, spectrum_ax, fivethirds_line_artist, spectrum_artist = energy_plot_setup_estimated()
-#     spectrum_artist.set_data(flash_1d_extent, histo/np.sqrt(flash_1d_extent))
-#
-#     if save==False:
-#         plt.show()
-#     else:
-#         plt.savefig(save)
-#         plt.close()
+def plot_energies(footprint_bin_edges,time_array,scalar_map,flashes_series,
+                    flashes_in_poly_edges,spectrum_save_file_base_en,which_energy,title):
+    '''
+    Plots estimated total and specific energy fields in .h5 files. 
+    Arguments:
+            -) flash area bin edges: footprint_bin_edges
+            -) times in polygon:     time_array
+            -) color by time cmap:   scalar_map
+            -) radar specific times: time_mask   
+            -) flash table series:   flashes_series
+            -) flashes in lasso:     flashes_in_poly_edges
+            -) save path:            spectrum_save_file_base_en
+            -) energy field:         which_energy
+            -) title of plot:        title             
+    '''
+    import matplotlib.pyplot as plt
+    s_m = scalar_map
+    figure_energy = plt.figure(figsize=(14,9)) 
+    ax_energy = figure_energy.add_subplot(111)
+    # cmap = plt.cm.Reds_r
+    
+    for f, (flashes, t0, t1) in enumerate(zip(flashes_series, flashes_in_poly_edges[:-1], flashes_in_poly_edges[1:])):
+        
+        flash_1d_extent = bin_center(np.sqrt(footprint_bin_edges))
+        histo_cd, edges_cd = np.histogram(np.sqrt(flashes['area']), 
+                                          bins=np.sqrt(footprint_bin_edges), 
+                                          weights=np.abs(flashes[which_energy]))
+
+        spectrum_save_file_en = spectrum_save_file_base_en.format(t0.strftime('%y%m%d%H%M%S'),
+                                                                  t1.strftime('%y%m%d%H%M%S'))
+        
+        estimated, = ax_energy.loglog(flash_1d_extent[:],
+                            np.abs(np.asarray(histo_cd))/np.sqrt(flash_1d_extent),
+                            color=s_m.to_rgba(np.asarray(time_array)[f]),
+                            alpha=0.7); 
+                                                   
+    if which_energy == 'Energy' or which_energy == 'total_energy':
+        ax_energy.set_ylim(1e7,1e13)
+        # plt.xlim(plt.xlim()[::-1])
+        ax_energy.set_xlim(1e2,1e-1)
+        wavenumber = (2.*np.pi)/flash_1d_extent
+        inertialsubrange = 10**6 * (wavenumber*0.0002)**(-5.0/3.0)
+        
+    else:
+        wavenumber = (2.*np.pi)/flash_1d_extent
+        inertialsubrange = 10**1 * (wavenumber)**(5.0/3.0)
+        ax_energy.set_xlim(1e2,1e-1)
+        ax_energy.set_xlim(plt.xlim()[::-1])
+    
+    
+
+    cbar = plt.colorbar(s_m)
+    # cbar.set_clim(200000,235000)
+    ax_energy.loglog(flash_1d_extent, inertialsubrange,'k-',alpha=0.5);
+    ax_energy.set_title('Estimated {0} Spectra for Cell Selection'.format(title),fontsize=15)
+    ax_energy.set_xlabel(r'Flash width ($\sqrt{A_h}$, $km$)',fontsize=15)
+    ax_energy.set_ylabel(r'Energy ($J$)',fontsize=15)
+    cbar.ax.tick_params(labelsize=15)
+    estimated.axes.tick_params(labelsize=15)
+    plt.savefig(spectrum_save_file_en)
+    plt.close()
+    
 ########################################################
 
 @coroutine
