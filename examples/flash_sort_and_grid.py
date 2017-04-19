@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 """
 Example script showing how to use lmatools to sort LMA ASCII data into flashes
 and how to create gridded imagery from those flashes.
@@ -183,6 +184,6 @@ if __name__ == '__main__':
     h5_filenames = sort_flashes(filenames, data_out, params) 
     
     # other keyword arguments control the grid spacing ... see the function definition
-    nc_names_2d, nc_names_3d = grid_and_plot(h5_filenames, data_out, base_date=datetime(2012, 1, 1)
+    nc_names_2d, nc_names_3d = grid_and_plot(h5_filenames, data_out, base_date=datetime(2012, 1, 1),
         ctr_lat=params['ctr_lat'], ctr_lon=params['ctr_lon'], center_ID=center_ID)
 

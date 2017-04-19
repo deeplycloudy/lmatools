@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 """
 USAGE
 python cell-lasso-stats.py path_to_lasso_log.txt path_to_sort_results outdir
