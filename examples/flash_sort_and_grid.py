@@ -1,5 +1,4 @@
-#!/usr/bin/python
-
+#!/usr/bin/env python
 """
 Example script showing how to use lmatools to sort LMA ASCII data into flashes
 and how to create gridded imagery from those flashes.
@@ -45,11 +44,10 @@ def sort_flashes(files, base_sort_dir, params):
                   }
         
     """
-    
     # base_sort_dir = outpath
     logger_setup(base_sort_dir)
     # files = lmatools.testing.test_gen_autorun_DBSCAN.get_sample_data_list()
-    h5_dir = os.path.join(base_sort_dir, 'h5_files') #Changed for sensitivity analysis from 'h5_files'
+    h5_dir = os.path.join(base_sort_dir, 'h5_files') 
     
     y,m,d,H,M,S = tfromfile(files[0])
     date = datetime(y,m,d, H,M,S)
@@ -73,10 +71,7 @@ def sort_flashes(files, base_sort_dir, params):
     h5_filenames = glob.glob(h5_dir+'/20%s/LYLOUT*.dat.flash.h5' %(date.strftime('%y/%b/%d')))
     h5_filenames.sort()
     return h5_filenames
-
-#####################################################    
-#Change dx,dy,dz == 1.0e3 the original resolution. ##
-#####################################################
+    
 def grid_and_plot(h5_filenames, base_sort_dir, dx=1.0e3, dy=1.0e3, dz=1.0e3, frame_interval=60.0,
                   x_bnd=(-200.0e3, 200.0e3), y_bnd=(-200.0e3, 200.0e3), z_bnd=(0.0e3, 20.0e3),
                   ctr_lat=33.5, ctr_lon=-101.5, center_ID='WTLMA',
@@ -164,7 +159,6 @@ def grid_and_plot(h5_filenames, base_sort_dir, dx=1.0e3, dy=1.0e3, dz=1.0e3, fra
         gridtype = f.split('dx_')[-1].replace('.nc', '').replace('_3d', '')
         var = mapping[gridtype]
         # grid_range = range_mapping[gridtype]
-
         ###Read grid files, then plot in either 2d or 3d space###
         grid, grid_name, x, y, z, t, grid_t_idx, grid_x_idx, grid_z_idx = read_file_3d(f, var, x_name='longitude', y_name='latitude', z_name='altitude')
         make_plot_3d(grid, grid_name, x, y, z, t,
@@ -187,9 +181,9 @@ if __name__ == '__main__':
     
     data_out = sys.argv[1]
     filenames = sys.argv[2:]
-    h5_filenames = sort_flashes(filenames, data_out, params) #Turn off when .h5 files are made to make grid files!!
+    h5_filenames = sort_flashes(filenames, data_out, params) 
+    
     # other keyword arguments control the grid spacing ... see the function definition
-
-    nc_names_2d, nc_names_3d = grid_and_plot(h5_filenames, data_out, base_date=datetime(2012, 1, 1)
+    nc_names_2d, nc_names_3d = grid_and_plot(h5_filenames, data_out, base_date=datetime(2012, 1, 1),
         ctr_lat=params['ctr_lat'], ctr_lon=params['ctr_lon'], center_ID=center_ID)
 
