@@ -61,7 +61,6 @@ def plot_flash_stat_time_series(basedate, t_edges, stats, major_tick_every=1800)
     ax_higher.plot(t, kurt, label='Kurtosis')
     ax_higher.set_ylim(-2,10)
     ax_higher.legend()
-    
 
     for ax in fig.get_axes():
         ax.xaxis.set_major_formatter(SecDayFormatter(basedate, ax.xaxis))  
