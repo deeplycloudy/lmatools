@@ -127,12 +127,12 @@ flash_ctr_filename = 'flash_ctr_{0}_{1}.png'.format(t_start.strftime('%y%m%d%H%M
 flash_location_plotter.fig.savefig(os.path.join(outdir, flash_ctr_filename))
 
 
-# # =======================================
-# # Loop over each window in the time series and calculate some
-# # aggregate flash statistical properties
-# # =======================================
+# =======================================
+# Loop over each window in the time series and calculate some
+# aggregate flash statistical properties
+# =======================================
 
-# # Set up fractal length calcuations and channel height profiles
+# Set up fractal length calcuations and channel height profiles
 D = 1.5
 b_s = 200.0
 max_alt, d_alt = 20.0, 0.5
