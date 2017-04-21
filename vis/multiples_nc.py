@@ -313,8 +313,8 @@ def make_plot(filename, grid_name, x_name='x', y_name='y', t_name='time',
     if (max_count == 0) | (max_count == 1 ):
         max_count = min_count+1
     f.close()
-    
-    default_vmin = -0.2
+
+    default_vmin = -1.0#0.2
     if np.log10(max_count) <= default_vmin:
         vmin_count = np.log10(max_count) + default_vmin
     else:

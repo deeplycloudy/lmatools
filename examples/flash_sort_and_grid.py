@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 """
 Example script showing how to use lmatools to sort LMA ASCII data into flashes
 and how to create gridded imagery from those flashes.
@@ -43,11 +44,10 @@ def sort_flashes(files, base_sort_dir, params):
                   }
         
     """
-    
     # base_sort_dir = outpath
     logger_setup(base_sort_dir)
     # files = lmatools.testing.test_gen_autorun_DBSCAN.get_sample_data_list()
-    h5_dir = os.path.join(base_sort_dir, 'h5_files')
+    h5_dir = os.path.join(base_sort_dir, 'h5_files') 
     
     y,m,d,H,M,S = tfromfile(files[0])
     date = datetime(y,m,d, H,M,S)
@@ -134,7 +134,11 @@ def grid_and_plot(h5_filenames, base_sort_dir, dx=1.0e3, dy=1.0e3, dz=1.0e3, fra
     mapping = { 'source':'lma_source',
                 'flash_extent':'flash_extent',
                 'flash_init':'flash_initiation',
-                'footprint':'flash_footprint'}
+                'footprint':'flash_footprint',
+                'specific_energy':'specific_energy',
+                'flashsize_std':'flashsize_std',
+                'total_energy': 'total_energy'
+               }
     
     nc_names = glob.glob(grid_dir+'/20%s/*.nc' %(date.strftime('%y/%b/%d')))
     nc_names_3d = glob.glob(grid_dir+'/20%s/*_3d.nc' %(date.strftime('%y/%b/%d')))
@@ -155,11 +159,10 @@ def grid_and_plot(h5_filenames, base_sort_dir, dx=1.0e3, dy=1.0e3, dz=1.0e3, fra
         gridtype = f.split('dx_')[-1].replace('.nc', '').replace('_3d', '')
         var = mapping[gridtype]
         # grid_range = range_mapping[gridtype]
-   
         ###Read grid files, then plot in either 2d or 3d space###
         grid, grid_name, x, y, z, t, grid_t_idx, grid_x_idx, grid_z_idx = read_file_3d(f, var, x_name='longitude', y_name='latitude', z_name='altitude')
-        make_plot_3d(grid, grid_name, x, y, z, t, 
-                     grid_t_idx, grid_x_idx, grid_z_idx, 
+        make_plot_3d(grid, grid_name, x, y, z, t,
+                     grid_t_idx, grid_x_idx, grid_z_idx,
                      n_cols = n_cols, outpath = outpath)
         #, grid_range=grid_range)
         
@@ -178,8 +181,9 @@ if __name__ == '__main__':
     
     data_out = sys.argv[1]
     filenames = sys.argv[2:]
-    h5_filenames = sort_flashes(filenames, data_out, params)
+    h5_filenames = sort_flashes(filenames, data_out, params) 
     
     # other keyword arguments control the grid spacing ... see the function definition
-    nc_names_2d, nc_names_3d = grid_and_plot(h5_filenames, data_out, base_date=datetime(2012, 1, 1)
+    nc_names_2d, nc_names_3d = grid_and_plot(h5_filenames, data_out, base_date=datetime(2012, 1, 1),
         ctr_lat=params['ctr_lat'], ctr_lon=params['ctr_lon'], center_ID=center_ID)
+
