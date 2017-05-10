@@ -385,7 +385,7 @@ def seconds_since_start_of_day(start_time, t):
 
 
 class FlashGridder(object):
-    def __init__(self, start_time, end_time, 
+    def __init__(self, start_time, end_time, do_3d = True,
                     frame_interval=120.0, dx=4.0e3, dy=4.0e3, dz=1.0e3,
 					base_date = None,
                     x_bnd = (-100e3, 100e3),
@@ -457,14 +457,15 @@ class FlashGridder(object):
         total_energy_grid = np.zeros((xedge.shape[0]-1, yedge.shape[0]-1, n_frames), dtype='float32')
         flashsize_std_grid  = np.zeros((xedge.shape[0]-1, yedge.shape[0]-1, n_frames), dtype='float32')
 
-        event_density_grid_3d  = np.zeros((xedge.shape[0]-1, yedge.shape[0]-1, zedge.shape[0]-1, n_frames), dtype='int32')
-        init_density_grid_3d   = np.zeros((xedge.shape[0]-1, yedge.shape[0]-1, zedge.shape[0]-1, n_frames), dtype='int32')
-        extent_density_grid_3d = np.zeros((xedge.shape[0]-1, yedge.shape[0]-1, zedge.shape[0]-1, n_frames), dtype='int32')
-        footprint_grid_3d      = np.zeros((xedge.shape[0]-1, yedge.shape[0]-1, zedge.shape[0]-1, n_frames), dtype='float32')
+        if do_3d == True:
+            event_density_grid_3d  = np.zeros((xedge.shape[0]-1, yedge.shape[0]-1, zedge.shape[0]-1, n_frames), dtype='int32')
+            init_density_grid_3d   = np.zeros((xedge.shape[0]-1, yedge.shape[0]-1, zedge.shape[0]-1, n_frames), dtype='int32')
+            extent_density_grid_3d = np.zeros((xedge.shape[0]-1, yedge.shape[0]-1, zedge.shape[0]-1, n_frames), dtype='int32')
+            footprint_grid_3d      = np.zeros((xedge.shape[0]-1, yedge.shape[0]-1, zedge.shape[0]-1, n_frames), dtype='float32')
     
-        specific_energy_grid_3d = np.zeros((xedge.shape[0]-1, yedge.shape[0]-1, zedge.shape[0]-1, n_frames), dtype='float32')
-        total_energy_grid_3d    = np.zeros((xedge.shape[0]-1, yedge.shape[0]-1, zedge.shape[0]-1, n_frames), dtype='float32')
-        flashsize_std_grid_3d   = np.zeros((xedge.shape[0]-1, yedge.shape[0]-1, zedge.shape[0]-1, n_frames), dtype='float32')
+            specific_energy_grid_3d = np.zeros((xedge.shape[0]-1, yedge.shape[0]-1, zedge.shape[0]-1, n_frames), dtype='float32')
+            total_energy_grid_3d    = np.zeros((xedge.shape[0]-1, yedge.shape[0]-1, zedge.shape[0]-1, n_frames), dtype='float32')
+            flashsize_std_grid_3d   = np.zeros((xedge.shape[0]-1, yedge.shape[0]-1, zedge.shape[0]-1, n_frames), dtype='float32')
         
         self.outgrids = (extent_density_grid, 
                     init_density_grid,   
@@ -475,7 +476,8 @@ class FlashGridder(object):
                     total_energy_grid,
                     )
                 
-        self.outgrids_3d = (extent_density_grid_3d,
+        if do_3d == True:
+            self.outgrids_3d = (extent_density_grid_3d,
                     init_density_grid_3d,
                     event_density_grid_3d,
                     footprint_grid_3d,
@@ -483,6 +485,8 @@ class FlashGridder(object):
                     flashsize_std_grid_3d,
                     total_energy_grid_3d
                     )
+        else:
+            self.outgrids_3d = None
         
         
         all_frames = []
@@ -506,22 +510,24 @@ class FlashGridder(object):
             accum_flashstd       = density_to_files.accumulate_points_on_grid_sdev(flashsize_std_grid[:,:,i], footprint_grid[:,:,i], xedge, yedge, out=extent_out, label='flashsize_std')
             accum_total_energy   = density_to_files.accumulate_energy_on_grid(total_energy_grid[:,:,i], xedge, yedge, out=extent_out, label='total_energy')
 
-            accum_event_density_3d  = density_to_files.accumulate_points_on_grid_3d(event_density_grid_3d[:,:,:,i], xedge, yedge, zedge,  out=event_out_3d, label='event_3d')
-            accum_init_density_3d   = density_to_files.accumulate_points_on_grid_3d(init_density_grid_3d[:,:,:,i], xedge, yedge, zedge,   out=init_out_3d,  label='init_3d')
-            accum_extent_density_3d = density_to_files.accumulate_points_on_grid_3d(extent_density_grid_3d[:,:,:,i], xedge, yedge, zedge, out=extent_out_3d,label='extent_3d')
-            accum_footprint_3d      = density_to_files.accumulate_points_on_grid_3d(footprint_grid_3d[:,:,:,i], xedge, yedge, zedge, label='footprint_3d')
+            if do_3d == True:
+                accum_event_density_3d  = density_to_files.accumulate_points_on_grid_3d(event_density_grid_3d[:,:,:,i], xedge, yedge, zedge,  out=event_out_3d, label='event_3d')
+                accum_init_density_3d   = density_to_files.accumulate_points_on_grid_3d(init_density_grid_3d[:,:,:,i], xedge, yedge, zedge,   out=init_out_3d,  label='init_3d')
+                accum_extent_density_3d = density_to_files.accumulate_points_on_grid_3d(extent_density_grid_3d[:,:,:,i], xedge, yedge, zedge, out=extent_out_3d,label='extent_3d')
+                accum_footprint_3d      = density_to_files.accumulate_points_on_grid_3d(footprint_grid_3d[:,:,:,i], xedge, yedge, zedge, label='footprint_3d')
 
-            accum_specific_energy_3d = density_to_files.accumulate_energy_on_grid_3d(specific_energy_grid_3d[:,:,:,i], xedge, yedge, zedge, out=extent_out_3d,label='specific_energy_3d')
-            accum_flashstd_3d       = density_to_files.accumulate_points_on_grid_sdev_3d(flashsize_std_grid_3d[:,:,:,i], footprint_grid_3d[:,:,:,i], xedge, yedge, zedge, out=extent_out_3d,label='flashsize_std_3d')
-            accum_total_energy_3d   = density_to_files.accumulate_energy_on_grid_3d(total_energy_grid_3d[:,:,:,i], xedge, yedge, zedge, out=extent_out_3d,label='total_energy_3d')
+                accum_specific_energy_3d = density_to_files.accumulate_energy_on_grid_3d(specific_energy_grid_3d[:,:,:,i], xedge, yedge, zedge, out=extent_out_3d,label='specific_energy_3d')
+                accum_flashstd_3d       = density_to_files.accumulate_points_on_grid_sdev_3d(flashsize_std_grid_3d[:,:,:,i], footprint_grid_3d[:,:,:,i], xedge, yedge, zedge, out=extent_out_3d,label='flashsize_std_3d')
+                accum_total_energy_3d   = density_to_files.accumulate_energy_on_grid_3d(total_energy_grid_3d[:,:,:,i], xedge, yedge, zedge, out=extent_out_3d,label='total_energy_3d')
 
             extent_out['func'] = accum_extent_density
             init_out['func'] = accum_init_density
             event_out['func'] = accum_event_density
 
-            extent_out_3d['func'] = accum_extent_density_3d
-            init_out_3d['func'] = accum_init_density_3d
-            event_out_3d['func'] = accum_event_density_3d        
+            if do_3d == True:
+                extent_out_3d['func'] = accum_extent_density_3d
+                init_out_3d['func'] = accum_init_density_3d
+                event_out_3d['func'] = accum_event_density_3d        
         
             event_density_target  = density_to_files.point_density(accum_event_density)
             init_density_target   = density_to_files.point_density(accum_init_density)
@@ -531,32 +537,37 @@ class FlashGridder(object):
             mean_total_energy_target = density_to_files.extent_density(x0, y0, dx, dy, accum_total_energy, weight_key='total_energy')    #Energy
             std_flashsize_target  = density_to_files.extent_density(x0, y0, dx, dy, accum_flashstd, weight_key='area')
 
-            event_density_target_3d  = density_to_files.point_density_3d(accum_event_density_3d)
-            init_density_target_3d   = density_to_files.point_density_3d(accum_init_density_3d)
-            extent_density_target_3d = density_to_files.extent_density_3d(x0, y0, z0, dx, dy, dz, accum_extent_density_3d)
-            mean_footprint_target_3d = density_to_files.extent_density_3d(x0, y0, z0, dx, dy, dz, accum_footprint_3d, weight_key='area')
+            if do_3d == True:
+                event_density_target_3d  = density_to_files.point_density_3d(accum_event_density_3d)
+                init_density_target_3d   = density_to_files.point_density_3d(accum_init_density_3d)
+                extent_density_target_3d = density_to_files.extent_density_3d(x0, y0, z0, dx, dy, dz, accum_extent_density_3d)
+                mean_footprint_target_3d = density_to_files.extent_density_3d(x0, y0, z0, dx, dy, dz, accum_footprint_3d, weight_key='area')
             
-            mean_energy_target_3d    = density_to_files.extent_density_3d(x0, y0, z0, dx, dy, dz, accum_specific_energy_3d, weight_key='specific_energy') #tot_energy
-            mean_total_energy_target_3d = density_to_files.extent_density_3d(x0, y0, z0, dx, dy, dz, accum_total_energy_3d, weight_key='total_energy')     #Energy
-            std_flashsize_target_3d  = density_to_files.extent_density_3d(x0, y0, z0, dx, dy, dz, accum_flashstd_3d, weight_key='area')
+                mean_energy_target_3d    = density_to_files.extent_density_3d(x0, y0, z0, dx, dy, dz, accum_specific_energy_3d, weight_key='specific_energy') #tot_energy
+                mean_total_energy_target_3d = density_to_files.extent_density_3d(x0, y0, z0, dx, dy, dz, accum_total_energy_3d, weight_key='total_energy')     #Energy
+                std_flashsize_target_3d  = density_to_files.extent_density_3d(x0, y0, z0, dx, dy, dz, accum_flashstd_3d, weight_key='area')
 
-            spew_to_density_types = broadcast( ( 
-                        density_to_files.project('lon', 'lat', 'alt', mapProj, geoProj, event_density_target, use_flashes=False),
-                        density_to_files.project('init_lon', 'init_lat', 'init_alt', mapProj, geoProj, init_density_target, use_flashes=True),
-                        density_to_files.project('lon', 'lat', 'alt', mapProj, geoProj, extent_density_target, use_flashes=False),
-                        density_to_files.project('lon', 'lat', 'alt', mapProj, geoProj, mean_footprint_target, use_flashes=False),
-                        density_to_files.project('lon', 'lat', 'alt', mapProj, geoProj, mean_energy_target, use_flashes=False),
-                        density_to_files.project('lon', 'lat', 'alt', mapProj, geoProj, std_flashsize_target, use_flashes=False),
-                        density_to_files.project('lon', 'lat', 'alt', mapProj, geoProj, mean_total_energy_target, use_flashes=False),
-                    
-                        density_to_files.project('lon', 'lat', 'alt', mapProj, geoProj, event_density_target_3d, use_flashes=False),
-                        density_to_files.project('init_lon', 'init_lat', 'init_alt', mapProj, geoProj, init_density_target_3d, use_flashes=True),
-                        density_to_files.project('lon', 'lat', 'alt', mapProj, geoProj, extent_density_target_3d, use_flashes=False),
-                        density_to_files.project('lon', 'lat', 'alt', mapProj, geoProj, mean_footprint_target_3d, use_flashes=False),
-                        density_to_files.project('lon', 'lat', 'alt', mapProj, geoProj, mean_energy_target_3d, use_flashes=False),
-                        density_to_files.project('lon', 'lat', 'alt', mapProj, geoProj, std_flashsize_target_3d, use_flashes=False),
-                        density_to_files.project('lon', 'lat', 'alt', mapProj, geoProj, mean_total_energy_target_3d, use_flashes=False),
-                        ) )
+            broadcast_targets = ( 
+                density_to_files.project('lon', 'lat', 'alt', mapProj, geoProj, event_density_target, use_flashes=False),
+                density_to_files.project('init_lon', 'init_lat', 'init_alt', mapProj, geoProj, init_density_target, use_flashes=True),
+                density_to_files.project('lon', 'lat', 'alt', mapProj, geoProj, extent_density_target, use_flashes=False),
+                density_to_files.project('lon', 'lat', 'alt', mapProj, geoProj, mean_footprint_target, use_flashes=False),
+                density_to_files.project('lon', 'lat', 'alt', mapProj, geoProj, mean_energy_target, use_flashes=False),
+                density_to_files.project('lon', 'lat', 'alt', mapProj, geoProj, std_flashsize_target, use_flashes=False),
+                density_to_files.project('lon', 'lat', 'alt', mapProj, geoProj, mean_total_energy_target, use_flashes=False),
+                )
+            if do_3d == True:
+                broadcast_targets += (
+                    density_to_files.project('lon', 'lat', 'alt', mapProj, geoProj, event_density_target_3d, use_flashes=False),
+                    density_to_files.project('init_lon', 'init_lat', 'init_alt', mapProj, geoProj, init_density_target_3d, use_flashes=True),
+                    density_to_files.project('lon', 'lat', 'alt', mapProj, geoProj, extent_density_target_3d, use_flashes=False),
+                    density_to_files.project('lon', 'lat', 'alt', mapProj, geoProj, mean_footprint_target_3d, use_flashes=False),
+                    density_to_files.project('lon', 'lat', 'alt', mapProj, geoProj, mean_energy_target_3d, use_flashes=False),
+                    density_to_files.project('lon', 'lat', 'alt', mapProj, geoProj, std_flashsize_target_3d, use_flashes=False),
+                    density_to_files.project('lon', 'lat', 'alt', mapProj, geoProj, mean_total_energy_target_3d, use_flashes=False),
+                    )
+
+            spew_to_density_types = broadcast( broadcast_targets )
 
             all_frames.append( density_to_files.extract_events_for_flashes( spew_to_density_types ) )
 
@@ -729,55 +740,56 @@ class FlashGridder(object):
                         **output_kwargs)
     
         ########3D:
-        output_writer_3d(outfiles_3d[0], t_ref, np.asarray(t_edges_seconds[:-1]),
-                        x_coord*spatial_scale_factor, y_coord*spatial_scale_factor,
-                        z_coord*spatial_scale_factor, 
-                        lons_3d, lats_3d, alts_3d, ctr_lat, ctr_lon, ctr_alt,
-                        outgrids_3d[0], field_names[0], field_descriptions[0], 
-                        grid_units=field_units_3d[0],
-                        **output_kwargs)
-        output_writer_3d(outfiles_3d[1], t_ref, np.asarray(t_edges_seconds[:-1]),
-                        x_coord*spatial_scale_factor, y_coord*spatial_scale_factor,
-                        z_coord*spatial_scale_factor, 
-                        lons_3d, lats_3d, alts_3d, ctr_lat, ctr_lon, ctr_alt,
-                        outgrids_3d[1], field_names[1], field_descriptions[1], 
-                        grid_units=field_units_3d[1],
-                        **output_kwargs)
-        output_writer_3d(outfiles_3d[2], t_ref, np.asarray(t_edges_seconds[:-1]),
-                        x_coord*spatial_scale_factor, y_coord*spatial_scale_factor,
-                        z_coord*spatial_scale_factor, 
-                        lons_3d, lats_3d, alts_3d, ctr_lat, ctr_lon, ctr_alt,
-                        outgrids_3d[2], field_names[2], field_descriptions[2], 
-                        grid_units=field_units_3d[2],
-                        **output_kwargs)
-        output_writer_3d(outfiles_3d[3], t_ref, np.asarray(t_edges_seconds[:-1]),
-                        x_coord*spatial_scale_factor, y_coord*spatial_scale_factor,
-                        z_coord*spatial_scale_factor, 
-                        lons_3d, lats_3d, alts_3d, ctr_lat, ctr_lon, ctr_alt,
-                        outgrids_3d[3], field_names[3], field_descriptions[3], format='f', 
-                        grid_units=field_units_3d[3],
-                        **output_kwargs)
-        output_writer_3d(outfiles_3d[4], t_ref, np.asarray(t_edges_seconds[:-1]),
-                        x_coord*spatial_scale_factor, y_coord*spatial_scale_factor,
-                        z_coord*spatial_scale_factor, 
-                        lons_3d, lats_3d, alts_3d, ctr_lat, ctr_lon, ctr_alt,
-                        outgrids_3d[4], field_names[4], field_descriptions[4], format='f', 
-                        grid_units=field_units_3d[4],
-                        **output_kwargs)    
-        output_writer_3d(outfiles_3d[5], t_ref, np.asarray(t_edges_seconds[:-1]),
-                        x_coord*spatial_scale_factor, y_coord*spatial_scale_factor,
-                        z_coord*spatial_scale_factor, 
-                        lons_3d, lats_3d, alts_3d, ctr_lat, ctr_lon, ctr_alt,
-                        outgrids_3d[5], field_names[5], field_descriptions[5], format='f', 
-                        grid_units=field_units_3d[5],
-                        **output_kwargs)                
-        output_writer_3d(outfiles_3d[6], t_ref, np.asarray(t_edges_seconds[:-1]),
-                        x_coord*spatial_scale_factor, y_coord*spatial_scale_factor,
-                        z_coord*spatial_scale_factor, 
-                        lons_3d, lats_3d, alts_3d, ctr_lat, ctr_lon, ctr_alt,
-                        outgrids_3d[6], field_names[6], field_descriptions[6], format='f', 
-                        grid_units=field_units_3d[6],
-                        **output_kwargs)                
+        if self.outgrids_3d is not None:
+            output_writer_3d(outfiles_3d[0], t_ref, np.asarray(t_edges_seconds[:-1]),
+                            x_coord*spatial_scale_factor, y_coord*spatial_scale_factor,
+                            z_coord*spatial_scale_factor, 
+                            lons_3d, lats_3d, alts_3d, ctr_lat, ctr_lon, ctr_alt,
+                            outgrids_3d[0], field_names[0], field_descriptions[0], 
+                            grid_units=field_units_3d[0],
+                            **output_kwargs)
+            output_writer_3d(outfiles_3d[1], t_ref, np.asarray(t_edges_seconds[:-1]),
+                            x_coord*spatial_scale_factor, y_coord*spatial_scale_factor,
+                            z_coord*spatial_scale_factor, 
+                            lons_3d, lats_3d, alts_3d, ctr_lat, ctr_lon, ctr_alt,
+                            outgrids_3d[1], field_names[1], field_descriptions[1], 
+                            grid_units=field_units_3d[1],
+                            **output_kwargs)
+            output_writer_3d(outfiles_3d[2], t_ref, np.asarray(t_edges_seconds[:-1]),
+                            x_coord*spatial_scale_factor, y_coord*spatial_scale_factor,
+                            z_coord*spatial_scale_factor, 
+                            lons_3d, lats_3d, alts_3d, ctr_lat, ctr_lon, ctr_alt,
+                            outgrids_3d[2], field_names[2], field_descriptions[2], 
+                            grid_units=field_units_3d[2],
+                            **output_kwargs)
+            output_writer_3d(outfiles_3d[3], t_ref, np.asarray(t_edges_seconds[:-1]),
+                            x_coord*spatial_scale_factor, y_coord*spatial_scale_factor,
+                            z_coord*spatial_scale_factor, 
+                            lons_3d, lats_3d, alts_3d, ctr_lat, ctr_lon, ctr_alt,
+                            outgrids_3d[3], field_names[3], field_descriptions[3], format='f', 
+                            grid_units=field_units_3d[3],
+                            **output_kwargs)
+            output_writer_3d(outfiles_3d[4], t_ref, np.asarray(t_edges_seconds[:-1]),
+                            x_coord*spatial_scale_factor, y_coord*spatial_scale_factor,
+                            z_coord*spatial_scale_factor, 
+                            lons_3d, lats_3d, alts_3d, ctr_lat, ctr_lon, ctr_alt,
+                            outgrids_3d[4], field_names[4], field_descriptions[4], format='f', 
+                            grid_units=field_units_3d[4],
+                            **output_kwargs)    
+            output_writer_3d(outfiles_3d[5], t_ref, np.asarray(t_edges_seconds[:-1]),
+                            x_coord*spatial_scale_factor, y_coord*spatial_scale_factor,
+                            z_coord*spatial_scale_factor, 
+                            lons_3d, lats_3d, alts_3d, ctr_lat, ctr_lon, ctr_alt,
+                            outgrids_3d[5], field_names[5], field_descriptions[5], format='f', 
+                            grid_units=field_units_3d[5],
+                            **output_kwargs)                
+            output_writer_3d(outfiles_3d[6], t_ref, np.asarray(t_edges_seconds[:-1]),
+                            x_coord*spatial_scale_factor, y_coord*spatial_scale_factor,
+                            z_coord*spatial_scale_factor, 
+                            lons_3d, lats_3d, alts_3d, ctr_lat, ctr_lon, ctr_alt,
+                            outgrids_3d[6], field_names[6], field_descriptions[6], format='f', 
+                            grid_units=field_units_3d[6],
+                            **output_kwargs)                
                         
         # return x_coord, y_coord, z_coord, lons, lats, alts, extent_density_grid, outfiles, field_names
 
