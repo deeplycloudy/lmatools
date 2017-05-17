@@ -511,7 +511,7 @@ def accumulate_points_on_grid(grid, xedge, yedge, out=None, label=''):
                 # using += (as opposed to grid = grid + count) is essential
                 # so that the user can retain a reference to the grid object
                 # outside this routine.
-                if grid == None:
+                if grid is None:
                     grid = count
                     out['out'] = grid
                 else:
@@ -553,7 +553,7 @@ def accumulate_points_on_grid_3d(grid, xedge, yedge, zedge, out=None, label=''):
                 # using += (as opposed to grid = grid + count) is essential
                 # so that the user can retain a reference to the grid object
                 # outside this routine.
-                if grid == None:
+                if grid is None:
                     grid = count
                     out['out'] = grid
                 else:
@@ -598,7 +598,7 @@ def accumulate_points_on_grid_sdev(grid, grid2, xedge, yedge, out=None, label=''
                 # using += (as opposed to grid = grid + count) is essential
                 # so that the user can retain a reference to the grid object
                 # outside this routine.
-                if grid == None:
+                if grid is None:
                     grid = count
                     out['out'] = grid
                 else:
@@ -642,7 +642,7 @@ def accumulate_points_on_grid_sdev_3d(grid, grid2, xedge, yedge, zedge, out=None
                 # using += (as opposed to grid = grid + count) is essential
                 # so that the user can retain a reference to the grid object
                 # outside this routine.
-                if grid == None:
+                if grid is None:
                     grid = count
                     out['out'] = grid
                 else:
@@ -685,7 +685,7 @@ def accumulate_energy_on_grid(grid, xedge, yedge, out=None, label=''):
                 # using += (as opposed to grid = grid + count) is essential
                 # so that the user can retain a reference to the grid object
                 # outside this routine.
-                if grid == None:
+                if grid is None:
                     grid = count
                     out['out'] = grid
                 else:
@@ -735,7 +735,7 @@ def accumulate_energy_on_grid_3d(grid, xedge, yedge, zedge, out=None, label=''):
                 # using += (as opposed to grid = grid + count) is essential
                 # so that the user can retain a reference to the grid object
                 # outside this routine.
-                if grid == None:
+                if grid is None:
                     grid = count
                     out['out'] = grid
                 else:
