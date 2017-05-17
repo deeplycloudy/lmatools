@@ -401,6 +401,7 @@ class FlashGridder(object):
             On init, specify the grid """
             
         # args, kwargs that are saved for the future
+        self.do_3d = do_3d
         self.start_time = start_time
         self.dx, self.dy, self.dz = dx, dy, dz
         self.end_time = end_time
