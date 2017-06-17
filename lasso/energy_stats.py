@@ -247,8 +247,11 @@ def flash_size_stats(flashes):
     result['energy_per_flash'] = energy/number
     
     #Moments for energy:
-    result['specific_energy'] = flashes['specific_energy'].sum()
-    result['total_energy']  = flashes['total_energy'].sum()
+    try:
+        result['specific_energy'] = flashes['specific_energy'].sum()
+        result['total_energy']  = flashes['total_energy'].sum()
+    except ValueError:
+        "Print skipping energy quantities"
     return result
 
 ####ADDED FUNCTION:   
