@@ -54,6 +54,7 @@ This function allows the retrieval of charge densities for an arbitrary, or know
 channel lengths obtained from the convex hull area method, resembling a capacitor plate). The electrostatic
 energy dissipated between these plates can the be found as in Bruning and MacGorman (2013).
 '''
+from __future__ import absolute_import
 import numpy as np
 import matplotlib.pyplot as plt
 import pandas as pd

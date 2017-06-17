@@ -1,3 +1,4 @@
+from __future__ import absolute_import
 import numpy as np
 from datetime import datetime
 
@@ -5,7 +6,7 @@ from lmatools.io.LMA_h5_file import LMAh5Collection
 from lmatools.grid.make_grids import time_edges, seconds_since_start_of_day
 from lmatools.grid.density_to_files import ArrayChopper, stack_chopped_arrays
 
-from energy_stats import TimeSeriesPolygonLassoFilter 
+from lmatools.lasso.energy_stats import TimeSeriesPolygonLassoFilter 
 
 class TimeSeriesFlashSubset(object):
     def __init__(self, h5_filenames, t_start, t_end, dt, base_date=None, min_points=10):

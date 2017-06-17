@@ -1,9 +1,11 @@
+from __future__ import absolute_import
 import os, glob, itertools
 from datetime import datetime
 
 import logging, json, operator
 
 import numpy as np
+from six.moves import zip
 
 def gen_polys(filename, time_keys=None):
     """ time_keys is a dictionary mapping from variable names 
@@ -63,7 +65,7 @@ def apply_filter_poly(filter_poly, polys_log, flash_stat_polys):
         poly.update(new_coords)
         
     # grab the revised coordinates
-    flash_stat_polys = tuple(zip(p['x_verts'], p['y_verts']) for p in polys_log)
+    flash_stat_polys = tuple(list(zip(p['x_verts'], p['y_verts'])) for p in polys_log)
     return flash_stat_polys
 
 
@@ -86,7 +88,7 @@ def read_poly_log_file(filename, lat_lon_filter=None):
         "Assuming lat, lon data are in the x_verts, y_verts polygon log entries"
         lon_name, lat_name = 'x_verts', 'y_verts'
     
-    flash_stat_polys = tuple(zip(p[lon_name], p[lat_name]) for p in polys_log)
+    flash_stat_polys = tuple(list(zip(p[lon_name], p[lat_name])) for p in polys_log)
     flash_stat_left_time_edges = tuple(p['frame_time'] for p in polys_log)
     dt = flash_stat_left_time_edges[1] - flash_stat_left_time_edges[0]
     t_edges = flash_stat_left_time_edges + (flash_stat_left_time_edges[-1] + dt, )

@@ -16,6 +16,8 @@ bound_filt (on time)
 read_flashes -> filterer.filt_ev_fl -> length_for_these_flashes -> brancher -> timeframe_targets
 
 """
+from __future__ import absolute_import
+from __future__ import print_function
 import os
 
 import matplotlib.pyplot as plt
@@ -29,6 +31,8 @@ from lmatools.grid.make_grids import time_edges, seconds_since_start_of_day
 
 from stormdrain.pipeline import coroutine, Branchpoint
 from stormdrain.support.matplotlib.formatters import SecDayFormatter
+from six.moves import range
+from six.moves import zip
 
 def gen_fractal_length_for_flashes(events, flashes, D, b_s, alt_bins):
     """ Given events and flashes, calculate the fractal length
@@ -269,9 +273,9 @@ def length_for_these_flashes(D, b_s, alt_bins, chi2=5.0, stations=5, target=None
             fl_srcs = pts[this_flash & good] 
             
             if fl_srcs.shape[0] < 5:
-                print("Skipping flash because original source count reduced from {0}={4} to {1} for flash {2} at {3}".format(
+                print(("Skipping flash because original source count reduced from {0}={4} to {1} for flash {2} at {3}".format(
                     pts[this_flash].shape[0], fl_srcs.shape[0], fl_id, fl['start'], fl['n_points']
-                ))
+                )))
                 continue
 
             x,y,z = GeoSys.toECEF(fl_srcs['lon'], fl_srcs['lat'], fl_srcs['alt'])
@@ -354,7 +358,7 @@ class StatResults(object):
         # print each_result.shape, each_result.dtype
         total = np.empty((1,), dtype=res_dtype)
         for colname in total.dtype.names:
-            print colname, each_result[colname].shape
+            print((colname, each_result[colname].shape))
             total[colname] = each_result[colname].sum(axis=0)
         return total
 
@@ -446,7 +450,7 @@ class StatResults(object):
         fig_CG.clf()
         
         for diagnose in CG_totals:
-            print diagnose.dtype, diagnose.shape
+            print((diagnose.dtype, diagnose.shape))
         
         for partition_kind, kind_totals in zip (('IC', 'CG'), (IC_totals, CG_totals)):
             lengths_2D, lengths_3D, scaled_sources, L_profile_rate, max_L_bin = kind_totals

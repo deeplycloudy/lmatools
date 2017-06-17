@@ -3,6 +3,8 @@
 
 # In[1]:
 
+from __future__ import absolute_import
+from __future__ import print_function
 import os
 import numpy as np
 
@@ -18,6 +20,8 @@ from matplotlib.ticker import MultipleLocator
 from lmatools.flash_stats import raw_moments, raw_moments_for_parameter, central_moments_from_raw, events_flashes_receiver
 from lmatools.grid.make_grids import time_edges, seconds_since_start_of_day
 import matplotlib.pyplot as plt
+import six
+from six.moves import range
 
 def summary_stat_line(start_t, end_t, moments):
     """ Moments should be a tuple of number, mean, variance, skewness, kurtosis """
@@ -142,7 +146,7 @@ class StatResults(object):
         except GeneratorExit:
             lines.sort()
             for l in lines:
-                print l
+                print(l)
             fig = self.plot()
             fig.savefig(self.outdir+'/moment-energy-timeseries.pdf')
         
@@ -348,7 +352,7 @@ class TimeSeriesPolygonLassoFilter(object):
         good = np.zeros(a.shape, dtype=bool)
         
         t = a[self.time_key]
-        for (t0, t1), poly_target in self.poly_lookup.iteritems():
+        for (t0, t1), poly_target in six.iteritems(self.poly_lookup):
             # make sure this is only one-side inclusive to eliminate double-counting
             in_time = (t >= t0) & (t < t1)
             reduced = a[in_time]
