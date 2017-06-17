@@ -100,7 +100,8 @@ def test_sort_and_grid_and_plot(outpath):
                     dx=dx, dy=dy, x_bnd=x_bnd, y_bnd=y_bnd, z_bnd=z_bnd_km,
                     ctr_lon=ctr_lon, ctr_lat=ctr_lat, outpath = outpath,
                     output_writer = write_cf_netcdf_latlon, output_writer_3d = write_cf_netcdf_3d_latlon,
-                    output_filename_prefix=center_ID, spatial_scale_factor=1.0
+                    output_filename_prefix=center_ID, spatial_scale_factor=1.0,
+                    energy_grids = True
                     )
         
     # Create plots

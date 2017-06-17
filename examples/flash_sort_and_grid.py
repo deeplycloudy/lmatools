@@ -123,7 +123,7 @@ def grid_and_plot(h5_filenames, base_sort_dir, dx=1.0e3, dy=1.0e3, dz=1.0e3, fra
             subprocess.call(['chmod', 'a+w', outpath, grid_dir+'/20%s' %(date.strftime('%y/%b')), grid_dir+'/20%s' %(date.strftime('%y'))])
         if True:
             grid_h5flashfiles(h5_filenames, start_time, end_time, frame_interval=frame_interval, proj_name='latlong',
-                    base_date = base_date,
+                    base_date = base_date, energy_grids=True,
 					dx=dx, dy=dy, x_bnd=x_bnd, y_bnd=y_bnd, z_bnd=z_bnd_km,
                     ctr_lon=ctr_lon, ctr_lat=ctr_lat, outpath = outpath,
                     output_writer = write_cf_netcdf_latlon, output_writer_3d = write_cf_netcdf_3d_latlon,

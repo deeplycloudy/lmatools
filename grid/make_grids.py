@@ -395,7 +395,7 @@ class FlashGridder(object):
                     proj_name = 'aeqd',
                     proj_datum = 'WGS84',
                     proj_ellipse = 'WGS84',
-                    flash_count_logfile = None,):
+                    flash_count_logfile = None, energy_grids = None):
         """ Class to support gridding of flash and event data. 
                     
             On init, specify the grid """
@@ -553,20 +553,26 @@ class FlashGridder(object):
                 density_to_files.project('init_lon', 'init_lat', 'init_alt', mapProj, geoProj, init_density_target, use_flashes=True),
                 density_to_files.project('lon', 'lat', 'alt', mapProj, geoProj, extent_density_target, use_flashes=False),
                 density_to_files.project('lon', 'lat', 'alt', mapProj, geoProj, mean_footprint_target, use_flashes=False),
-                density_to_files.project('lon', 'lat', 'alt', mapProj, geoProj, mean_energy_target, use_flashes=False),
                 density_to_files.project('lon', 'lat', 'alt', mapProj, geoProj, std_flashsize_target, use_flashes=False),
-                density_to_files.project('lon', 'lat', 'alt', mapProj, geoProj, mean_total_energy_target, use_flashes=False),
                 )
+            if energy_grids is not None:
+                broadcast_targets += (
+                    density_to_files.project('lon', 'lat', 'alt', mapProj, geoProj, mean_energy_target, use_flashes=False),
+                    density_to_files.project('lon', 'lat', 'alt', mapProj, geoProj, mean_total_energy_target, use_flashes=False),
+                    )
             if do_3d == True:
                 broadcast_targets += (
                     density_to_files.project('lon', 'lat', 'alt', mapProj, geoProj, event_density_target_3d, use_flashes=False),
                     density_to_files.project('init_lon', 'init_lat', 'init_alt', mapProj, geoProj, init_density_target_3d, use_flashes=True),
                     density_to_files.project('lon', 'lat', 'alt', mapProj, geoProj, extent_density_target_3d, use_flashes=False),
                     density_to_files.project('lon', 'lat', 'alt', mapProj, geoProj, mean_footprint_target_3d, use_flashes=False),
-                    density_to_files.project('lon', 'lat', 'alt', mapProj, geoProj, mean_energy_target_3d, use_flashes=False),
                     density_to_files.project('lon', 'lat', 'alt', mapProj, geoProj, std_flashsize_target_3d, use_flashes=False),
-                    density_to_files.project('lon', 'lat', 'alt', mapProj, geoProj, mean_total_energy_target_3d, use_flashes=False),
                     )
+                if energy_grids is not None:
+                    broadcast_targets += (
+                        density_to_files.project('lon', 'lat', 'alt', mapProj, geoProj, mean_energy_target_3d, use_flashes=False),
+                        density_to_files.project('lon', 'lat', 'alt', mapProj, geoProj, mean_total_energy_target_3d, use_flashes=False),
+                        )
 
             spew_to_density_types = broadcast( broadcast_targets )
 
@@ -586,7 +592,7 @@ class FlashGridder(object):
                     output_writer = write_cf_netcdf, 
                     output_writer_3d = write_cf_netcdf_3d,
                     output_filename_prefix="LMA",
-                    output_kwargs = {},
+                    output_kwargs = {}, energy_grids = None,
                     spatial_scale_factor = 1.0/1000.0,):
         xedge = self.xedge    
         yedge = self.yedge
@@ -721,24 +727,26 @@ class FlashGridder(object):
                         outgrids[3], field_names[3], field_descriptions[3], format='f', 
                         grid_units=field_units[3],
                         **output_kwargs)
-        output_writer(outfiles[4], t_ref, np.asarray(t_edges_seconds[:-1]),
-                        x_coord*spatial_scale_factor, y_coord*spatial_scale_factor, 
-                        lons, lats, ctr_lat, ctr_lon, 
-                        outgrids[4], field_names[4], field_descriptions[4], format='f', 
-                        grid_units=field_units[4],
-                        **output_kwargs)
+        if energy_grids is not None:
+            output_writer(outfiles[4], t_ref, np.asarray(t_edges_seconds[:-1]),
+                            x_coord*spatial_scale_factor, y_coord*spatial_scale_factor, 
+                            lons, lats, ctr_lat, ctr_lon, 
+                            outgrids[4], field_names[4], field_descriptions[4], format='f', 
+                            grid_units=field_units[4],
+                            **output_kwargs)
         output_writer(outfiles[5], t_ref, np.asarray(t_edges_seconds[:-1]),
                         x_coord*spatial_scale_factor, y_coord*spatial_scale_factor, 
                         lons, lats, ctr_lat, ctr_lon, 
                         outgrids[5], field_names[5], field_descriptions[5], format='f', 
                         grid_units=field_units[5],
                         **output_kwargs)
-        output_writer(outfiles[6], t_ref, np.asarray(t_edges_seconds[:-1]),
-                        x_coord*spatial_scale_factor, y_coord*spatial_scale_factor, 
-                        lons, lats, ctr_lat, ctr_lon, 
-                        outgrids[6], field_names[6], field_descriptions[6], format='f', 
-                        grid_units=field_units[6],
-                        **output_kwargs)
+        if energy_grids is not None:
+            output_writer(outfiles[6], t_ref, np.asarray(t_edges_seconds[:-1]),
+                            x_coord*spatial_scale_factor, y_coord*spatial_scale_factor, 
+                            lons, lats, ctr_lat, ctr_lon, 
+                            outgrids[6], field_names[6], field_descriptions[6], format='f', 
+                            grid_units=field_units[6],
+                            **output_kwargs)
     
         ########3D:
         if self.outgrids_3d is not None:
@@ -770,13 +778,14 @@ class FlashGridder(object):
                             outgrids_3d[3], field_names[3], field_descriptions[3], format='f', 
                             grid_units=field_units_3d[3],
                             **output_kwargs)
-            output_writer_3d(outfiles_3d[4], t_ref, np.asarray(t_edges_seconds[:-1]),
-                            x_coord*spatial_scale_factor, y_coord*spatial_scale_factor,
-                            z_coord*spatial_scale_factor, 
-                            lons_3d, lats_3d, alts_3d, ctr_lat, ctr_lon, ctr_alt,
-                            outgrids_3d[4], field_names[4], field_descriptions[4], format='f', 
-                            grid_units=field_units_3d[4],
-                            **output_kwargs)    
+            if energy_grids is not None:
+                output_writer_3d(outfiles_3d[4], t_ref, np.asarray(t_edges_seconds[:-1]),
+                                x_coord*spatial_scale_factor, y_coord*spatial_scale_factor,
+                                z_coord*spatial_scale_factor, 
+                                lons_3d, lats_3d, alts_3d, ctr_lat, ctr_lon, ctr_alt,
+                                outgrids_3d[4], field_names[4], field_descriptions[4], format='f', 
+                                grid_units=field_units_3d[4],
+                                **output_kwargs)    
             output_writer_3d(outfiles_3d[5], t_ref, np.asarray(t_edges_seconds[:-1]),
                             x_coord*spatial_scale_factor, y_coord*spatial_scale_factor,
                             z_coord*spatial_scale_factor, 
@@ -784,13 +793,14 @@ class FlashGridder(object):
                             outgrids_3d[5], field_names[5], field_descriptions[5], format='f', 
                             grid_units=field_units_3d[5],
                             **output_kwargs)                
-            output_writer_3d(outfiles_3d[6], t_ref, np.asarray(t_edges_seconds[:-1]),
-                            x_coord*spatial_scale_factor, y_coord*spatial_scale_factor,
-                            z_coord*spatial_scale_factor, 
-                            lons_3d, lats_3d, alts_3d, ctr_lat, ctr_lon, ctr_alt,
-                            outgrids_3d[6], field_names[6], field_descriptions[6], format='f', 
-                            grid_units=field_units_3d[6],
-                            **output_kwargs)                
+            if energy_grids is not None:
+                output_writer_3d(outfiles_3d[6], t_ref, np.asarray(t_edges_seconds[:-1]),
+                                x_coord*spatial_scale_factor, y_coord*spatial_scale_factor,
+                                z_coord*spatial_scale_factor, 
+                                lons_3d, lats_3d, alts_3d, ctr_lat, ctr_lon, ctr_alt,
+                                outgrids_3d[6], field_names[6], field_descriptions[6], format='f', 
+                                grid_units=field_units_3d[6],
+                                **output_kwargs)                
                         
         # return x_coord, y_coord, z_coord, lons, lats, alts, extent_density_grid, outfiles, field_names
 
@@ -809,7 +819,7 @@ def grid_h5flashfiles(h5_filenames, start_time, end_time, **kwargs):
 
     out_kwargs = {}
     for outk in ('outpath', 'output_writer', 'output_writer_3d', 'output_kwargs',
-                 'output_filename_prefix', 'spatial_scale_factor'):
+                 'output_filename_prefix', 'spatial_scale_factor', 'energy_grids'):
         if outk in kwargs:
             out_kwargs[outk] = kwargs.pop(outk)
     

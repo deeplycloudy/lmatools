@@ -94,8 +94,8 @@ def test_sort_and_grid_and_plot(outpath):
             subprocess.call(['chmod', 'a+w', outpath, grid_dir+'/20%s' %(date.strftime('%y/%b')), grid_dir+'/20%s' %(date.strftime('%y'))])
         grid_h5flashfiles(h5_filenames, start_time, end_time, frame_interval=frame_interval, proj_name='latlong',
                     dx=dx, dy=dy, x_bnd=x_bnd, y_bnd=y_bnd, ctr_lon=ctr_lon, ctr_lat=ctr_lat, outpath = outpath,
-                    output_writer = write_cf_netcdf_latlon, output_filename_prefix=center_ID, spatial_scale_factor=1.0
-                    )
+                    output_writer = write_cf_netcdf_latlon, output_filename_prefix=center_ID, spatial_scale_factor=1.0,
+                    energy_grids=True)
         
     # Create plots
     n_cols=2
