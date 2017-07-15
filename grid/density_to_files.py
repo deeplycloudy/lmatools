@@ -391,7 +391,7 @@ def flash_std_3d(x0, y0, z0, dx, dy, dz, target, flash_id_key='flash_id', weight
             print('extent with points numbering', len(x_i), ' with weights', weight_key)
             unq_idx = unique_vectors(x_i, y_i, z_i, events[flash_id_key])
             # if x[unq_idx].shape[0] > 1:
-            if weight_key <> None:
+            if weight_key != None:
                 weight_lookup = dict(list(zip(flash[flash_id_key], flash[weight_key]**2.)))
                 weights = [weight_lookup[fi] for fi in events[unq_idx]['flash_id']] #puts weights in same order as x[unq_idx], y[unq_idx]
                 del weight_lookup
@@ -425,7 +425,7 @@ def extent_density(x0, y0, dx, dy, target, flash_id_key='flash_id', weight_key=N
             print('extent with points numbering', len(x_i), ' with weights', weight_key)
             unq_idx = unique_vectors(x_i, y_i, events[flash_id_key])
             # if x[unq_idx].shape[0] > 1:
-            if weight_key <> None:
+            if weight_key != None:
                 weight_lookup = dict(list(zip(flash[flash_id_key], flash[weight_key])))
                 weights = [weight_lookup[fi] for fi in events[unq_idx]['flash_id']] #puts weights in same order as x[unq_idx], y[unq_idx]
                 del weight_lookup
@@ -462,7 +462,7 @@ def extent_density_3d(x0, y0, z0, dx, dy, dz, target, flash_id_key='flash_id', w
             print('extent with points numbering', len(x_i), ' with weights', weight_key)
             unq_idx = unique_vectors(x_i, y_i, z_i, events[flash_id_key])
             # if x[unq_idx].shape[0] > 1:
-            if weight_key <> None:
+            if weight_key != None:
                 weight_lookup = dict(list(zip(flash[flash_id_key], flash[weight_key])))
                 weights = [weight_lookup[fi] for fi in events[unq_idx]['flash_id']] #puts weights in same order as x[unq_idx], y[unq_idx]
                 del weight_lookup

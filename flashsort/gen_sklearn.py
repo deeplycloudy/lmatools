@@ -113,7 +113,7 @@ class ChunkedFlashSorter(object):
             with an ID of -1 are singleton points not belonging to a 
             cluster, consistent with the convention of sklearn.cluster.DBSCAN
         """
-        chunk1, id1 = stream.next()
+        chunk1, id1 = stream.__next__()
         for chunk2, id2 in stream:
             len1 = chunk1.shape[0]
             len2 = chunk2.shape[0]
