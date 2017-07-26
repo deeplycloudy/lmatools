@@ -76,12 +76,14 @@ def write_cf_netcdf_latlon(outfile, t_start, t, xloc, yloc, lon_for_x, lat_for_y
         Should display natively in conformant packages like McIDAS-V.
         
     """
-
-    import scipy.io.netcdf as nc
+    try:
+        from netCDF4 import Dataset as NetCDFFile
+    except ImportError:
+        from scipy.io.netcdf import NetCDFFile
 
     missing_value = -9999
     
-    nc_out = nc.NetCDFFile(outfile, 'w')
+    nc_out = NetCDFFile(outfile, 'w')
     nc_out.createDimension('lon', xloc.shape[0])
     nc_out.createDimension('lat', yloc.shape[0])
     nc_out.createDimension('ntimes', t.shape[0])  #unlimited==None
@@ -117,7 +119,7 @@ def write_cf_netcdf_latlon(outfile, t_start, t, xloc, yloc, lon_for_x, lat_for_y
     # lats.standard_name="latitude"
     # lats.units = "degrees_north"
 
-    lightning2d = nc_out.createVariable(grid_var_name, format, ('ntimes','lon','lat') )#, filters=no_compress)
+    lightning2d = nc_out.createVariable(grid_var_name, format, ('ntimes','lon','lat'),  zlib=True)#, filters=no_compress)
     lightning2d.long_name=grid_description #'LMA VHF event counts (vertically integrated)'
     lightning2d.units=kwargs['grid_units']
     # lightning2d.coordinates='time lons lats'
