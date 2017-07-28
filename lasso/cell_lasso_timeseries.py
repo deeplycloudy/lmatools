@@ -8,24 +8,17 @@ from lmatools.grid.density_to_files import ArrayChopper, stack_chopped_arrays
 
 from lmatools.lasso.energy_stats import TimeSeriesPolygonLassoFilter 
 
-class TimeSeriesFlashSubset(object):
-    def __init__(self, h5_filenames, t_start, t_end, dt, base_date=None, min_points=10):
-        """ 
-            t_start, t_end: datetime objects giving start and end of the time series
-            dt: datetime.timedelta object giving the time series interval
+class TimeSeriesGenericFlashSubset(object):
+    """ This class is not meant to be used alone. A subclass which provides
+        self.lma corresponding to the LMAh5Collection API is necessary.
+    """
+    def __init__(self, t_start, t_end, dt, base_date=None):
+        self.lma = None
         
-            h5_filenames are in the lmatools format.
-            
-            Attributes
-            t_edges: edges of the time series windows as datetime objects
-            n_frames: number of time series windows
-        """
         if base_date is None:
             self.base_date = datetime(t_start.year, t_start.month, t_start.day)
         else: 
             self.base_date = base_date
-        
-        self.lma = LMAh5Collection(h5_filenames, min_points=min_points, base_date=self.base_date)
         
         t_edges, duration = time_edges(t_start, t_end, dt.total_seconds())
         self.t_edges = t_edges
@@ -82,6 +75,22 @@ class TimeSeriesFlashSubset(object):
             events.append(ev_chop)
             flashes.append(fl_chop)
         return stack_chopped_arrays(events), stack_chopped_arrays(flashes)
+
+class TimeSeriesFlashSubset(TimeSeriesGenericFlashSubset):
+    def __init__(self, h5_filenames, t_start, t_end, dt, base_date=None, min_points=10):
+        """ 
+            t_start, t_end: datetime objects giving start and end of the time series
+            dt: datetime.timedelta object giving the time series interval
+        
+            h5_filenames are in the lmatools format.
+            
+            Attributes
+            t_edges: edges of the time series windows as datetime objects
+            n_frames: number of time series windows
+        """
+        super(TimeSeriesFlashSubset, self).__init__(t_start, t_end, dt, base_date=None)
+        self.lma = LMAh5Collection(h5_filenames, min_points=min_points, base_date=self.base_date)
+        
 
         
 class TimeSeriesPolygonFlashSubset(TimeSeriesFlashSubset):

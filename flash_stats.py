@@ -178,19 +178,20 @@ def plot_energies(footprint_bin_edges,time_array,scalar_map,flashes_series,
     # cmap = plt.cm.Reds_r
     
     for f, (flashes, t0, t1) in enumerate(zip(flashes_series, flashes_in_poly_edges[:-1], flashes_in_poly_edges[1:])):
-        
-        flash_1d_extent = bin_center(np.sqrt(footprint_bin_edges))
-        histo_cd, edges_cd = np.histogram(np.sqrt(flashes['area']), 
-                                          bins=np.sqrt(footprint_bin_edges), 
-                                          weights=np.abs(flashes[which_energy]))
+        if flashes.shape[0] > 1:
+            # If there is no data in this time window, skip it
+            flash_1d_extent = bin_center(np.sqrt(footprint_bin_edges))
+            histo_cd, edges_cd = np.histogram(np.sqrt(flashes['area']), 
+                                              bins=np.sqrt(footprint_bin_edges), 
+                                              weights=np.abs(flashes[which_energy]))
 
-        spectrum_save_file_en = spectrum_save_file_base_en.format(t0.strftime('%y%m%d%H%M%S'),
-                                                                  t1.strftime('%y%m%d%H%M%S'))
+            spectrum_save_file_en = spectrum_save_file_base_en.format(t0.strftime('%y%m%d%H%M%S'),
+                                                                      t1.strftime('%y%m%d%H%M%S'))
         
-        estimated, = ax_energy.loglog(flash_1d_extent[:],
-                            np.abs(np.asarray(histo_cd))/np.sqrt(flash_1d_extent),
-                            color=s_m.to_rgba(np.asarray(time_array)[f]),
-                            alpha=0.7); 
+            estimated, = ax_energy.loglog(flash_1d_extent[:],
+                                np.abs(np.asarray(histo_cd))/np.sqrt(flash_1d_extent),
+                                color=s_m.to_rgba(np.asarray(time_array)[f]),
+                                alpha=0.7); 
                                                    
     if which_energy == 'Energy' or which_energy == 'total_energy':
         ax_energy.set_ylim(1e7,1e13)

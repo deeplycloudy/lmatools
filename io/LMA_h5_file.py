@@ -125,11 +125,12 @@ class LMAh5Collection(object):
             # renumber the flash ids so they remain
             # unique across the entire dataset
             flash_increment = last_flash_id + 1
-            events['flash_id'] += flash_increment
-            flashes['flash_id'] += flash_increment
+            if (events.size > 0) | (flashes.size > 0):
+                events['flash_id'] += flash_increment
+                flashes['flash_id'] += flash_increment
             
-            last_flash_id = max(events['flash_id'].max(),
-                                flashes['flash_id'].max())            
+                last_flash_id = max(events['flash_id'].max(),
+                                    flashes['flash_id'].max())            
             yield events, flashes
         
         
