@@ -1,11 +1,13 @@
 from __future__ import absolute_import
 import os, glob, itertools
-from datetime import datetime
+from datetime import datetime, timedelta
 
 import logging, json, operator
 
 import numpy as np
 from six.moves import zip
+
+from lmatools.io.LMA_h5_file import parse_lma_h5_filename
 
 def gen_polys(filename, time_keys=None):
     """ time_keys is a dictionary mapping from variable names 
@@ -111,6 +113,7 @@ def polys_to_bounding_box(polys):
     lats = (sw_corner[1], ne_corner[1])
     return lons, lats
     
+    
 def h5_files_from_standard_path(path_to_sort_results, date_min, date_max):
     """ Path contains a set of directories with h5 files as follows
         path/h5_files/yyyy/Mon/dd/LYLOUT*.h5
@@ -133,8 +136,7 @@ def h5_files_from_standard_path(path_to_sort_results, date_min, date_max):
 
     reduced_h5 = []
     for h5i in h5_filenames:
-        h5_parts = os.path.split(h5i)[-1].split('_')[1:3]
-        h5time = datetime.strptime('_'.join(h5_parts), '%y%m%d_%H%M%S')
+        h5time, h5endtime = parse_lma_h5_filename(h5i)
         if ( (h5time - date_min).total_seconds() > -60.0 ) & ( (h5time - date_max).total_seconds() < 60.0 ):
             reduced_h5.append(h5i)
     h5_filenames = reduced_h5

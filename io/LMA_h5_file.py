@@ -3,11 +3,20 @@ from __future__ import print_function
 import numpy as np
 from datetime import datetime, timedelta
 import tables
+import os
 
 def to_seconds(dt):
     'convert datetime.timedelta object to float seconds'
     return dt.days * 86400 + dt.seconds + dt.microseconds/1.0e6
     
+def parse_lma_h5_filename(filename):
+    file_parts = os.path.split(filename)[-1].split('_')
+    date_parts = file_parts[1:3]
+    start = datetime.strptime('_'.join(date_parts), '%y%m%d_%H%M%S')
+    duration = float(file_parts[3].split('.')[0])
+    end = start + timedelta(0, duration)
+    return start, end
+
 def filter_on_limits(data, limits):
     fl_good = np.ones(data.shape, dtype=bool)
     for k, (v_min, v_max) in limits.items():
