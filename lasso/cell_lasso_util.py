@@ -12,13 +12,25 @@ from lmatools.io.LMA_h5_file import parse_lma_h5_filename
 def gen_polys(filename, time_keys=None):
     """ time_keys is a dictionary mapping from variable names 
         that store time to datetime format strings used to 
-        parse those times
-        """
-    
-    f = open(filename)
-    for line in f:
-        v = json.loads(line)
+        parse those times.
 
+        There are two JSON file formats used. The polygon lasso
+        log GUI tool produces a file with one compact-encoded JOSN lasso
+        object per line.
+        { "created": "2017-08-02T17:19:45.0", ...}
+        { "created": "2017-08-02T17:19:50.0", ...}
+
+        An additional format, more suitable for manual editing, has a single
+        JSON object "lassos", which has a list of the individual lasso objects.
+        {
+            "lassos": [
+                { "created": "2017-08-02T17:19:45.0", ...}
+                { "created": "2017-08-02T17:19:50.0", ...}
+            ]
+        }
+        """
+
+    def parse_one_poly(v):
         # We'll return just the polygon data
         p = v['poly'] 
         
@@ -29,10 +41,25 @@ def gen_polys(filename, time_keys=None):
         if time_keys is not None:
             for k in time_keys:
                 # Parse into a datetime object
-                k_date = datetime.strptime(p[k], time_keys[k])
-                p[k] = k_date
-
-        yield p
+                if k in p:
+                    k_date = datetime.strptime(p[k], time_keys[k])
+                    p[k] = k_date
+        return p
+    
+    f = open(filename)
+    
+    s = f.read(100)
+    f.seek(0)
+    first_json = "".join(s.split()) # strip all whitespace
+    if first_json.startswith('{"lassos":[{'):
+        polys = json.load(f)
+        for v in polys['lassos']:
+            print(v)
+            yield parse_one_poly(v)
+    else:
+        for line in f:
+            v = json.loads(line)
+            yield parse_one_poly(v)
     f.close()
     
 def read_polys(filename, sort_key=None, time_keys=None):
@@ -77,24 +104,35 @@ def read_poly_log_file(filename, lat_lon_filter=None):
         Returns (polys, t_edges)
         polys: length N sequence of (lon,lat) tuples giving the polygon vertices 
         t_edges: length N+1 sequence of datetime instances giving the 
-            start and end times to which each of the N polygons applies
+            start and end times to which each of the N polygons applies. Each
+            polygon is valid beginning at the frame_time given in the log file
+            for each polygon, and ends when next polygon begins. If the last 
+            polygon has frame_end, then that time is used as the end time of the
+            last polygon. Otherwise, the last time in t_edges is found by taking
+            the frame_time of the last lasso and extending it by the frame_time 
+            difference between the second to last and last lassos.
     """
 
-    time_keys = {'frame_time':'%Y-%m-%dT%H:%M:%S'}
+    time_keys = {'frame_time':'%Y-%m-%dT%H:%M:%S',
+                 'frame_end':'%Y-%m-%dT%H:%M:%S'}
     polys_log = read_polys(filename, 
                        sort_key = 'frame_time', time_keys=time_keys)
 
-    if polys_log[0]['lon_verts'] is not None:
+    if 'lon_verts' in polys_log[0]:
         lon_name, lat_name = 'lon_verts', 'lat_verts'
     else:
-        "Assuming lat, lon data are in the x_verts, y_verts polygon log entries"
+        "Assuming lon, lat data are in the x_verts, y_verts polygon log entries"
         lon_name, lat_name = 'x_verts', 'y_verts'
     
     flash_stat_polys = tuple(list(zip(p[lon_name], p[lat_name])) for p in polys_log)
     flash_stat_left_time_edges = tuple(p['frame_time'] for p in polys_log)
-    dt = flash_stat_left_time_edges[1] - flash_stat_left_time_edges[0]
-    t_edges = flash_stat_left_time_edges + (flash_stat_left_time_edges[-1] + dt, )
-    
+    if 'frame_end' not in polys_log[-1]:
+        dt = flash_stat_left_time_edges[-1] - flash_stat_left_time_edges[-2]
+        t_edges = flash_stat_left_time_edges + (flash_stat_left_time_edges[-1] + dt, )
+    else:
+        flash_stat_right_time_edges = tuple(p['frame_end'] for p in polys_log)
+        t_edges = flash_stat_left_time_edges + (flash_stat_right_time_edges[-1],)
+        
     if lat_lon_filter is not None:
         flash_stat_polys = apply_filter_poly(lat_lon_filter, polys_log, flash_stat_polys)
     
