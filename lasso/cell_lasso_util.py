@@ -54,7 +54,6 @@ def gen_polys(filename, time_keys=None):
     if first_json.startswith('{"lassos":[{'):
         polys = json.load(f)
         for v in polys['lassos']:
-            print(v)
             yield parse_one_poly(v)
     else:
         for line in f:

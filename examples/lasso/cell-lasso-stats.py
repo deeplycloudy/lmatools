@@ -1,29 +1,82 @@
 #!/usr/bin/env python
-"""
+import argparse
+parse_desc = """
 USAGE
 python cell-lasso-stats.py path_to_lasso_log.txt path_to_sort_results outdir
-
-path_to_lasso_log.txt is a path to a log file of cell lassos in json format,
-    as created by the grid analysis GUI notebook that operates on the NetCDF
-    flash files.
-
-path_to_sort_results is a path to a standard directory of flash sorting
-    results produced by lmatools, and which contains gridded flash counts 
-    and hdf5 flash files on the usual paths:
-        flash_sort_results/
-            grid_files/yyyy/mon/dd/*.nc
-            h5_files/yyyy/mon/dd/*.h5
-
-outdir is created in within the figures-length folder inside path_to_sort_results
-    This way multiple runs with different lassos on the same dataset are stored
-    together. figures-length is created if it does not exist.
-    
 EXAMPLE
 python lmatools/examples/lasso/cell-lasso-stats.py lmatools/testing/test_gen_autorun_DBSCAN_LassoLog.txt lmatools/sampledata/flashsort-solution/ lmatoolstest
+
+cd /data/tmp/lmatools_test/
+python ~/code/lmatools/examples/lasso/cell-lasso-stats.py DemoNCGridLassoLog.txt ./flashsort/ newlassotest
+
+python ~/code/lmatools/examples/lasso/cell-lasso-stats.py -l DemoNCGridLassoLog.txt -s ./flashsort/ -o newlassotest --stdpath
+
 """
 
+lasso_log_help = """ path_to_lasso_log.txt is a path to a log file of cell
+lassos in json format, as created by the grid analysis GUI notebook that
+operates on the NetCDF flash files."""
+
+path_to_sort_help = """path_to_sort_results is a path to a standard directory
+of flash sorting results produced by lmatools, and which contains gridded flash
+counts and hdf5 flash files on the usual paths:
+    flash_sort_results/
+        grid_files/yyyy/mon/dd/*.nc
+        h5_files/yyyy/mon/dd/*.h5"""
+
+outdir_help = """outdir is created in within the figures-length folder
+inside path_to_sort_results. This way multiple runs with different lassos
+on the same dataset are stored together. figures-length is created if it does
+not exist. """
+
+parser = argparse.ArgumentParser(description=parse_desc)
+parser.add_argument(dest='filenames',metavar='filenames', nargs='*')
+parser.add_argument('-s', dest='path_to_sort_results', action='store',
+                    help=path_to_sort_help,)
+parser.add_argument('--stdpath', dest='use_standard_path', action='store_true',
+                    help='Look for data in h5_files directory in path_to_sort_results')                    
+parser.add_argument('-o', '--output_dir', metavar='directory', required=True,
+                    dest='outdir', action='store', help=outdir_help)
+parser.add_argument('-l', '--lasso', metavar='filename', required=True,
+                    dest='lasso_log', action='store',
+                    help=lasso_log_help)
+parser.add_argument('-a', '--minarea', metavar='float km^2',
+                    type=float, dest='min_area', action='store', default=0.0)
+parser.add_argument('-A', '--maxarea', metavar='float km^2',
+                    type=float, dest='max_area', action='store', default=1.0e10)
+parser.add_argument('--nevents', metavar='minimum events per flash', type=int,
+                    dest='min_events', action='store', default=10,
+                    help='minimum number of events per flash')
+parser.add_argument('--ngroups', metavar='minimum groups per flash', type=int,
+                    dest='min_groups', action='store', default=1,
+                    help='minimum number of groups per flash')
+parser.add_argument('--skip3d', dest='do_3d', action='store_false',
+                    help='Skip calculations requiring 3D flash position data')
+
+args = parser.parse_args()
+
+min_area = args.min_area
+max_area = args.max_area
+
+min_events = args.min_events
+if min_events < 2:
+    min_events = None
+min_groups = args.min_groups
+if min_groups < 2:
+    min_groups = None
+
+do_3d = args.do_3d
+use_standard_path = args.use_standard_path
+
+polylog = args.lasso_log
+path_to_sort_results = args.path_to_sort_results
+outdir_name_from_user = args.outdir
+input_filenames = args.filenames
+
+##### END PARSING #####
+
 import os, sys, errno
-from datetime import timedelta
+from datetime import datetime, timedelta
 
 import numpy as np
 from numpy.lib.recfunctions import append_fields, stack_arrays
@@ -42,13 +95,16 @@ from lmatools.lasso import empirical_charge_density as cd ###NEW
 # =====
 # Read polygon data and configure output directories
 # =====
-polylog = sys.argv[1]
 polys, t_edges_polys = read_poly_log_file(polylog)
+
+all_poly_lons =  np.asarray(polys)[:,:,0]
+all_poly_lats =  np.asarray(polys)[:,:,1]
+lonmin, lonmax = all_poly_lons.min(), all_poly_lons.max() 
+latmin, latmax = all_poly_lats.min(), all_poly_lats.max() 
+
 t_start, t_end = min(t_edges_polys), max(t_edges_polys)
 dt = timedelta(minutes=1)
 
-path_to_sort_results = sys.argv[2]  
-outdir_name_from_user = sys.argv[3]      
 outdir=os.path.join(path_to_sort_results, 'figures-length/', outdir_name_from_user)
 try:
     os.makedirs(outdir)
@@ -59,9 +115,12 @@ except OSError as exc:
 # =====
 # Load data from HDF5 files into a time series of events and flashes
 # =====
-h5_filenames = h5_files_from_standard_path(path_to_sort_results, t_start, t_end)
+if use_standard_path:
+    h5_filenames = h5_files_from_standard_path(path_to_sort_results, t_start, t_end)
+else:
+    h5_filenames = input_filenames
 flashes_in_poly = TimeSeriesPolygonFlashSubset(h5_filenames, t_start, t_end, dt, 
-                        min_points=10, polys=polys, t_edges_polys=t_edges_polys)
+                        min_points=min_events, polys=polys, t_edges_polys=t_edges_polys)
 events_series, flashes_series = flashes_in_poly.get_event_flash_time_series()
 
 #-----
@@ -86,9 +145,8 @@ def gen_filtered_time_series(events_series, flashes_series, bounds):
         events_filt, flashes_filt = (events[ev_good], flashes[fl_good])
         
         yield (events_filt, flashes_filt)
- 
-max_area = 1.0e10#4.0**2.0 #km^2       
-bounds={'area':(0.0, max_area)}#1.0e10)} # used to remove flashes not meeting certain critera
+
+bounds={'area':(min_area, max_area)} # used to remove flashes not meeting certain critera
 filtered_time_series = gen_filtered_time_series(events_series, flashes_series, bounds)
 events_series, flashes_series = zip(*filtered_time_series)
 
@@ -133,17 +191,19 @@ flash_location_plotter.fig.savefig(os.path.join(outdir, flash_ctr_filename))
 # =======================================
 
 # Set up fractal length calcuations and channel height profiles
-D = 1.5
-b_s = 200.0
-max_alt, d_alt = 20.0, 0.5
-alt_bins = np.arange(0.0,max_alt+d_alt, d_alt)
-length_profiler = FractalLengthProfileCalculator(D, b_s, alt_bins)
-
+if do_3d:
+    D = 1.5
+    b_s = 200.0
+    max_alt, d_alt = 20.0, 0.5
+    alt_bins = np.arange(0.0,max_alt+d_alt, d_alt)
+    length_profiler = FractalLengthProfileCalculator(D, b_s, alt_bins)
+else:
+    length_profiler = None
 
 def write_flash_volume(outfile, field):
     import xray as xr
     import pandas as pd
-    print field.shape
+    print(field.shape)
     dat = pd.DataFrame(field).T
     dat.to_csv(outfile)
 
@@ -153,7 +213,10 @@ def gen_flash_summary_time_series(events_series, flashes_series, length_profiler
         size_stats = flash_size_stats(flashes)
         # for each flash, get a dictionary with 2D and 3D fractal lengths.
         # also includes the volume and point triangulation data.
-        per_flash_data, IC_profile, CG_profile = length_profiler.process_events_flashes(events, flashes)
+        if length_profiler is not None:
+            per_flash_data, IC_profile, CG_profile = length_profiler.process_events_flashes(events, flashes)
+        else:
+            IC_profile, CG_profile = None, None
         yield size_stats, IC_profile, CG_profile
 
 
@@ -172,9 +235,9 @@ size_stats = append_fields(size_stats, ('start_isoformat','end_isoformat'),
 # =====
 def write_size_stat_data(outfile, size_stats):
     stat_keys = ('start_isoformat','end_isoformat', 'number', 'mean', 'variance',
-                 'skewness', 'kurtosis', 'energy', 'energy_per_flash')
-    header = "# start_isoformat, end_isoformat, number, mean, variance, skewness, kurtosis, energy, energy_per_flash\n"
-    line_template = "{0}, {1}, {2}, {3}, {4}, {5}, {6}, {7}, {8}\n"
+                 'skewness', 'kurtosis', 'energy', 'energy_per_flash','total_energy','specific_energy')
+    header = "# start_isoformat, end_isoformat, number, mean, variance, skewness, kurtosis, energy, energy_per_flash, total_energy, specific_energy\n"
+    line_template = "{0}, {1}, {2}, {3}, {4}, {5}, {6}, {7}, {8}, {9}, {10}\n"
     f = open(outfile, 'w')
     #for start_t, end_t, stats in zip(starts, ends, size_stats):
     f.write(header)
@@ -202,34 +265,35 @@ tot_energy_fig.savefig(tot_energy_figure_name)
 # =====
 # Write profile data to file and plot profile time series
 # =====
-durations_min = (flashes_in_poly.t_edges_seconds[1:] - flashes_in_poly.t_edges_seconds[:-1])/60.0 #minutes
-fig_kwargs = dict(label_t_every=1800.)
+if do_3d:
+    durations_min = (flashes_in_poly.t_edges_seconds[1:] - flashes_in_poly.t_edges_seconds[:-1])/60.0 #minutes
+    fig_kwargs = dict(label_t_every=1800.)
 
-IC_norm_profiles = length_profiler.normalize_profiles(IC_profiles, durations_min)
-CG_norm_profiles = length_profiler.normalize_profiles(CG_profiles, durations_min)
+    IC_norm_profiles = length_profiler.normalize_profiles(IC_profiles, durations_min)
+    CG_norm_profiles = length_profiler.normalize_profiles(CG_profiles, durations_min)
 
-outfile_base = os.path.join(outdir,
-                'D-{0:3.1f}_b-{1:4.2f}_length-profiles'.format(D,b_s)
-                )
+    outfile_base = os.path.join(outdir,
+                    'D-{0:3.1f}_b-{1:4.2f}_length-profiles'.format(D,b_s)
+                    )
 
-IC_fig = length_profiler.make_time_series_plot(flashes_in_poly.base_date,
-            flashes_in_poly.t_edges_seconds,
-            *IC_norm_profiles, **fig_kwargs)
-CG_fig = length_profiler.make_time_series_plot(flashes_in_poly.base_date,
-            flashes_in_poly.t_edges_seconds,
-            *CG_norm_profiles, **fig_kwargs)
-if 'CG' in flashes_series[0].dtype.names:
-    length_profiler.write_profile_data(flashes_in_poly.base_date, flashes_in_poly.t_edges_seconds,
-                outfile_base, *IC_norm_profiles, partition_kind='IC')
-    length_profiler.write_profile_data(flashes_in_poly.base_date, flashes_in_poly.t_edges_seconds,
-                outfile_base, *CG_norm_profiles, partition_kind='CG')
-    CG_fig.savefig(outfile_base+'_CG.pdf')
-    IC_fig.savefig(outfile_base+'_IC.pdf')
-else:
-    # no CG data and so the CG profiles should be empty. No need to save them
-    length_profiler.write_profile_data(flashes_in_poly.base_date, flashes_in_poly.t_edges_seconds,
-                outfile_base, *IC_norm_profiles, partition_kind='total')
-    IC_fig.savefig(outfile_base+'_total.pdf')
+    IC_fig = length_profiler.make_time_series_plot(flashes_in_poly.base_date,
+                flashes_in_poly.t_edges_seconds,
+                *IC_norm_profiles, **fig_kwargs)
+    CG_fig = length_profiler.make_time_series_plot(flashes_in_poly.base_date,
+                flashes_in_poly.t_edges_seconds,
+                *CG_norm_profiles, **fig_kwargs)
+    if 'CG' in flashes_series[0].dtype.names:
+        length_profiler.write_profile_data(flashes_in_poly.base_date, flashes_in_poly.t_edges_seconds,
+                    outfile_base, *IC_norm_profiles, partition_kind='IC')
+        length_profiler.write_profile_data(flashes_in_poly.base_date, flashes_in_poly.t_edges_seconds,
+                    outfile_base, *CG_norm_profiles, partition_kind='CG')
+        CG_fig.savefig(outfile_base+'_CG.pdf')
+        IC_fig.savefig(outfile_base+'_IC.pdf')
+    else:
+        # no CG data and so the CG profiles should be empty. No need to save them
+        length_profiler.write_profile_data(flashes_in_poly.base_date, flashes_in_poly.t_edges_seconds,
+                    outfile_base, *IC_norm_profiles, partition_kind='total')
+        IC_fig.savefig(outfile_base+'_total.pdf')
 
 # =====
 # Energy spectrum plots
@@ -266,27 +330,29 @@ s_m.set_array([])
 spectrum_save_file_base_en = os.path.join(outdir, 'energy_spectrum_estimate_{0}_{1}_new.pdf')
 which_energy = 'total_energy'
 title        = 'Total Energy'
-plot_energies(footprint_bin_edges, 
+plot_energies(footprint_bin_edges,
               time_array, s_m, flashes_series,
-              flashes_in_poly.t_edges, 
+              flashes_in_poly.t_edges,
               spectrum_save_file_base_en,
-              which_energy, 
+              which_energy,
               title)
 
-#ENERGY SPECTRA FOR SPECIFIC ENERGY:
-cmap_specific_en = plt.cm.cubehelix
-s_m2 = plt.cm.ScalarMappable(cmap=cmap_specific_en,norm=norm)
-s_m2.set_array([])
+# ENERGY SPECTRA FOR SPECIFIC ENERGY:
+if do_3d:
+    # Flash volume is required to do specific energy
+    cmap_specific_en = plt.cm.cubehelix
+    s_m2 = plt.cm.ScalarMappable(cmap=cmap_specific_en,norm=norm)
+    s_m2.set_array([])
 
-spectrum_save_file_base_specific = os.path.join(outdir, 'specific_energy_spectrum_estimate_{0}_{1}_new.pdf')
-which_energy = 'specific_energy'
-title        = 'Specific Energy'
-plot_energies(footprint_bin_edges, 
-              time_array, s_m2, flashes_series,
-              flashes_in_poly.t_edges, 
-              spectrum_save_file_base_specific,
-              which_energy, 
-              title)
+    spectrum_save_file_base_specific = os.path.join(outdir, 'specific_energy_spectrum_estimate_{0}_{1}_new.pdf')
+    which_energy = 'specific_energy'
+    title        = 'Specific Energy'
+    plot_energies(footprint_bin_edges,
+                  time_array, s_m2, flashes_series,
+                  flashes_in_poly.t_edges,
+                  spectrum_save_file_base_specific,
+                  which_energy,
+                  title)
 
 # =====
 # NetCDF grid processing
@@ -338,10 +404,12 @@ def plot_lasso_grid_subset(fig,datalog, t,xedge,yedge,data,grid_lassos,field_nam
     art = ax.pcolormesh(xedge, yedge,
                         masked_nonzero_filtered[field_name],
                         vmin=grid_range[0], vmax=grid_range[1],
-                        cmap=cmap, norm=norm,alpha=0.6)
+                        cmap=cmap, norm=norm)
 
     # ax.plot(lon_range,lat_range,'ok--',alpha=0.5)
-    fig.colorbar(art)
+    art.set_rasterized(True)
+    cbar = fig.colorbar(art)
+    cbar.solids.set_rasterized(True) 
     ax.axis(axis_range)
 
     if nonzero_filtered.size > 0:
@@ -370,7 +438,7 @@ for field_id in field_ids_to_run:
         if exc.errno == errno.EEXIST and os.path.isdir(fig_outdir):
             pass
 
-    GC = LMAgridFileCollection(nc_filenames, field_name, x_name='longitude', y_name='latitude')
+    gfc = LMAgridFileCollection(nc_filenames, field_name, x_name='longitude', y_name='latitude')
     grid_lassos = flashes_in_poly.grid_lassos
     basedate = flashes_in_poly.base_date
 
@@ -380,10 +448,10 @@ for field_id in field_ids_to_run:
 
     fig=plt.figure(figsize=(12,10))
     lon_range, lat_range = polys_to_bounding_box(flashes_in_poly.polys)
-    print lon_range,lat_range
+    print(lon_range,lat_range)
     axis_range = lon_range+lat_range
 
-    for t, xedge, yedge, data in GC:
+    for t, xedge, yedge, data in gfc:
         if (t >= t_start) & (t <= t_end):
             plot_lasso_grid_subset(fig,datalog,t,xedge,yedge,data,grid_lassos,field_name,basedate,grid_range, axis_range)
             fig.savefig(os.path.join(fig_outdir, '{0}_{1}.png'.format(field_name, t.strftime('%Y%m%d_%H%M%S'))))
