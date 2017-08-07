@@ -177,17 +177,16 @@ def plot_energies(footprint_bin_edges,time_array,scalar_map,flashes_series,
     ax_energy = figure_energy.add_subplot(111)
     # cmap = plt.cm.Reds_r
     
+    tmin = min(flashes_in_poly_edges)
+    tmax = max(flashes_in_poly_edges)
+    
+    flash_1d_extent = bin_center(np.sqrt(footprint_bin_edges))
     for f, (flashes, t0, t1) in enumerate(zip(flashes_series, flashes_in_poly_edges[:-1], flashes_in_poly_edges[1:])):
         if flashes.shape[0] > 1:
             # If there is no data in this time window, skip it
-            flash_1d_extent = bin_center(np.sqrt(footprint_bin_edges))
             histo_cd, edges_cd = np.histogram(np.sqrt(flashes['area']), 
                                               bins=np.sqrt(footprint_bin_edges), 
-                                              weights=np.abs(flashes[which_energy]))
-
-            spectrum_save_file_en = spectrum_save_file_base_en.format(t0.strftime('%y%m%d%H%M%S'),
-                                                                      t1.strftime('%y%m%d%H%M%S'))
-        
+                                              weights=np.abs(flashes[which_energy]))        
             estimated, = ax_energy.loglog(flash_1d_extent[:],
                                 np.abs(np.asarray(histo_cd))/np.sqrt(flash_1d_extent),
                                 color=s_m.to_rgba(np.asarray(time_array)[f]),
@@ -205,8 +204,9 @@ def plot_energies(footprint_bin_edges,time_array,scalar_map,flashes_series,
         inertialsubrange = 10**1 * (wavenumber)**(5.0/3.0)
         ax_energy.set_xlim(1e2,1e-1)
         ax_energy.set_xlim(plt.xlim()[::-1])
-    
-    
+
+    spectrum_save_file_en = spectrum_save_file_base_en.format(tmin.strftime('%y%m%d%H%M%S'),
+                                                              tmax.strftime('%y%m%d%H%M%S'))
 
     cbar = plt.colorbar(s_m)
     ax_energy.loglog(flash_1d_extent, inertialsubrange,'k-',alpha=0.5);
@@ -214,7 +214,7 @@ def plot_energies(footprint_bin_edges,time_array,scalar_map,flashes_series,
     ax_energy.set_xlabel(r'Flash width ($\sqrt{A_h}$, $km$)',fontsize=15)
     ax_energy.set_ylabel(r'Energy ($J$)',fontsize=15)
     cbar.ax.tick_params(labelsize=15)
-    estimated.axes.tick_params(labelsize=15)
+    ax_energy.tick_params(labelsize=15)
     plt.savefig(spectrum_save_file_en)
     plt.close()
     

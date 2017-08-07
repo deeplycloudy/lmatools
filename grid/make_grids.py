@@ -815,9 +815,9 @@ def grid_h5flashfiles(h5_filenames, start_time, end_time, **kwargs):
     """
     
     process_flash_kwargs = {}
-    for prock in ('min_points_per_flash'):
+    for prock in ('min_points_per_flash',):
         if prock in kwargs:
-            process_flash_kwargs[prock] = kwargs.pop(proc)
+            process_flash_kwargs[prock] = kwargs.pop(prock)
 
     out_kwargs = {}
     for outk in ('outpath', 'output_writer', 'output_writer_3d', 'output_kwargs',
