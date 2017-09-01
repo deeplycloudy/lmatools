@@ -1,6 +1,8 @@
 from __future__ import absolute_import
 from __future__ import print_function
 
+from functools import partial
+
 import numpy as np
 
 from six.moves import range
@@ -10,143 +12,112 @@ try:
 except ImportError:
     from scipy.io.netcdf import NetCDFFile
 
-
-def write_cf_netcdf_latlon(outfile, t_start, t, xloc, yloc, lon_for_x, lat_for_y, ctr_lat, ctr_lon, grid, grid_var_name, grid_description, format='i', **kwargs):
-    """ Write a Climate and Forecast Metadata-compliant NetCDF file. 
+def write_cf_netcdf_latlon(outfile, t_start, t, xloc, yloc, 
+    lon_for_x=None, lat_for_y=None, ctr_lat=None, ctr_lon=None, 
+    grid=None, grid_var_name='lightning',
+    grid_description='some kind of lightning data', 
+    format='i', missing_value=-9999, is_latlon=True, **kwargs):
+    """ 
+    Write a Climate and Forecast Metadata-compliant NetCDF file. 
         
-        Grid is regular in lon, lat and so no map projection information is necessary.
+    Grid is assumed to be regular in lon, lat and so no map projection
+    information is necessary. If is_latlon=False, lat_for_y, and 
+    lon_for_x, ctr_lat, and ctr_lon will be used as coordinates for a 
+    Lambert Azimuthal Equal Area projection with the specified center.
     
-        Should display natively in conformant packages like McIDAS-V.
-        
+    Should display natively in conformant packages like McIDAS-V.
     """
-
-    missing_value = -9999
+    if grid is None:
+        raise ValueError("An array must be given for grid")
+        
+    east_dim = 'lon'
+    north_dim = 'lat'
+    grid_mapping = "crs"
+    
+    if not is_latlon:
+        east_dim = 'nx'
+        north_dim = 'ny'
+        grid_mapping = "Lambert_Azimuthal_Equal_Area"
+    
+    grid_units = kwargs.pop('grid_units', 'dimensionless')
     
     nc_out = NetCDFFile(outfile, 'w')
-    nc_out.createDimension('lon', xloc.shape[0])
-    nc_out.createDimension('lat', yloc.shape[0])
+    nc_out.createDimension(east_dim, xloc.shape[0])
+    nc_out.createDimension(north_dim, yloc.shape[0])
     nc_out.createDimension('ntimes', t.shape[0])  #unlimited==None
 
     # declare the coordinate reference system, WGS84 values
-    proj = nc_out.createVariable('crs', 'i', ())
-    proj.grid_mapping_name = 'latitude_longitude'
-    proj.longitude_of_prime_meridian = 0.0 
-    proj.semi_major_axis = 6378137.0 
-    proj.inverse_flattening = 298.257223563 
+    proj = nc_out.createVariable(grid_mapping, 'i', ())
+    if is_latlon:
+        proj.grid_mapping_name = 'latitude_longitude'
+        proj.longitude_of_prime_meridian = 0.0 
+        proj.semi_major_axis = 6378137.0 
+        proj.inverse_flattening = 298.257223563 
+    else:
+        proj.grid_mapping_name = 'lambert_azimuthal_equal_area'
+        proj.longitude_of_projection_origin = ctr_lon
+        proj.latitude_of_projection_origin = ctr_lat
+        proj.false_easting = 0.0
+        proj.false_northing = 0.0
     
-    y_coord = nc_out.createVariable('latitude', 'f', ('lat',))
-    y_coord.units = "degrees_north"
-    y_coord.long_name = "latitude"
-    y_coord.standard_name = 'latitude'
-
-    x_coord = nc_out.createVariable('longitude', 'f', ('lon',))
-    x_coord.units = "degrees_east"
-    x_coord.long_name = "longitude"
-    x_coord.standard_name = 'longitude'
-
-    times = nc_out.createVariable('time', 'f', ('ntimes',) )#, filters=no_compress)
-    times.long_name="time"
-    times.units = "seconds since %s" % t_start.strftime('%Y-%m-%d %H:%M:%S')
-    
-    # lons = nc_out.createVariable('lons', 'd', ('nx','ny') )#, filters=no_compress)
-    # lons.long_name="longitude"
-    # lons.standard_name="longitude"
-    # lons.units = "degrees_east"
-    # 
-    # lats = nc_out.createVariable('lats', 'd', ('nx','ny') )#, filters=no_compress)
-    # lats.long_name="latitude"
-    # lats.standard_name="latitude"
-    # lats.units = "degrees_north"
-
-    lightning2d = nc_out.createVariable(grid_var_name, format, ('ntimes','lon','lat'),  zlib=True)#, filters=no_compress)
-    lightning2d.long_name=grid_description #'LMA VHF event counts (vertically integrated)'
-    lightning2d.units=kwargs['grid_units']
-    # lightning2d.coordinates='time lons lats'
-    lightning2d.grid_mapping = "crs"
-    lightning2d.missing_value = missing_value
-
-    x_coord[:] = xloc[:]
-    y_coord[:] = yloc[:]
-    times[:] = t[:]
-    # lons[:] = lon_for_x[:]
-    # lats[:] = lat_for_y[:]
-
-    for i in range(grid.shape[2]):
-        lightning2d[i,:,:] = grid[:,:,i]
-    nc_out.close()    
-
-def write_cf_netcdf(outfile, t_start, t, xloc, yloc, lon_for_x, lat_for_y, ctr_lat, ctr_lon, grid, grid_var_name, grid_description, format='i', **kwargs):
-    """ Write a Climate and Forecast Metadata-compliant NetCDF file. 
-    
-        Should display natively in conformant packages like McIDAS-V.
+    if is_latlon:
+        y_coord = nc_out.createVariable('latitude', 'f', (north_dim,))
+        y_coord.units = "degrees_north"
+        y_coord.long_name = "latitude"
+        y_coord.standard_name = 'latitude'
         
-    """
-
-    # import scipy.io.netcdf as nc
-
-    missing_value = -9999
-    
-    nc_out = NetCDFFile(outfile, 'w')
-    nc_out.createDimension('nx', xloc.shape[0])
-    nc_out.createDimension('ny', yloc.shape[0])
-    nc_out.createDimension('ntimes', t.shape[0])  #unlimited==None
-
-    proj = nc_out.createVariable('Lambert_Azimuthal_Equal_Area', 'i', ())
-    proj.grid_mapping_name = 'lambert_azimuthal_equal_area'
-    proj.longitude_of_projection_origin = ctr_lon
-    proj.latitude_of_projection_origin = ctr_lat
-    proj.false_easting = 0.0
-    proj.false_northing = 0.0
-    
-    # x_coord = nc_out.createVariable('longitude', 'f', ('nx',))
-    # x_coord.long_name="longitude"
-    # x_coord.standard_name="longitude"
-    # x_coord.units = "degrees_east"
-    x_coord = nc_out.createVariable('x', 'f', ('nx',))
-    x_coord.units = "km"
-    x_coord.long_name = "x coordinate of projection"
-    x_coord.standard_name = 'projection_x_coordinate'
-
-    # y_coord = nc_out.createVariable('latitude', 'f', ('nx',))
-    # y_coord.long_name="latitude"
-    # y_coord.standard_name="latitude"
-    # y_coord.units = "degrees_north"
-    y_coord = nc_out.createVariable('y', 'f', ('ny',))
-    y_coord.units = "km"
-    y_coord.long_name = "y coordinate of projection"
-    y_coord.standard_name = 'projection_y_coordinate'
+        x_coord = nc_out.createVariable('longitude', 'f', (east_dim,))
+        x_coord.units = "degrees_east"
+        x_coord.long_name = "longitude"
+        x_coord.standard_name = 'longitude'
+    else:
+        x_coord = nc_out.createVariable('x', 'f', (east_dim,))
+        x_coord.units = "km"
+        x_coord.long_name = "x coordinate of projection"
+        x_coord.standard_name = 'projection_x_coordinate'
+        
+        y_coord = nc_out.createVariable('y', 'f', (north_dim,))
+        y_coord.units = "km"
+        y_coord.long_name = "y coordinate of projection"
+        y_coord.standard_name = 'projection_y_coordinate'
 
     times = nc_out.createVariable('time', 'f', ('ntimes',) )#, filters=no_compress)
     times.long_name="time"
     times.units = "seconds since %s" % t_start.strftime('%Y-%m-%d %H:%M:%S')
     
     #Dtype change from 'd' to 'f':
-    lons = nc_out.createVariable('lons', 'f', ('nx','ny') )#, filters=no_compress)
-    lons.long_name="longitude"
-    lons.standard_name="longitude"
-    lons.units = "degrees_east"
-    
-    lats = nc_out.createVariable('lats', 'f', ('nx','ny') )#, filters=no_compress)
-    lats.long_name="latitude"
-    lats.standard_name="latitude"
-    lats.units = "degrees_north"
+    if not is_latlon:
+        lons = nc_out.createVariable('lons', 'f', (east_dim, north_dim))
+        lons.long_name="longitude"
+        lons.standard_name="longitude"
+        lons.units = "degrees_east"
+        
+        lats = nc_out.createVariable('lats', 'f', (east_dim, north_dim))
+        lats.long_name="latitude"
+        lats.standard_name="latitude"
+        lats.units = "degrees_north"
 
-    lightning2d = nc_out.createVariable(grid_var_name, format, ('ntimes','nx','ny') )#, filters=no_compress)
-    lightning2d.long_name=grid_description #'LMA VHF event counts (vertically integrated)'
-    lightning2d.units='dimensionless'
-    lightning2d.coordinates='time lons lats'
-    lightning2d.grid_mapping = "Lambert_Azimuthal_Equal_Area"
+        lons[:] = lon_for_x[:]
+        lats[:] = lat_for_y[:]
+
+    lightning2d = nc_out.createVariable(grid_var_name, format,
+        ('ntimes',east_dim,north_dim), zlib=True)
+    lightning2d.long_name=grid_description
+    lightning2d.units=grid_units
+    if not is_latlon:
+        lightning2d.coordinates='time lons lats'
+    lightning2d.grid_mapping = grid_mapping
     lightning2d.missing_value = missing_value
 
     x_coord[:] = xloc[:]
     y_coord[:] = yloc[:]
     times[:] = t[:]
-    lons[:] = lon_for_x[:]
-    lats[:] = lat_for_y[:]
 
     for i in range(grid.shape[2]):
         lightning2d[i,:,:] = grid[:,:,i]
     nc_out.close()
+
+write_cf_netcdf = partial(write_cf_netcdf_latlon, is_latlon=False)
 
 def write_cf_netcdf_3d(outfile, t_start, t, xloc, yloc, zloc, lon_for_x, lat_for_y, alt_for_z, ctr_lat, ctr_lon, ctr_alt, grid, grid_var_name, grid_description, format='i', **kwargs):
     """ Write a Climate and Forecast Metadata-compliant NetCDF file. 
