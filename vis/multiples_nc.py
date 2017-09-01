@@ -7,7 +7,11 @@ import gc
 
 from datetime import datetime, timedelta
 import numpy as np
-import scipy.io.netcdf as nc
+
+try:
+    from netCDF4 import Dataset as NetCDFFile
+except ImportError:
+    from scipy.io.netcdf import NetCDFFile
 
 # from pylab import figure, get_cmap, colorbar
 from matplotlib.figure import figaspect, Figure
@@ -116,7 +120,7 @@ def read_file_3d(filename, grid_name, x_name='x', y_name='y', z_name = 'z', t_na
             or a matplotlib.colors.Colormap instance
         """
     
-    f = nc.NetCDFFile(filename)
+    f = NetCDFFile(filename)
     data = f.variables  # dictionary of variable names to nc_var objects
     dims = f.dimensions # dictionary of dimension names to sizes
     x_idx = data[x_name]
@@ -140,9 +144,7 @@ def read_file_3d(filename, grid_name, x_name='x', y_name='y', z_name = 'z', t_na
     grid_x_idx = name_to_idx[x_idx.dimensions[0]]
     grid_y_idx = name_to_idx[y_idx.dimensions[0]]
     grid_z_idx = name_to_idx[z_idx.dimensions[0]]
-    
-    f.close()
-    
+        
     return grid, grid_name, x, y, all_z, t, grid_t_idx, grid_x_idx, grid_z_idx
 
 
@@ -266,7 +268,7 @@ def make_plot(filename, grid_name, x_name='x', y_name='y', t_name='time',
             or a matplotlib.colors.Colormap instance
         """
 
-    f = nc.NetCDFFile(filename)
+    f = NetCDFFile(filename)
     data = f.variables  # dictionary of variable names to nc_var objects
     dims = f.dimensions # dictionary of dimension names to sizes
     x = data[x_name]
@@ -312,7 +314,6 @@ def make_plot(filename, grid_name, x_name='x', y_name='y', t_name='time',
     min_count, max_count = 1, grid[:].max() #max_count_baseline*(t[1]-t[0])
     if (max_count == 0) | (max_count == 1 ):
         max_count = min_count+1
-    f.close()
 
     default_vmin = -1.0#0.2
     if np.log10(max_count) <= default_vmin:
@@ -335,7 +336,7 @@ def make_plot(filename, grid_name, x_name='x', y_name='y', t_name='time',
         ax.spines['right'].set_edgecolor(frame_color)
     #     ax.yaxis.set_major_formatter(kilo_formatter)
     #     ax.xaxis.set_major_formatter(kilo_formatter)
-    base_date = datetime.strptime(t.units.decode(), "seconds since %Y-%m-%d %H:%M:%S")
+    base_date = datetime.strptime(t.units, "seconds since %Y-%m-%d %H:%M:%S")
     time_delta = timedelta(0,float(t[0]),0)
     start_time = base_date + time_delta
         

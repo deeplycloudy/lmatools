@@ -9,7 +9,7 @@ import subprocess
 from lmatools.flashsort.gen_autorun import logger_setup, sort_files
 from lmatools.flashsort.gen_sklearn import DBSCANFlashSorter
 
-from lmatools.grid.make_grids import grid_h5flashfiles, dlonlat_at_grid_center, write_cf_netcdf_latlon, write_cf_netcdf_3d_latlon
+from lmatools.grid.make_grids import grid_h5flashfiles, dlonlat_at_grid_center, write_cf_netcdf_latlon, write_cf_netcdf_3d_latlon, write_cf_netcdf, write_cf_netcdf_3d
 from lmatools.vis.multiples_nc import make_plot, make_plot_3d, read_file_3d
 from six.moves import map
 
@@ -61,7 +61,7 @@ def test_sort_and_grid_and_plot(outpath):
     info.write(str(params))
     info.close()
     
-    if True:
+    if False:
         cluster = DBSCANFlashSorter(params).cluster
         sort_files(files, outdir, cluster)
     # Figure out which HDF5 files were created
@@ -77,9 +77,10 @@ def test_sort_and_grid_and_plot(outpath):
     z_bnd_km = (0.0e3, 15.0e3)
 
     # There are similar functions in lmatools to grid on a regular x,y grid in some map projection.
-    dx, dy, x_bnd, y_bnd = dlonlat_at_grid_center(ctr_lat, ctr_lon, 
-                                dx=dx_km, dy=dy_km,
-                                x_bnd = x_bnd_km, y_bnd = y_bnd_km )
+    # dx, dy, x_bnd, y_bnd = dlonlat_at_grid_center(ctr_lat, ctr_lon,
+    #                             dx=dx_km, dy=dy_km,
+    #                             x_bnd = x_bnd_km, y_bnd = y_bnd_km )
+    dx, dy, x_bnd, y_bnd = dx_km, dy_km, x_bnd_km, y_bnd_km
     # print("dx, dy = {0}, {1} deg".format(dx,dy))
     # print("lon_range = {0} deg".format(x_bnd))
     # print("lat_range = {0} deg".format(y_bnd))
@@ -96,11 +97,17 @@ def test_sort_and_grid_and_plot(outpath):
             os.makedirs(outpath)
             subprocess.call(['chmod', 'a+w', outpath, grid_dir+'/20%s' %(date.strftime('%y/%b')), grid_dir+'/20%s' %(date.strftime('%y'))])
         if True:
-            grid_h5flashfiles(h5_filenames, start_time, end_time, frame_interval=frame_interval, proj_name='latlong',
+            grid_h5flashfiles(h5_filenames, start_time, end_time, frame_interval=frame_interval,
                     dx=dx, dy=dy, x_bnd=x_bnd, y_bnd=y_bnd, z_bnd=z_bnd_km,
                     ctr_lon=ctr_lon, ctr_lat=ctr_lat, outpath = outpath,
-                    output_writer = write_cf_netcdf_latlon, output_writer_3d = write_cf_netcdf_3d_latlon,
-                    output_filename_prefix=center_ID, spatial_scale_factor=1.0,
+                    proj_name='aeqd',
+                    output_writer = write_cf_netcdf,
+                    output_writer_3d = write_cf_netcdf_3d,
+                    output_filename_prefix=center_ID, spatial_scale_factor=1.0e-3,
+                    # proj_name='latlong',
+                    # output_writer = write_cf_netcdf_latlon,
+                    # output_writer_3d = write_cf_netcdf_3d_latlon,
+                    # output_filename_prefix=center_ID, spatial_scale_factor=1.0,
                     energy_grids = True
                     )
         
@@ -128,7 +135,8 @@ def test_sort_and_grid_and_plot(outpath):
     for f in nc_names_2d:
         gridtype = f.split('dx_')[-1].replace('.nc', '')
         var = mapping[gridtype]
-        make_plot(f, var, n_cols=n_cols, x_name='longitude', y_name='latitude', outpath = outpath)
+        # make_plot(f, var, n_cols=n_cols, x_name='longitude', y_name='latitude', outpath = outpath)
+        make_plot(f, var, n_cols=n_cols, x_name='x', y_name='y', outpath = outpath)
     
     for f in nc_names_3d:
         gridtype = f.split('dx_')[-1].replace('.nc', '').replace('_3d', '')
@@ -136,7 +144,8 @@ def test_sort_and_grid_and_plot(outpath):
         # grid_range = range_mapping[gridtype]
    
         ###Read grid files, then plot in either 2d or 3d space###
-        grid, grid_name, x, y, z, t, grid_t_idx, grid_x_idx, grid_z_idx = read_file_3d(f, var, x_name='longitude', y_name='latitude', z_name='altitude')
+        # grid, grid_name, x, y, z, t, grid_t_idx, grid_x_idx, grid_z_idx = read_file_3d(f, var, x_name='longitude', y_name='latitude', z_name='altitude')
+        grid, grid_name, x, y, z, t, grid_t_idx, grid_x_idx, grid_z_idx = read_file_3d(f, var, x_name='x', y_name='y', z_name='z')
         make_plot_3d(grid, grid_name, x, y, z, t, 
                      grid_t_idx, grid_x_idx, grid_z_idx, 
                      n_cols = n_cols, outpath = outpath)
