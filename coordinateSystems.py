@@ -115,6 +115,64 @@ class MapProjection(CoordinateSystem):
         else:
             px, py, pz = projectedData[0,:], projectedData[1,:], projectedData[2,:]
         return px-self.cx, py-self.cy, pz-self.cz
+
+class PixelGrid(CoordinateSystem):
+    def __init__(self, lons, lats, lookup, x, y, alts=None, geosys=None):
+        """ 
+        Coordinate system for arbitrary pixel coordinates in a 2D pixel array. 
+        Arguments: 
+        lons: 2D array of longitudes of pixel centers
+        lats: 2D array of longitudes of pixel centers
+        alts: 2D array of longitudes of pixel centers. If None, zeros are assumed.
+        Each array is of shape (nx, ny) with pixel coordinate (x=0, y=0) 
+            corresponding to grid index [0, 0]
+        
+        lookup is an object with a method 'query' that accepts a single argument,
+        a (N,2) array of lats, lons and returns pixel IDs that can be used to 
+        index lons and lats, as well as the distances between the pixel centers
+        and the queried locations. X and Y flattened arrays of pixel coordinates 
+        that align with indices of the flattened lon and lat arrays used to 
+        create the lookup table.
+        >>> test_events = np.vstack([(33.5, -101.5), (32.5, -102.8), (32.5, -102.81)]) 
+        >>> distances, idx = lookup.query(test_events)
+        >>> loni, lati = lons[X[idx], Y[idx]], lats[X[idx], Y[idx]]
+        An instance of sklearn.neighbors.KDTree is one such lookup.
+        
+        If geosys is provided, it should be an instance of GeographicSystem; 
+        otherwise a GeographicSystem instance with default arguments is created.
+        
+        When converting toECEF, which accepts pixel coordinates,
+        the z pixel coordinate is ignored, as it has no meaning.
+        When converting fromECEF, zeros in the shape of x are returned as the z 
+        coordinate.
+        
+        """
+        if geosys is None:
+            self.geosys = GeographicSystem()
+        else:
+            self.geosys = geosys
+        self.lookup = lookup
+        self.x = x
+        self.y = y
+        self.lons = lons
+        self.lats = lats
+        if alts is None:
+            alts = zeros_like(lons)
+        self.alts = alts
+        
+    def toECEF(self, x, y, z):
+        lons = self.lons[x, y]
+        lats = self.lats[x, y]        
+        alts = self.alts[x, y]
+        return self.geosys.toECEF(lons, lats, alts)
+
+    def fromECEF(self, x, y, z):
+        lons, lats, alts = self.geosys.fromECEF(x, y, z)
+        locs = vstack((lats.flatten(), lons.flatten())).T
+        distances, idx = self.lookup.query(locs)
+        x = self.x[idx]
+        y = self.y[idx]
+        return x, y, zeros_like(x)
         
 # class AltitudePreservingMapProjection(MapProjection):
 #     def toECEF(self, x, y, z):
