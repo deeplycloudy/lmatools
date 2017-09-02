@@ -161,6 +161,8 @@ class PixelGrid(CoordinateSystem):
         self.alts = alts
         
     def toECEF(self, x, y, z):
+        x = x.astype('int64')
+        y = y.astype('int64')
         lons = self.lons[x, y]
         lats = self.lats[x, y]        
         alts = self.alts[x, y]
@@ -169,9 +171,12 @@ class PixelGrid(CoordinateSystem):
     def fromECEF(self, x, y, z):
         lons, lats, alts = self.geosys.fromECEF(x, y, z)
         locs = vstack((lats.flatten(), lons.flatten())).T
-        distances, idx = self.lookup.query(locs)
-        x = self.x[idx]
-        y = self.y[idx]
+        if locs.shape[0] > 0:
+            distances, idx = self.lookup.query(locs)
+        else:
+            idx = []
+        x = squeeze(self.x[idx])
+        y = squeeze(self.y[idx])
         return x, y, zeros_like(x)
         
 # class AltitudePreservingMapProjection(MapProjection):

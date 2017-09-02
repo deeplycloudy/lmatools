@@ -13,7 +13,7 @@ from lmatools.io.LMA_h5_file import read_flashes, to_seconds
 from lmatools.coordinateSystems import MapProjection, GeographicSystem
 from six.moves import range
 
-from .cf_netcdf import write_cf_netcdf, write_cf_netcdf_3d, write_cf_netcdf_latlon, write_cf_netcdf_3d_latlon
+from .cf_netcdf import write_cf_netcdf, write_cf_netcdf_3d, write_cf_netcdf_latlon, write_cf_netcdf_3d_latlon, write_cf_netcdf_noproj
     
 
 def dlonlat_at_grid_center(ctr_lat, ctr_lon, dx=4.0e3, dy=4.0e3,
@@ -103,10 +103,14 @@ class FlashGridder(object):
                     proj_name = 'aeqd',
                     proj_datum = 'WGS84',
                     proj_ellipse = 'WGS84',
+                    pixel_coords = None,
                     flash_count_logfile = None, energy_grids = None):
         """ Class to support gridding of flash and event data. 
                     
             On init, specify the grid 
+                    
+            If proj_name = 'pixel_grid' then pixel_coords must be an
+                instance of lmatools.coordinateSystems.PixelGrid
                     
             energy_grids controls which energy grids are saved, default None.
                 energy_grids may be True, which will calculate all energy grid 
@@ -150,6 +154,9 @@ class FlashGridder(object):
         if self.proj_name == 'latlong':
             dx_units = '{0:6.4f}deg'.format(dx)
             mapProj = GeographicSystem()
+        elif self.proj_name == 'pixel_grid':
+            dx_units = 'pixel'
+            mapProj = pixel_coords
         else:
             dx_units = '{0:5.1f}m'.format(dx)
             mapProj = MapProjection(projection=self.proj_name, ctrLat=ctr_lat, ctrLon=ctr_lon, lat_ts=ctr_lat, 

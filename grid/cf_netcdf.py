@@ -25,10 +25,18 @@ def write_cf_netcdf_latlon(outfile, t_start, t, xloc, yloc,
     lon_for_x, ctr_lat, and ctr_lon will be used as coordinates for a 
     Lambert Azimuthal Equal Area projection with the specified center.
     
+    If is_projected=False, and is_latlon=False, then x and y are treated
+    as unitless pixel coordinates with no physical meaning. This is useful
+    for arbitrarily stretched lat/lon grids, or explicitly mappings between 
+    a sensor pixel array and geolocated coordinates.
+    
     Should display natively in conformant packages like McIDAS-V.
     """
     if grid is None:
         raise ValueError("An array must be given for grid")
+
+    grid_units = kwargs.pop('grid_units', 'dimensionless')
+    is_projected = kwargs.pop('is_projected', True)
         
     east_dim = 'lon'
     north_dim = 'lat'
@@ -37,9 +45,8 @@ def write_cf_netcdf_latlon(outfile, t_start, t, xloc, yloc,
     if not is_latlon:
         east_dim = 'nx'
         north_dim = 'ny'
-        grid_mapping = "Lambert_Azimuthal_Equal_Area"
-    
-    grid_units = kwargs.pop('grid_units', 'dimensionless')
+        if is_projected:
+            grid_mapping = "Lambert_Azimuthal_Equal_Area"
     
     nc_out = NetCDFFile(outfile, 'w')
     nc_out.createDimension(east_dim, xloc.shape[0])
@@ -47,18 +54,19 @@ def write_cf_netcdf_latlon(outfile, t_start, t, xloc, yloc,
     nc_out.createDimension('ntimes', t.shape[0])  #unlimited==None
 
     # declare the coordinate reference system, WGS84 values
-    proj = nc_out.createVariable(grid_mapping, 'i', ())
-    if is_latlon:
-        proj.grid_mapping_name = 'latitude_longitude'
-        proj.longitude_of_prime_meridian = 0.0 
-        proj.semi_major_axis = 6378137.0 
-        proj.inverse_flattening = 298.257223563 
-    else:
-        proj.grid_mapping_name = 'lambert_azimuthal_equal_area'
-        proj.longitude_of_projection_origin = ctr_lon
-        proj.latitude_of_projection_origin = ctr_lat
-        proj.false_easting = 0.0
-        proj.false_northing = 0.0
+    if is_projected:
+        proj = nc_out.createVariable(grid_mapping, 'i', ())
+        if is_latlon:
+            proj.grid_mapping_name = 'latitude_longitude'
+            proj.longitude_of_prime_meridian = 0.0 
+            proj.semi_major_axis = 6378137.0 
+            proj.inverse_flattening = 298.257223563 
+        else:
+            proj.grid_mapping_name = 'lambert_azimuthal_equal_area'
+            proj.longitude_of_projection_origin = ctr_lon
+            proj.latitude_of_projection_origin = ctr_lat
+            proj.false_easting = 0.0
+            proj.false_northing = 0.0
     
     if is_latlon:
         y_coord = nc_out.createVariable('latitude', 'f', (north_dim,))
@@ -71,15 +79,19 @@ def write_cf_netcdf_latlon(outfile, t_start, t, xloc, yloc,
         x_coord.long_name = "longitude"
         x_coord.standard_name = 'longitude'
     else:
-        x_coord = nc_out.createVariable('x', 'f', (east_dim,))
-        x_coord.units = "km"
-        x_coord.long_name = "x coordinate of projection"
-        x_coord.standard_name = 'projection_x_coordinate'
-        
-        y_coord = nc_out.createVariable('y', 'f', (north_dim,))
-        y_coord.units = "km"
-        y_coord.long_name = "y coordinate of projection"
-        y_coord.standard_name = 'projection_y_coordinate'
+        if is_projected:
+            var_type = 'f'
+        else:
+            var_type = 'i' # integer pixel coordinates
+        x_coord = nc_out.createVariable('x', var_type, (east_dim,))
+        y_coord = nc_out.createVariable('y', var_type, (north_dim,))
+        if is_projected:
+            x_coord.units = "km"
+            x_coord.long_name = "x coordinate of projection"
+            x_coord.standard_name = 'projection_x_coordinate'        
+            y_coord.units = "km"
+            y_coord.long_name = "y coordinate of projection"
+            y_coord.standard_name = 'projection_y_coordinate'
 
     times = nc_out.createVariable('time', 'f', ('ntimes',) )#, filters=no_compress)
     times.long_name="time"
@@ -118,6 +130,7 @@ def write_cf_netcdf_latlon(outfile, t_start, t, xloc, yloc,
     nc_out.close()
 
 write_cf_netcdf = partial(write_cf_netcdf_latlon, is_latlon=False)
+write_cf_netcdf_noproj = partial(write_cf_netcdf, is_projected=False)
 
 def write_cf_netcdf_3d(outfile, t_start, t, xloc, yloc, zloc, lon_for_x, lat_for_y, alt_for_z, ctr_lat, ctr_lon, ctr_alt, grid, grid_var_name, grid_description, format='i', **kwargs):
     """ Write a Climate and Forecast Metadata-compliant NetCDF file. 

@@ -317,6 +317,8 @@ def point_density(target):
     while True:
         events, flash, x, y, z = (yield)
         # print 'Doing point density',
+        x = np.atleast_1d(x)
+        y = np.atleast_1d(y)
         if len(x) > 0:
             print('with points numbering', len(x))
             target.send((x, y, None))
