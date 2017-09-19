@@ -137,9 +137,13 @@ class LMAh5Collection(object):
             if (events.size > 0) | (flashes.size > 0):
                 events['flash_id'] += flash_increment
                 flashes['flash_id'] += flash_increment
-            
-                last_flash_id = max(events['flash_id'].max(),
-                                    flashes['flash_id'].max())            
+                
+                if flashes['flash_id'].shape[0] > 0:
+                    last_flash_id = max(events['flash_id'].max(),
+                                        flashes['flash_id'].max())
+                else:
+                    last_flash_id = events['flash_id'].max()
+
             yield events, flashes
         
         

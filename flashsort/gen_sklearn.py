@@ -12,7 +12,7 @@ from lmatools.coordinateSystems import GeographicSystem
 from lmatools.flashsort.flash_stats import calculate_flash_stats, Flash
 from six.moves import range
 from six.moves import zip
-
+from six import next
  
 def gen_stream(vec, IDs): #<1>
     for v, vi in zip(vec, IDs):
@@ -113,7 +113,7 @@ class ChunkedFlashSorter(object):
             with an ID of -1 are singleton points not belonging to a 
             cluster, consistent with the convention of sklearn.cluster.DBSCAN
         """
-        chunk1, id1 = stream.__next__()
+        chunk1, id1 = next(stream)
         for chunk2, id2 in stream:
             len1 = chunk1.shape[0]
             len2 = chunk2.shape[0]
