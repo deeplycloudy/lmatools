@@ -261,8 +261,14 @@ class RadarCoordinateSystem(CoordinateSystem):
         # R', R'+h as sides and s/R' as the angle to get slant range
         r  = sqrt(Rprime**2.0 + (Rprime+h)**2.0 - 2*(Rprime+h)*Rprime*cos(s/Rprime))
         # Inverse of eq. 2.28c in Doviak and Zrnic 1993
-        # Will return NaN for r=0
-        el = arccos((Rprime+h) * sin(s/Rprime) / r) 
+        # Will return NaN for r=0, and only positive angles
+        el = atleast_1d(arccos((Rprime+h) * sin(s/Rprime) / r))
+        # Below gives all negative angles
+        # el = arcsin((Rprime+h) * sin(s/Rprime) / r) - (pi/2.0)
+
+        # If elevation angle is negative, the triangle will be acute
+        acute = atleast_1d( (Rprime+h)*(Rprime+h) < (Rprime*Rprime + r*r) )
+        el[acute] *= -1
         el *= 180.0 / pi
         
         return r, el
