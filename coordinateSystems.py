@@ -133,7 +133,7 @@ class PixelGrid(CoordinateSystem):
         and the queried locations. X and Y flattened arrays of pixel coordinates 
         that align with indices of the flattened lon and lat arrays used to 
         create the lookup table.
-        >>> test_events = np.vstack([(33.5, -101.5), (32.5, -102.8), (32.5, -102.81)]) 
+        >>> test_events = np.vstack([(-101.5, 33.5), (-102.8, 32.5), (-102.81,32.5)])
         >>> distances, idx = lookup.query(test_events)
         >>> loni, lati = lons[X[idx], Y[idx]], lats[X[idx], Y[idx]]
         An instance of sklearn.neighbors.KDTree is one such lookup.
@@ -170,7 +170,7 @@ class PixelGrid(CoordinateSystem):
 
     def fromECEF(self, x, y, z):
         lons, lats, alts = self.geosys.fromECEF(x, y, z)
-        locs = vstack((lats.flatten(), lons.flatten())).T
+        locs = vstack((lons.flatten(), lats.flatten())).T
         if locs.shape[0] > 0:
             distances, idx = self.lookup.query(locs)
         else:

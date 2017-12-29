@@ -256,7 +256,8 @@ def project(x_coord, y_coord, z_coord, mapProj, geoProj, target, use_flashes=Fal
         x,y,z = mapProj.fromECEF( 
                 *geoProj.toECEF(points[x_coord], points[y_coord], points[z_coord])
                 )
-        target.send((events, flashes, x,y,z))
+        target.send((events, flashes, np.atleast_1d(x),
+                     np.atleast_1d(y), np.atleast_1d(z)))
         del events, flashes, x,y,z, points
 
 @coroutine
