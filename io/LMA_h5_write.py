@@ -70,6 +70,10 @@ class Flash(T.IsDescription):
     init_alt = T.Float32Col() # initation altitude
     init_pts = T.StringCol(256) # Indices of the points (first point in flash is id=0) used to calc init location
     area     = T.Float32Col() # area of convex hull of the points comprising the flash
+    volume   = T.Float32Col()
+    #Changed variable names: 03-20-17 ---> Check make_grids.py in case of inconsistancies.
+    total_energy   =  T.Float32Col()    #Energy
+    specific_energy = T.Float32Col()    #tot_energy
         
 
 
@@ -82,11 +86,11 @@ def write_h5(outfile, flashes, metadata, orig_LMA_file):
                                 m.starthour, m.startminute, m.startsecond, m.sec_analyzed)
     # orig_columns_LYLOUT = m.columns
     
-    h5file = T.openFile(outfile, mode='w', title='Flash-sorted New Mexico Tech LMA Data')
-    group  = h5file.createGroup('/', 'events', 'Analyzed detected events')
-    table  = h5file.createTable(group, time_code, Event, time_code)
-    fl_group = h5file.createGroup('/', 'flashes', 'Sorted LMA flash data')
-    fl_table  = h5file.createTable(fl_group, time_code, Flash, time_code)
+    h5file = T.open_file(outfile, mode='w', title='Flash-sorted New Mexico Tech LMA Data')
+    group  = h5file.create_group('/', 'events', 'Analyzed detected events')
+    table  = h5file.create_table(group, time_code, Event, time_code)
+    fl_group = h5file.create_group('/', 'flashes', 'Sorted LMA flash data')
+    fl_table  = h5file.create_table(fl_group, time_code, Flash, time_code)
     
     table.attrs.header = m.header
     table.attrs.filename = orig_LMA_file
@@ -112,6 +116,11 @@ def write_h5(outfile, flashes, metadata, orig_LMA_file):
         fl_meta['init_lat'] = flash.initLat
         fl_meta['init_lon'] = flash.initLon
         fl_meta['init_alt'] = flash.initAlt
+        fl_meta['volume']   = flash.volume
+        #Changed 03-20-17
+        fl_meta['total_energy']   = flash.total_energy  #flash.energy
+        fl_meta['specific_energy'] = flash.specific_energy #flash.tot_energy
+        
         # init_table = fl_meta['init_points']
         # init_event = init_table.row
         # for idx in flash.initPts:

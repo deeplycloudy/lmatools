@@ -1,0 +1,83 @@
+Would like to better reflect the three steps of the normal workflow
+    in the structure of the project
+    - sort flashes
+    - calculate flash statistics and
+      produce derived products including gridded data
+    - make plots
+Reorganize IO stuff outside flashsort directory, maybe including
+    LMADataset model, etc. Also get rid of unnecessary 
+    hierarchy in directory structure overall.
+
+Write instructions about how to convert an old run_files_with_params to
+    the new gen_flashes script.
+Update lmaworkshop materials by following the above instructions 
+
+Update all examples to work with new code. Ensure old code still works in deprecated autosort directory.
+
+Rename gen_autorun and gen_sklearn to something more meaningful
+
+Formally deprecate autorun directory via __init__.py
+
+Try moving mflash into new infrastructure
+
+LMAh5File (and collection) should remove events from flashes not in
+    excess of min_points, and should also provide somethign to chop up
+    events into flashes, either as masks for the events table, or
+    as pre-chopped events tables. The latter should be a convenience function.
+    
+Add flash stats and time series code 
+    Adapt IOP-stats code from KTAL/futurelmatools to a new test
+    IOPstats - turn it into a lat/lon polygon accepter, as per PolyFilter docs
+    Outputs: 
+    - flash energy spectra plots
+    - grid stats
+    - flash size moment time series text
+    - flash size moment time series plot
+    - vertical length profiles (IC/CG)
+    
+Parts:
+IO
+    - Lasso-reduced dataset (read NetCDF, H5; emit )
+        - could be generator function, since it's a serial stream of data, doesn't split.
+    - Also chop up by time series interval (yield t_start, t_end, ev, fl)
+Analysis
+    Entity level
+    - Length calculations
+    Time series discretized
+    - Size stats
+    - Gridded vertical distributions
+        - save as NetCDF
+    - Energy spectra
+=== Save data between these steps ===
+Vis
+    - Time series diagnostic plots
+        - Gridded, line plot
+    - Spatial diagnostic plots
+    - Energy spectra
+    
+class LassoReader():
+    def gen_ev_fl:
+        ev = lasso(events)
+        fl = lasso(flashes)
+        yield (ev, fl)
+
+def analysis_by_user():
+    lasso = LassoReader()
+    for ev, fl in lasso:
+        task1(ev, fl)
+        task2(ev)
+    
+
+
+combine two flash_stats.py
+    
+Also TODO:
+1. figure out how to use this method with old run_files_with_parmas 
+    without rewriting a bunch of driver scripts
+2. fully decouple from things containing autosort in the input lines.
+    Maybe just pull everything out of that directory.
+3. Get rid of old use of FlashMetadata class in mflash and autorun_sklearn, 
+    in favor of new style in gen_sklearn. It was never flash metadata anyway,
+    and belonged in an LMA dataset metadata class.
+    
+    

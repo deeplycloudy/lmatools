@@ -6,8 +6,12 @@ import itertools
 
 import numpy as np
 
-from lmatools.multiples_nc import centers_to_edges
-import scipy.io.netcdf as nc
+try:
+    from netCDF4 import Dataset as NetCDFFile
+except ImportError:
+    from scipy.io.netcdf import NetCDFFile
+
+from lmatools.vis.multiples_nc import centers_to_edges
 from six.moves import range
         
 class LMAgridFileCollection(object):
@@ -24,7 +28,7 @@ class LMAgridFileCollection(object):
             collection of files:
             
             >>> for t, xedge, yedge, data in NCs:
-            >>>     print t
+            >>>     print(t)
 
             Or, if you know a time accurately, you can do:
             >>> from datetime import datetime
@@ -42,7 +46,7 @@ class LMAgridFileCollection(object):
         self.t_name = t_name
         self.grid_name = grid_name
         self._filenames = filenames
-#         self._ncfiles = [nc.NetCDFFile(f) for f in filenames]
+#         self._ncfiles = [NetCDFFile(f) for f in filenames]
         self._time_lookup = {} # populated by self._frame_times_for_file
         self.times = [t for t in self._all_times()]
         self.times.sort()
@@ -53,7 +57,7 @@ class LMAgridFileCollection(object):
         """
         fname, i = self._time_lookup[t0]  #i is the frame id for this time in NetCDFFile f
         
-        f = nc.NetCDFFile(fname)
+        f = NetCDFFile(fname)
         
         data = f.variables  # dictionary of variable names to nc_var objects
         dims = f.dimensions # dictionary of dimension names to sizes
@@ -86,14 +90,14 @@ class LMAgridFileCollection(object):
         """ Called once by init to set up frame lookup tables and yield 
             the frame start times. _frame_lookup goes from 
             datetime->(nc file, frame index)"""
-        f = nc.NetCDFFile(fname)
+        f = NetCDFFile(fname)
 
         data = f.variables  # dictionary of variable names to nc_var objects
         dims = f.dimensions # dictionary of dimension names to sizes
         t = data[self.t_name]
         
         base_date = datetime.strptime(t.units, "seconds since %Y-%m-%d %H:%M:%S")
-        for i in range(t.shape[0]):
+        for i in range(np.atleast_1d(t).shape[0]):
             frame_start = base_date + timedelta(0,float(t[i]),0)
             self._time_lookup[frame_start] = (fname, i)
             yield frame_start
@@ -108,7 +112,7 @@ class LMAgridFileCollection(object):
         from lmatools.coordinateSystems import GeographicSystem, MapProjection
         geosys = GeographicSystem()
         
-        f = nc.NetCDFFile(self._filenames[0])
+        f = NetCDFFile(self._filenames[0])
         
         # Surely someone has written an automated library to parse coordinate 
         # reference data from CF-compliant files.
@@ -127,8 +131,9 @@ class LMAgridFileCollection(object):
             # print geosys.fromECEF(*mapproj.toECEF((0,0), (0,0), (0,0)))
             return geosys, mapproj
         else:
-            print("projection not found")    
-            return geosys, None
+            print("projection not found, assuming lat, lon grid")    
+            return geosys, geosys
+        f.close()
 
         
                     

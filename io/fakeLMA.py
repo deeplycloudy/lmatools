@@ -7,7 +7,7 @@ import datetime
 PRELOADED_DATA = 'LYLOUT_111121_145001_0600.dat.npy'
 
 def preload_some_data():
-    from lmatools.flashsort.autosort.LMAarrayFile import LMAdataFile
+    from lmatools.io.LMAarrayFile import LMAdataFile
     lma = LMAdataFile('/data/WTLMA/FirstLightning/processed7stn/LYLOUT_111121_145001_0600.dat.gz')
     np.save(PRELOADED_DATA, lma.data)
 

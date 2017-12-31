@@ -1,3 +1,4 @@
-.DS_Store
+radarscan/
+*/*.pyc
 *.pyc
-*.bak
+*.DS_Store

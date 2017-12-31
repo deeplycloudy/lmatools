@@ -2,23 +2,29 @@ from __future__ import absolute_import
 from __future__ import print_function
 import numpy as np
 
-def unique_vectors(x_i, y_i, g_id, return_indices_only=True):
-    """ x_i, y_i: Discretized (bin index) values of point locations.
-        id:       Entity ids that group points
+def unique_vectors(*args, **kwargs):
+    """ Given D, N-element arrays of vector components return the
+        unique vectors as a (D, N_reduced) array. If return_indices_only=True
+        is true (the default) then return the N_reduced indices of the original
+        arrays corresponding to the unique vectors.
         
-        Returns a (3, n_points) array of unique points and ids.
+        args: x0_i, x1_i, x2_i, ...
+            where each x0, x1, etc. are discretized (bin index) values of point
+            locations.
         """
-    vector_len = 3
-    itemsize = max((x_i.itemsize,y_i.itemsize,g_id.itemsize))
+    try:
+        return_indices_only=kwargs['return_indices_only']
+    except KeyError:
+        return_indices_only=True
+        
+    vector_len = len(args)
+    itemsize = max((x_i.itemsize for x_i in args))
     inttype = 'i{0:d}'.format(itemsize)
     
+    vec_cast = tuple((x_i.astype(inttype) for x_i in args))
         
     # Because we do casting below, ascontiguousarray is important
-    locs = np.ascontiguousarray(np.vstack( (
-                           x_i.astype(inttype), 
-                           y_i.astype(inttype), 
-                           g_id.astype(inttype)
-                           ) ).T )
+    locs = np.ascontiguousarray(np.vstack(vec_cast).T)
 
 	# Find unique rows (unique grid cells occupied per flash) by casting to a set
 	# of strings comprised of the bytes that make up the rows. Strings are not serialized, just ints cast to byte strings.

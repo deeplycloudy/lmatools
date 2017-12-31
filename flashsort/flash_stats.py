@@ -9,6 +9,7 @@ from scipy.misc import factorial
 from scipy.spatial.qhull import QhullError
 from six.moves import range
 
+from lmatools.lasso import empirical_charge_density as cd
 
 # logger = logging.getLogger('FlashAutorunLogger')
 class Flash(object):
@@ -48,11 +49,16 @@ class FlashMetadata(object):
             self.sec_analyzed = int(secAnalyzedMatch.group(1))
 
 
-        formatMatch=matchDataFormatLine.search(headerText)
-        if formatMatch:
-            columns = formatMatch.group(1).split(',')
-            self.columns = [columnName.strip() for columnName in columns]
+        # formatMatch=matchDataFormatLine.search(headerText)
+        # if formatMatch:
+        #     columns = formatMatch.group(1).split(',')
+        #     self.columns = [columnName.strip() for columnName in columns]
 
+ 
+def barotropic_rho(z):
+    rho = 1.225e9 #kg/km^3
+    H = 8. #km
+    return rho*np.exp(-z/H) 
     
 def poly_area(x,y):
     """ Calculate the area of a non-self-intersecting planar polygon.
@@ -90,7 +96,24 @@ def hull_volume(xyz):
     volume=np.sum(np.abs(simplex_volumes))
     return volume, vertices, simplex_volumes
 
+##############ADDED 01/05/2017 ###############
+def energy(area,constant=False):
+    # for f, (flashes, t0, t1) in enumerate(zip(flashes_series, flashes_in_poly.t_edges[:-1], flashes_in_poly.t_edges[1:])):
+        ###Now for charge densities approximated: #####
+        
+    # random = np.random.randn(1)*0.8e3 + 4.1e3#3.5e3
+ #    distance = np.abs(random) #Generates random distance between capacitor plates.
     
+    #New distance based on model comparison: 03-20-17: Assume Constant
+    random = np.abs(np.random.randn(1)*0.2e3 + 1.8e3)
+    distance = np.abs(random)
+    
+    # density = cd.rho_retrieve(area, distance)
+    density = cd.rho_retrieve(area,distance,False,0.4e-9)
+    rho,w = density.calculate()
+    return w
+##############################################   
+
 def calculate_flash_stats(flash, min_pts=2):
     logger = logging.getLogger('FlashAutorunLogger')
     
@@ -138,6 +161,11 @@ def calculate_flash_stats(flash, min_pts=2):
             # hull indexing has problems here
             logger.warning('Setting area to 0 for flash with points %s, %s' % (x, y))
             area=0.0
+           
+    if area == 0.0:
+        energy_estimate = 0.
+    else:        
+        energy_estimate = energy(area/ 1.0e6 )
             
     volume = 0.0
     if flash.pointCount > 3:
@@ -158,6 +186,15 @@ def calculate_flash_stats(flash, min_pts=2):
             volume, vertices, simplex_volumes = hull_volume(np.vstack((x,y,z)).T)
     
     flash_init_idx = np.argmin(flash.points['time'])
+    
+    ###ROUGH APPROXIMATION FOR NOW: #######################
+    air_density = barotropic_rho(alt[flash_init_idx]*1e-3)
+    if volume == 0.:
+        specific_energy = 0.
+    else:
+        specific_energy = energy_estimate / ((volume / 1.0e9) * air_density)
+    #######################################################
+    
     flash.start   = flash.points[flash_init_idx]['time']
     flash.end     = flash.points['time'].max()
     flash.duration = flash.end - flash.start
@@ -171,3 +208,6 @@ def calculate_flash_stats(flash, min_pts=2):
     flash.ctrlat  = latavg
     flash.ctrlon  = lonavg
     flash.volume  = volume / 1.0e9 # km^3, 1000x1000x1000 m
+    #CHANGED 03-20-17
+    flash.total_energy  = energy_estimate    #flash.energy ---> flash.tot_energy
+    flash.specific_energy = specific_energy  #flash.tot_energy ---> flash.specific_energy

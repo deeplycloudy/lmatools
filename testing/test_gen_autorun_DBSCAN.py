@@ -6,11 +6,11 @@ import sys, os, glob
 from datetime import datetime, timedelta
 import subprocess
 
-from lmatools.flashsort.autosort.autorun import run_files_with_params, logger_setup
-from lmatools.flashsort.autosort.autorun_sklearn import cluster
+from lmatools.flashsort.gen_autorun import logger_setup, sort_files
+from lmatools.flashsort.gen_sklearn import DBSCANFlashSorter
 
-from lmatools.grid.make_grids import grid_h5flashfiles, dlonlat_at_grid_center, write_cf_netcdf_latlon
-from lmatools.vis.multiples_nc import make_plot
+from lmatools.grid.make_grids import grid_h5flashfiles, dlonlat_at_grid_center, write_cf_netcdf_latlon, write_cf_netcdf_3d_latlon, write_cf_netcdf, write_cf_netcdf_3d
+from lmatools.vis.multiples_nc import make_plot, make_plot_3d, read_file_3d
 from six.moves import map
 
 
@@ -61,7 +61,9 @@ def test_sort_and_grid_and_plot(outpath):
     info.write(str(params))
     info.close()
     
-    run_files_with_params(files, outdir, params, cluster, retain_ascii_output=False, cleanup_tmp=True)
+    if False:
+        cluster = DBSCANFlashSorter(params).cluster
+        sort_files(files, outdir, cluster)
     # Figure out which HDF5 files were created
     h5_filenames = glob.glob(h5_dir+'/20%s/LYLOUT*.dat.flash.h5' %(date.strftime('%y/%b/%d')))
     h5_filenames.sort()
@@ -72,11 +74,13 @@ def test_sort_and_grid_and_plot(outpath):
     dy_km=3.0e3
     x_bnd_km = (-200e3, 200e3)
     y_bnd_km = (-200e3, 200e3)
+    z_bnd_km = (0.0e3, 15.0e3)
 
     # There are similar functions in lmatools to grid on a regular x,y grid in some map projection.
-    dx, dy, x_bnd, y_bnd = dlonlat_at_grid_center(ctr_lat, ctr_lon, 
-                                dx=dx_km, dy=dy_km,
-                                x_bnd = x_bnd_km, y_bnd = y_bnd_km )
+    # dx, dy, x_bnd, y_bnd = dlonlat_at_grid_center(ctr_lat, ctr_lon,
+    #                             dx=dx_km, dy=dy_km,
+    #                             x_bnd = x_bnd_km, y_bnd = y_bnd_km )
+    dx, dy, x_bnd, y_bnd = dx_km, dy_km, x_bnd_km, y_bnd_km
     # print("dx, dy = {0}, {1} deg".format(dx,dy))
     # print("lon_range = {0} deg".format(x_bnd))
     # print("lat_range = {0} deg".format(y_bnd))
@@ -92,31 +96,60 @@ def test_sort_and_grid_and_plot(outpath):
         if os.path.exists(outpath) == False:
             os.makedirs(outpath)
             subprocess.call(['chmod', 'a+w', outpath, grid_dir+'/20%s' %(date.strftime('%y/%b')), grid_dir+'/20%s' %(date.strftime('%y'))])
-        grid_h5flashfiles(h5_filenames, start_time, end_time, frame_interval=frame_interval, proj_name='latlong',
-                    dx=dx, dy=dy, x_bnd=x_bnd, y_bnd=y_bnd, ctr_lon=ctr_lon, ctr_lat=ctr_lat, outpath = outpath,
-                    output_writer = write_cf_netcdf_latlon, output_filename_prefix=center_ID, spatial_scale_factor=1.0,
-                    energy_grids=True)
+        if True:
+            grid_h5flashfiles(h5_filenames, start_time, end_time, frame_interval=frame_interval,
+                    dx=dx, dy=dy, x_bnd=x_bnd, y_bnd=y_bnd, z_bnd=z_bnd_km,
+                    ctr_lon=ctr_lon, ctr_lat=ctr_lat, outpath = outpath,
+                    proj_name='aeqd',
+                    output_writer = write_cf_netcdf,
+                    output_writer_3d = write_cf_netcdf_3d,
+                    output_filename_prefix=center_ID, spatial_scale_factor=1.0e-3,
+                    # proj_name='latlong',
+                    # output_writer = write_cf_netcdf_latlon,
+                    # output_writer_3d = write_cf_netcdf_3d_latlon,
+                    # output_filename_prefix=center_ID, spatial_scale_factor=1.0,
+                    energy_grids = True
+                    )
         
     # Create plots
     n_cols=2
     mapping = { 'source':'lma_source',
                 'flash_extent':'flash_extent',
                 'flash_init':'flash_initiation',
-                'footprint':'flash_footprint'}
-
-    #nc_names = glob.glob('/home/ebruning/Mar18-19/grids/*.nc')
+                'footprint':'flash_footprint',
+                'specific_energy':'specific_energy',
+                'flashsize_std':'flashsize_std',
+                'total_energy': 'total_energy'
+               }
+    
     nc_names = glob.glob(grid_dir+'/20%s/*.nc' %(date.strftime('%y/%b/%d')))
-    nc_names.sort()
+    nc_names_3d = glob.glob(grid_dir+'/20%s/*_3d.nc' %(date.strftime('%y/%b/%d')))
+    nc_names_2d = list(set(nc_names) - set(nc_names_3d))
+    nc_names_2d.sort()
+    nc_names_3d.sort()
     outpath = plot_dir+'/20%s' %(date.strftime('%y/%b/%d'))
     if os.path.exists(outpath) == False:
         os.makedirs(outpath)
         subprocess.call(['chmod', 'a+w', outpath, plot_dir+'/20%s' %(date.strftime('%y/%b')), plot_dir+'/20%s' %(date.strftime('%y'))])
 
-    for f in nc_names:
+    for f in nc_names_2d:
         gridtype = f.split('dx_')[-1].replace('.nc', '')
         var = mapping[gridtype]
-        # print f
-        make_plot(f, var, n_cols=n_cols, x_name='longitude', y_name='latitude', outpath = outpath)
+        # make_plot(f, var, n_cols=n_cols, x_name='longitude', y_name='latitude', outpath = outpath)
+        make_plot(f, var, n_cols=n_cols, x_name='x', y_name='y', outpath = outpath)
+    
+    for f in nc_names_3d:
+        gridtype = f.split('dx_')[-1].replace('.nc', '').replace('_3d', '')
+        var = mapping[gridtype]
+        # grid_range = range_mapping[gridtype]
+   
+        ###Read grid files, then plot in either 2d or 3d space###
+        # grid, grid_name, x, y, z, t, grid_t_idx, grid_x_idx, grid_z_idx = read_file_3d(f, var, x_name='longitude', y_name='latitude', z_name='altitude')
+        grid, grid_name, x, y, z, t, grid_t_idx, grid_x_idx, grid_z_idx = read_file_3d(f, var, x_name='x', y_name='y', z_name='z')
+        make_plot_3d(grid, grid_name, x, y, z, t, 
+                     grid_t_idx, grid_x_idx, grid_z_idx, 
+                     n_cols = n_cols, outpath = outpath)
+        #, grid_range=grid_range)
     
 
 

@@ -5,12 +5,21 @@ import os
 
 import numpy as np
 
-from lmatools.lma_io import read_flashes
-from lmatools.density_to_files import coroutine, Branchpoint
+from lmatools.io.LMA_h5_file import read_flashes
+from lmatools.stream.subset import coroutine, Branchpoint
 
-from lmatools.flashsort.autosort.flash_stats import hull_volume
+from lmatools.flashsort.flash_stats import hull_volume
 from six.moves import range
 from six.moves import zip
+
+def gen_flash_events(events, flashes):
+    """ Given events and flashes tables, generate
+        events for each flash as (events, flash)
+    """
+    for fl in flashes:
+        fl_id=fl['flash_id']
+        this_flash = (events['flash_id']==fl_id)
+        yield events[this_flash], fl
 
 def length_from_area(A,D,b_s):
     return ( (np.sqrt(A))**D ) / (b_s**(D-1))
@@ -106,7 +115,7 @@ def energy_plot_setup(fig=None, subplot=111, bin_unit='km'):
     wavenumber = (2*np.pi)/flash_1d_extent
     inertialsubrange = 10**6 * (wavenumber)**(-5.0/3.0)
     
-    spectrum_line_artist = spectrum_ax.loglog(flash_1d_extent, inertialsubrange, 'r')[0]
+    spectrum_line_artist = spectrum_ax.loglog(flash_1d_extent, inertialsubrange, 'r',alpha=0.5)[0]
     fivethirds_line_artist = spectrum_ax.loglog(flash_1d_extent, inertialsubrange, 'k')[0]
     
     return fig, spectrum_ax, fivethirds_line_artist, spectrum_line_artist
@@ -145,8 +154,71 @@ def plot_energy_from_area_histogram(histo, bin_edges, bin_unit='km', save=False,
         # ax.set_title(save)
         fig.savefig(save)
         fig.clf()
-    
 
+#######ADDED ESTIMATED ENERGY ####################
+def plot_energies(footprint_bin_edges,time_array,scalar_map,flashes_series,
+                    flashes_in_poly_edges,spectrum_save_file_base_en,which_energy,title):
+    '''
+    Plots estimated total and specific energy fields in .h5 files. 
+    Arguments:
+            -) flash area bin edges: footprint_bin_edges
+            -) times in polygon:     time_array
+            -) color by time cmap:   scalar_map
+            -) radar specific times: time_mask   
+            -) flash table series:   flashes_series
+            -) flashes in lasso:     flashes_in_poly_edges
+            -) save path:            spectrum_save_file_base_en
+            -) energy field:         which_energy
+            -) title of plot:        title             
+    '''
+    import matplotlib.pyplot as plt
+    s_m = scalar_map
+    figure_energy = plt.figure(figsize=(14,9)) 
+    ax_energy = figure_energy.add_subplot(111)
+    # cmap = plt.cm.Reds_r
+    
+    tmin = min(flashes_in_poly_edges)
+    tmax = max(flashes_in_poly_edges)
+    
+    flash_1d_extent = bin_center(np.sqrt(footprint_bin_edges))
+    for f, (flashes, t0, t1) in enumerate(zip(flashes_series, flashes_in_poly_edges[:-1], flashes_in_poly_edges[1:])):
+        if flashes.shape[0] > 1:
+            # If there is no data in this time window, skip it
+            histo_cd, edges_cd = np.histogram(np.sqrt(flashes['area']), 
+                                              bins=np.sqrt(footprint_bin_edges), 
+                                              weights=np.abs(flashes[which_energy]))        
+            estimated, = ax_energy.loglog(flash_1d_extent[:],
+                                np.abs(np.asarray(histo_cd))/np.sqrt(flash_1d_extent),
+                                color=s_m.to_rgba(np.asarray(time_array)[f]),
+                                alpha=0.7); 
+                                                   
+    if which_energy == 'Energy' or which_energy == 'total_energy':
+        ax_energy.set_ylim(1e7,1e13)
+        # plt.xlim(plt.xlim()[::-1])
+        ax_energy.set_xlim(1e2,1e-1)
+        wavenumber = (2.*np.pi)/flash_1d_extent
+        inertialsubrange = 10**6 * (wavenumber*0.0002)**(-5.0/3.0)
+        
+    else:
+        wavenumber = (2.*np.pi)/flash_1d_extent
+        inertialsubrange = 10**1 * (wavenumber)**(5.0/3.0)
+        ax_energy.set_xlim(1e2,1e-1)
+        ax_energy.set_xlim(plt.xlim()[::-1])
+
+    spectrum_save_file_en = spectrum_save_file_base_en.format(tmin.strftime('%y%m%d%H%M%S'),
+                                                              tmax.strftime('%y%m%d%H%M%S'))
+
+    cbar = plt.colorbar(s_m)
+    ax_energy.loglog(flash_1d_extent, inertialsubrange,'k-',alpha=0.5);
+    ax_energy.set_title('Estimated {0} Spectra for Cell Selection'.format(title),fontsize=15)
+    ax_energy.set_xlabel(r'Flash width ($\sqrt{A_h}$, $km$)',fontsize=15)
+    ax_energy.set_ylabel(r'Energy ($J$)',fontsize=15)
+    cbar.ax.tick_params(labelsize=15)
+    ax_energy.tick_params(labelsize=15)
+    plt.savefig(spectrum_save_file_en)
+    plt.close()
+    
+########################################################
 
 @coroutine
 def histogram_for_parameter(parameter, bin_edges, target=None):
@@ -214,7 +286,17 @@ def raw_moments_for_parameter(parameter, preprocess=None, n_moments=5, output_ta
         sample_raw_moments[1:] /= sample_raw_moments[0]
         if output_target is not None:
             output_target.send(sample_raw_moments)
-        
+
+def raw_moments(a, n_moments=5):
+    """ Given data in array a, return the raw moments,
+        sum(a^m) where m is 0...(n_moments-1).
+        Return is an array of shape (n_moments,).
+    """
+    sample_raw_moments = np.zeros(n_moments, dtype='f8')
+    for i in range(n_moments):
+        sample_raw_moments[i] = (a**i).sum()
+    sample_raw_moments[1:] /= sample_raw_moments[0]    
+    return sample_raw_moments
 
 def central_moments_from_raw(raw):
     """ Returns ctr, std where
@@ -233,6 +315,12 @@ def central_moments_from_raw(raw):
     std = raw[0], raw[1], ctr[2], ctr[3]/(ctr[2]**1.5), (ctr[4]/(ctr[2]*ctr[2]) - 3)
     return ctr, std
     
+def get_energy_spectrum_bins(min_pwr=-2, max_pwr = 4, delta_pwr=0.1):
+    #defaults are 1e-2 to 1e4
+    powers = np.arange(min_pwr, max_pwr+delta_pwr, delta_pwr)
+    footprint_bin_edges = 10**powers
+    return footprint_bin_edges
+    
 def footprint_stats(h5_filenames, save=False, fig=None, min_points=10, 
                     base_date=None, other_analysis_targets=None, filterer=None):
     """ filter should be a non-running coroutine that receives the (events, flashes)
@@ -242,11 +330,7 @@ def footprint_stats(h5_filenames, save=False, fig=None, min_points=10,
     """
 
     #1e-2 to 1e4
-    min_pwr = -2
-    max_pwr = 4
-    delta_pwr = 0.1
-    powers = np.arange(min_pwr, max_pwr+delta_pwr, delta_pwr)
-    footprint_bin_edges = 10**powers
+    footprint_bin_edges = get_energy_spectrum_bins()
 
     plotter = plot_energy_from_area_histogram
     
@@ -270,11 +354,9 @@ def plot_spectra_for_files(h5_filenames, min_points, time_criteria, distance_cri
                            other_analysis_targets=None, base_date=None, filterer=None):
     """ Make standard plots of the flash energy spectrum. There will be one spectrum created
         for each file in h5_filenames.
-
         min_pts, time_criteria, distance_critera are tuples of point and time-space thresholds, all the same length.
         They will be looped over, used to generate outdir_template which 
         needs {0},{1},{2}, which will be filled in with time, distance, and min_pts criteria
-
         The path in outdir_template will be created if it does not exist.
     """
     import matplotlib.pyplot as plt

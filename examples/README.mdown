@@ -1,0 +1,52 @@
+Basic processing using lmatools
+===============================
+
+This README decsribes how to use the examples in this directory to conduct basic LMA 
+processing from the raw VHF ASCII solution data. It is only meant to process data one day at a time
+single day, not crossing a day boundary, so it will take multiple rounds of steps 1-3 if your 
+case of interest crosses a day boundary.
+
+The steps are as follows.
+
+1. Turn LMA ASCII data into HDF5 flash files.
+2. Turn the HDF5 flash data into 2D and 3D grids (the types are described below).
+3. Make some quick-look plots of the grids.
+4. Use an interactive interface to manually identify cells
+5. Use a log of the cells identified above to calculate flash statistics
+
+Sort flashes, create grids and plots
+------------------------------------
+
+These instructions accomplish steps 1-3 above.
+
+Copy flash_sort_and_grid.py to some working directory. In that same directory, create a new folder to hold the results of the flash sorting, e.g., "flashsort".
+
+Edit that script to verify the flash sorting parameters, center latitude and longitude, LMA network ID, and grid spacing are as desired. This can all be configured in the last few lines of the file. The default is a very resolute 1 km, 1 minute grid, which will take a while to plot.
+
+Run the script as described in the usage example at the top of the script, substituting your own paths and LMA data files.
+
+At the end of this process, you will find plan-view plots of each time frame, and for the 3D grid for each vertical level.
+
+Interactively identify cells of interest
+----------------------------------------
+
+This is step 4 above.
+
+Copy lasso/GridLassoAnalysis.ipynb and lasso/GridLassoTools.py to the same working directory as above.
+Start the notebook app: jupyter notebook
+and click on the GridLassoAnalysis.ipynb notebook in the web interface that pops up. Follow the instructions in the cell at the top of the notebook.
+
+Create flash stats from tracked cells
+-------------------------------------
+
+This is step 5 above.
+
+Copy lasso/cell-lasso-stats.py to the same working directory as above.
+
+Using the lasso log file (e.g., DemoNCGridLassoLog.txt) you created in the previous step, run the above script as described in the usage notes at the top of the script. 
+
+Given the names suggested above, this would look like:
+python cell-lasso-stats.py DemoNCGridLassoLog.txt flashsort/ testlassoflashstats 
+where the last parameter will be a new folder containing the results of the run of this script.
+
+In that folder you will find a variety of diagnostic plots as well as CSV files of flash time series statistics for the cells you defined.

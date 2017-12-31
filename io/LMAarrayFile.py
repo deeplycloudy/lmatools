@@ -1,6 +1,6 @@
 from __future__ import absolute_import
 from __future__ import print_function
-import os, gzip, re
+import os, re #, gzip
 import numpy as np
 import logging
 import subprocess
@@ -233,6 +233,9 @@ class LMAdataFile(object):
 
         isDataStartTime = r"^Data start time:(.*)"
         matchDataStartTimeLine = re.compile(isDataStartTime, re.IGNORECASE)
+        
+        secAnalyzedLine = r"^Number of seconds analyzed:(.*)"
+        matchSecAnalyzedLine = re.compile(secAnalyzedLine, re.IGNORECASE | re.MULTILINE)
 
         for line in self.header:
 
@@ -250,6 +253,11 @@ class LMAdataFile(object):
             if formatMatch:
                 columns = formatMatch.group(1).split(',')
                 columns = [columnName.strip() for columnName in columns]
+                
+            secAnalyzedMatch=matchSecAnalyzedLine.search(line)
+            if secAnalyzedMatch:
+                self.sec_analyzed = int(secAnalyzedMatch.group(1))
+            
         
         n_columns = len(columns)
         field_names, types = list(range(n_columns)), list(range(n_columns))
