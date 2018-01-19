@@ -104,7 +104,8 @@ class FlashGridder(object):
                     proj_datum = 'WGS84',
                     proj_ellipse = 'WGS84',
                     pixel_coords = None,
-                    flash_count_logfile = None, energy_grids = None):
+                    flash_count_logfile = None, energy_grids = None,
+                    event_grid_area_fraction_key = None):
         """ Class to support gridding of flash and event data. 
                     
             On init, specify the grid 
@@ -116,10 +117,17 @@ class FlashGridder(object):
                 energy_grids may be True, which will calculate all energy grid 
                 types, or it may be one of 'specific_energy', 'total_energy', 
                 or a list of one or more of these.
+                    
+            event_grid_area_fraction_key specifies the name of the variable
+                in the events array that gives the fraction of each grid cell
+                covered by each event. Used only for pixel-based event 
+                detectors.
         """                    
         if energy_grids == True:
             energy_grids = ('specific_energy', 'total_energy')
         self.energy_grids = energy_grids
+        
+        self.event_grid_area_fraction_key = event_grid_area_fraction_key
         
         # args, kwargs that are saved for the future
         self.do_3d = do_3d
@@ -175,7 +183,10 @@ class FlashGridder(object):
         
         event_density_grid  = np.zeros((xedge.shape[0]-1, yedge.shape[0]-1, n_frames), dtype='int32')
         init_density_grid   = np.zeros((xedge.shape[0]-1, yedge.shape[0]-1, n_frames), dtype='int32')
-        extent_density_grid = np.zeros((xedge.shape[0]-1, yedge.shape[0]-1, n_frames), dtype='int32')
+        if self.event_grid_area_fraction_key is not None:
+            extent_density_grid = np.zeros((xedge.shape[0]-1, yedge.shape[0]-1, n_frames), dtype='float32')
+        else:
+            extent_density_grid = np.zeros((xedge.shape[0]-1, yedge.shape[0]-1, n_frames), dtype='int32')
         footprint_grid      = np.zeros((xedge.shape[0]-1, yedge.shape[0]-1, n_frames), dtype='float32')
 
         specific_energy_grid = np.zeros((xedge.shape[0]-1, yedge.shape[0]-1, n_frames), dtype='float32')
@@ -228,12 +239,12 @@ class FlashGridder(object):
         
             accum_event_density  = density_to_files.accumulate_points_on_grid(event_density_grid[:,:,i], xedge, yedge,  out=event_out, label='event')
             accum_init_density   = density_to_files.accumulate_points_on_grid(init_density_grid[:,:,i], xedge, yedge,   out=init_out,  label='init')
-            accum_extent_density = density_to_files.accumulate_points_on_grid(extent_density_grid[:,:,i], xedge, yedge, out=extent_out,label='extent')
-            accum_footprint      = density_to_files.accumulate_points_on_grid(footprint_grid[:,:,i], xedge, yedge, label='footprint')
+            accum_extent_density = density_to_files.accumulate_points_on_grid(extent_density_grid[:,:,i], xedge, yedge, out=extent_out,label='extent',  grid_frac_weights=True)
+            accum_footprint      = density_to_files.accumulate_points_on_grid(footprint_grid[:,:,i], xedge, yedge, label='footprint',  grid_frac_weights=True)
 
-            accum_specific_energy = density_to_files.accumulate_energy_on_grid(specific_energy_grid[:,:,i], xedge, yedge, out=extent_out, label='specific_energy')
-            accum_flashstd       = density_to_files.accumulate_points_on_grid_sdev(flashsize_std_grid[:,:,i], footprint_grid[:,:,i], xedge, yedge, out=extent_out, label='flashsize_std')
-            accum_total_energy   = density_to_files.accumulate_energy_on_grid(total_energy_grid[:,:,i], xedge, yedge, out=extent_out, label='total_energy')
+            accum_specific_energy = density_to_files.accumulate_energy_on_grid(specific_energy_grid[:,:,i], xedge, yedge, out=extent_out, label='specific_energy',  grid_frac_weights=True)
+            accum_flashstd       = density_to_files.accumulate_points_on_grid_sdev(flashsize_std_grid[:,:,i], footprint_grid[:,:,i], xedge, yedge, out=extent_out, label='flashsize_std',  grid_frac_weights=True)
+            accum_total_energy   = density_to_files.accumulate_energy_on_grid(total_energy_grid[:,:,i], xedge, yedge, out=extent_out, label='total_energy',  grid_frac_weights=True)
 
             if do_3d == True:
                 accum_event_density_3d  = density_to_files.accumulate_points_on_grid_3d(event_density_grid_3d[:,:,:,i], xedge, yedge, zedge,  out=event_out_3d, label='event_3d')
@@ -256,11 +267,16 @@ class FlashGridder(object):
         
             event_density_target  = density_to_files.point_density(accum_event_density)
             init_density_target   = density_to_files.point_density(accum_init_density)
-            extent_density_target = density_to_files.extent_density(x0, y0, dx, dy, accum_extent_density)
-            mean_footprint_target = density_to_files.extent_density(x0, y0, dx, dy, accum_footprint, weight_key='area')
-            mean_energy_target    = density_to_files.extent_density(x0, y0, dx, dy, accum_specific_energy, weight_key='specific_energy') #tot_energy
-            mean_total_energy_target = density_to_files.extent_density(x0, y0, dx, dy, accum_total_energy, weight_key='total_energy')    #Energy
-            std_flashsize_target  = density_to_files.extent_density(x0, y0, dx, dy, accum_flashstd, weight_key='area')
+            extent_density_target = density_to_files.extent_density(x0, y0, dx, dy, accum_extent_density,
+                event_grid_area_fraction_key=event_grid_area_fraction_key)
+            mean_footprint_target = density_to_files.extent_density(x0, y0, dx, dy, accum_footprint, weight_key='area',
+                event_grid_area_fraction_key=event_grid_area_fraction_key)
+            mean_energy_target    = density_to_files.extent_density(x0, y0, dx, dy, accum_specific_energy, weight_key='specific_energy',
+                event_grid_area_fraction_key=event_grid_area_fraction_key) #tot_energy
+            mean_total_energy_target = density_to_files.extent_density(x0, y0, dx, dy, accum_total_energy, weight_key='total_energy',
+                event_grid_area_fraction_key=event_grid_area_fraction_key)  #Energy
+            std_flashsize_target  = density_to_files.extent_density(x0, y0, dx, dy, accum_flashstd, weight_key='area',
+                event_grid_area_fraction_key=event_grid_area_fraction_key)
 
             if do_3d == True:
                 event_density_target_3d  = density_to_files.point_density_3d(accum_event_density_3d)
@@ -438,11 +454,17 @@ class FlashGridder(object):
                         density_label_3d,
                         "J per flash",
                          )
-    
+        
+        if self.event_grid_area_fraction_key is not None:
+            extent_format='f'
+        else:
+            extent_format='i'
+        
         output_writer(outfiles[0], t_ref, np.asarray(t_edges_seconds[:-1]),
                         x_coord*spatial_scale_factor, y_coord*spatial_scale_factor, 
                         lons, lats, ctr_lat, ctr_lon, 
-                        outgrids[0], field_names[0], field_descriptions[0], 
+                        outgrids[0], field_names[0], field_descriptions[0],
+                        format=extent_format,
                         grid_units=field_units[0],
                         **output_kwargs)
         output_writer(outfiles[1], t_ref, np.asarray(t_edges_seconds[:-1]),

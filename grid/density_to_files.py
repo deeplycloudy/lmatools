@@ -408,7 +408,8 @@ def flash_std_3d(x0, y0, z0, dx, dy, dz, target, flash_id_key='flash_id', weight
 
 
 @coroutine
-def extent_density(x0, y0, dx, dy, target, flash_id_key='flash_id', weight_key=None):
+def extent_density(x0, y0, dx, dy, target, flash_id_key='flash_id', 
+    weight_key=None, event_grid_area_fraction_key=None):
     """ This function assumes a regular grid in x and y with spacing dx, dy
         
         x0, y0 is the x coordinate of the lower left corner of the lower-left grid cell, 
@@ -434,10 +435,22 @@ def extent_density(x0, y0, dx, dy, target, flash_id_key='flash_id', weight_key=N
                 del weight_lookup
             else:
                 weights = None
-                
-
-            target.send((x[unq_idx], y[unq_idx], weights))
-            del weights, unq_idx
+            if event_grid_area_fraction_key is not None:
+                # Each event with a unique index is replicated above
+                # with the representative value for the flash (weights = None
+                # implies a weight of +1 for each flash). If there is knowledge
+                # of how much of the underlying grid cell each event fills
+                # (e.g. from pixel-based event detector), then we can modify
+                # the weights by how much of the grid cell is filled.
+                # The logic here presumes that any of the events in the grid
+                # cell cover as much area as any other, i.e., that the pixels
+                # doing the event detection don't move during the time of the
+                # flash.
+                grid_frac = events[unq_idx][event_grid_area_fraction_key]
+            else:
+                grid_frac = None
+            target.send((x[unq_idx], y[unq_idx], weights, grid_frac))
+            del weights, grid_frac, unq_idx
         # else:
             # print ''
         del events, flash, x, y, z, x_i, y_i
@@ -479,7 +492,8 @@ def extent_density_3d(x0, y0, z0, dx, dy, dz, target, flash_id_key='flash_id', w
 
 
 @coroutine
-def accumulate_points_on_grid(grid, xedge, yedge, out=None, label=''):
+def accumulate_points_on_grid(grid, xedge, yedge, out=None, label='',
+        grid_frac_weights=False):
     assert xedge.shape[0] == grid.shape[0]+1
     assert yedge.shape[0] == grid.shape[1]+1
     if out == None:
@@ -487,14 +501,26 @@ def accumulate_points_on_grid(grid, xedge, yedge, out=None, label=''):
     # grid = None
     try:
         while True:
-            x, y, weights = (yield)
+            if grid_frac_weights:
+                x, y, weights, grid_frac = (yield)
+                # There is an issue with small weights being rounded to
+                # zero in histogramdd, so multiply by some large value
+                # and divide it back out later.
+                # https://github.com/numpy/numpy/issues/9465
+                # grid_frac = grid_frac.astype('f8')
+                # grid_frac_scale = 1.0e5
+                # grid_frac = grid_frac.astype('f8')*grid_frac_scale
+            else:
+                x, y, weights = (yield)
+                grid_frac=None
             if len(x) > 0:
                 x = np.atleast_1d(x)
                 y = np.atleast_1d(y)
                 print('accumulating ', len(x), 'points for ', label)
-                count, edges = np.histogramdd((x,y), bins=(xedge, yedge), weights=None, normed=False)    
-                
-                if weights != None:
+                count, edges = np.histogramdd((x,y), bins=(xedge, yedge), weights=grid_frac, normed=False)
+                # if grid_frac_weights:
+                #     count /= grid_frac_scale
+                if weights is not None:
                     # histogramdd sums up weights in each bin for normed=False
                     total, edges = np.histogramdd((x,y), bins=(xedge, yedge), weights=weights, normed=False)
                     # return the mean of the weights in each bin
@@ -520,7 +546,7 @@ def accumulate_points_on_grid(grid, xedge, yedge, out=None, label=''):
                 else:
                     grid += count.astype(grid.dtype)
                 del count
-            del x, y, weights
+            del x, y, weights, grid_frac
             gc.collect()
     except GeneratorExit:
         out['out'] = grid
@@ -572,7 +598,7 @@ def accumulate_points_on_grid_3d(grid, xedge, yedge, zedge, out=None, label=''):
         
 ####FOR STANDARD DEVIATION OF A SINGLE FIELD:
 @coroutine
-def accumulate_points_on_grid_sdev(grid, grid2, xedge, yedge, out=None, label=''):
+def accumulate_points_on_grid_sdev(grid, grid2, xedge, yedge, out=None, label='', grid_frac_weights=True):
     assert xedge.shape[0] == grid.shape[0]+1
     assert yedge.shape[0] == grid.shape[1]+1
     if out == None:
@@ -580,14 +606,18 @@ def accumulate_points_on_grid_sdev(grid, grid2, xedge, yedge, out=None, label=''
     # grid = None
     try:
         while True:
-            x, y, weights = (yield)
+            if grid_frac_weights:
+                x, y, weights, grid_frac = (yield)
+            else:
+                x, y, weights = (yield)
+                grid_frac=None
             if len(x) > 0:
                 x = np.atleast_1d(x)
                 y = np.atleast_1d(y)
                 print('accumulating ', len(x), 'points for ', label)
-                count, edges = np.histogramdd((x,y), bins=(xedge, yedge), weights=None, normed=False)    
+                count, edges = np.histogramdd((x,y), bins=(xedge, yedge), weights=grid_frac, normed=False)    
                 
-                if weights != None:
+                if weights is not None:
                     # histogramdd sums up weights in each bin for normed=False
                     total, edges = np.histogramdd((x,y), bins=(xedge, yedge), weights=np.asarray(weights)**2., normed=False)
                     
@@ -659,7 +689,7 @@ def accumulate_points_on_grid_sdev_3d(grid, grid2, xedge, yedge, zedge, out=None
         
 #####FOR TOTAL ENERGY:
 @coroutine
-def accumulate_energy_on_grid(grid, xedge, yedge, out=None, label=''):
+def accumulate_energy_on_grid(grid, xedge, yedge, out=None, label='', grid_frac_weights=True):
     assert xedge.shape[0] == grid.shape[0]+1
     assert yedge.shape[0] == grid.shape[1]+1
     if out == None:
@@ -667,14 +697,18 @@ def accumulate_energy_on_grid(grid, xedge, yedge, out=None, label=''):
     # grid = None
     try:
         while True:
-            x, y, weights = (yield)
+            if grid_frac_weights:
+                x, y, weights, grid_frac = (yield)
+            else:
+                x, y, weights = (yield)
+                grid_frac=None
             if len(x) > 0:
                 x = np.atleast_1d(x)
                 y = np.atleast_1d(y)
                 print('accumulating ', len(x), 'points for ', label)
-                count, edges = np.histogramdd((x,y), bins=(xedge, yedge), weights=None, normed=False)    
+                count, edges = np.histogramdd((x,y), bins=(xedge, yedge), weights=grid_frac, normed=False)    
                 
-                if weights != None:
+                if weights is not None:
                     # histogramdd sums up weights in each bin for normed=False
                     total, edges = np.histogramdd((x,y), bins=(xedge, yedge), weights=np.abs(weights), normed=False)
                     # return the mean of the weights in each bin
