@@ -23,10 +23,11 @@ class CoordinateSystem(object):
         transforming it using to/fromECEF using the a coord system appropriate to the data, and then
         transforming that data to the final coordinate system using another coord system.
     
-    This class maintains an attribute WGS84xyz that can be used in 
-        transformations to/from the WGS84 ECEF cartesian system, e.g.
-        >>> WGS84lla = proj4.Proj(proj='latlong', ellps='WGS84', datum='WGS84')
-        >>> projectedData = proj4.transform(WGS84lla, coordinateSystem.WGS84xyz, lat, lon, alt )
+    Subclasses should maintain an attribute ERSxyz that can be used in 
+        transformations to/from an ECEF cartesian system, e.g.
+        >>> self.ERSxyz = proj4.Proj(proj='geocent', ellps='WGS84', datum='WGS84')
+        >>> self.ERSlla = proj4.Proj(proj='latlong', ellps='WGS84', datum='WGS84')
+        >>> projectedData = proj4.transform(self.ERSlla, self.ERSxyz, lat, lon, alt )
     The ECEF system has its origin at the center of the earth, with the +Z toward the north pole, 
         +X toward (lat=0, lon=0), and +Y right-handed orthogonal to +X, +Z
         
@@ -38,7 +39,7 @@ class CoordinateSystem(object):
     http://toys.jacobian.org/presentations/2007/oscon/tutorial/
     """
     
-    WGS84xyz = proj4.Proj(proj='geocent',  ellps='WGS84', datum='WGS84')
+    # WGS84xyz = proj4.Proj(proj='geocent',  ellps='WGS84', datum='WGS84')
     
     def coordinates():
         """Return a tuple of standarized coordinate names"""
@@ -55,20 +56,22 @@ class CoordinateSystem(object):
 
 class GeographicSystem(CoordinateSystem):
     """
-    Coordinate system defined on the surface of the earth using latitude, longitide, and altitude, referenced to WGS84 ellipse
+    Coordinate system defined on the surface of the earth using latitude, 
+    longitide, and altitude, referenced by default to the WGS84 ellipse
     """
-    
-    WGS84lla = proj4.Proj(proj='latlong', ellps='WGS84', datum='WGS84')
-        
+    def __init__(self, ellipse='WGS84', datum='WGS84'):
+        # lat lon alt in some earth reference system
+        self.ERSlla = proj4.Proj(proj='latlong', ellps=ellipse, datum=datum)
+        self.ERSxyz = proj4.Proj(proj='geocent', ellps=ellipse, datum=datum)
     def toECEF(self, lon, lat, alt):
-        projectedData = array(proj4.transform(GeographicSystem.WGS84lla, CoordinateSystem.WGS84xyz, lon, lat, alt ))
+        projectedData = array(proj4.transform(self.ERSlla, self.ERSxyz, lon, lat, alt ))
         if len(projectedData.shape) == 1:
             return projectedData[0], projectedData[1], projectedData[2]
         else:
             return projectedData[0,:], projectedData[1,:], projectedData[2,:]
         
     def fromECEF(self, x, y, z):
-        projectedData = array(proj4.transform(CoordinateSystem.WGS84xyz, GeographicSystem.WGS84lla, x, y, z ))
+        projectedData = array(proj4.transform(self.ERSxyz, self.ERSlla, x, y, z ))
         if len(projectedData.shape) == 1:
             return projectedData[0], projectedData[1], projectedData[2]
         else:
@@ -81,6 +84,7 @@ class MapProjection(CoordinateSystem):
     """
     
     def __init__(self, projection='eqc', ctrLat=None, ctrLon=None, ellipse='WGS84', datum='WGS84', **kwargs):
+        self.ERSxyz = proj4.Proj(proj='geocent', ellps=ellipse, datum=datum)
         self.projection = proj4.Proj(proj=projection, ellps=ellipse, datum=datum, **kwargs)
         self.ctrLat=ctrLat
         self.ctrLon=ctrLon
@@ -101,7 +105,7 @@ class MapProjection(CoordinateSystem):
         x += self.cx
         y += self.cy
         z += self.cz
-        projectedData = array(proj4.transform(self.projection, CoordinateSystem.WGS84xyz, x, y, z ))
+        projectedData = array(proj4.transform(self.projection, self.ERSxyz, x, y, z ))
         if len(projectedData.shape) == 1:
             px, py, pz = projectedData[0], projectedData[1], projectedData[2]
         else:
@@ -109,7 +113,7 @@ class MapProjection(CoordinateSystem):
         return px, py, pz
         
     def fromECEF(self, x, y, z):
-        projectedData = array(proj4.transform(CoordinateSystem.WGS84xyz, self.projection, x, y, z ))
+        projectedData = array(proj4.transform(self.ERSxyz, self.projection, x, y, z ))
         if len(projectedData.shape) == 1:
             px, py, pz = projectedData[0], projectedData[1], projectedData[2]
         else:
@@ -178,6 +182,29 @@ class PixelGrid(CoordinateSystem):
         x = squeeze(self.x[idx])
         y = squeeze(self.y[idx])
         return x, y, zeros_like(x)
+        
+class GeostationaryFixedGridSystem(CoordinateSystem):
+    
+    def __init__(self, subsat_lon=0.0, subsat_lat=0.0, sweep_axis='y',
+                 sat_ecef_height=35785831.0,
+                 ellipse='WGS84', datum='WGS84'):
+        """ 
+        Satellite height is with respect to the ellipsoid. Fixed grid
+        coordinates are in radians.
+        """
+        self.ECEFxyz = proj4.Proj(proj='geocent', ellps=ellipse)#, datum=datum)
+        self.fixedgrid = proj4.Proj(proj='geos', lon_0=subsat_lon,
+            lat_0=subsat_lat, h=sat_ecef_height, x_0=0.0, y_0=0.0, 
+            units='m', sweep=sweep_axis)
+        self.h=sat_ecef_height
+            
+    def toECEF(self, x, y, z):
+        X, Y, Z = x*self.h, y*self.h, z*self.h
+        return proj4.transform(self.fixedgrid, self.ECEFxyz, X, Y, Z)
+        
+    def fromECEF(self, x, y, z):
+        X, Y, Z = proj4.transform(self.ECEFxyz, self.fixedgrid, x, y, z)
+        return X/self.h, Y/self.h, Z/self.h
         
 # class AltitudePreservingMapProjection(MapProjection):
 #     def toECEF(self, x, y, z):
@@ -276,7 +303,7 @@ class RadarCoordinateSystem(CoordinateSystem):
     def toLonLatAlt(self, r, az, el):
         """Convert slant range r, azimuth az, and elevation el to ECEF system"""
         geoSys = GeographicSystem()
-        geodetic = proj4.Geod(ellps='WGS84')
+        geodetic = proj4.Geod(ellps=self.ellps)
         
         try:
             n = max((az.size, r.size))
@@ -295,7 +322,7 @@ class RadarCoordinateSystem(CoordinateSystem):
     def fromECEF(self, x, y, z):
         """Convert ECEF system to slant range r, azimuth az, and elevation el"""
         geoSys = GeographicSystem()
-        geodetic = proj4.Geod(ellps='WGS84')
+        geodetic = proj4.Geod(ellps=self.ellps)
         
         try:
             n = x.size
@@ -323,12 +350,12 @@ class TangentPlaneCartesianSystem:
         self.ctrLon = float(ctrLon)
         self.ctrAlt = float(ctrAlt)
         
-        WGS84lla = proj4.Proj(proj='latlong', ellps='WGS84', datum='WGS84')
-        WGS84xyz = proj4.Proj(proj='geocent',  ellps='WGS84', datum='WGS84')
-        self.centerECEF = array(proj4.transform(WGS84lla, WGS84xyz, ctrLon, ctrLat, ctrAlt))
+        ERSlla = proj4.Proj(proj='latlong', ellps='WGS84', datum='WGS84')
+        ERSxyz = proj4.Proj(proj='geocent',  ellps='WGS84', datum='WGS84')
+        self.centerECEF = array(proj4.transform(ERSlla, ERSxyz, ctrLon, ctrLat, ctrAlt))
         
         #location of point directly above local center
-        aboveCenterECEF = array(proj4.transform(WGS84lla, WGS84xyz, ctrLon, ctrLat, self.ctrAlt+1))
+        aboveCenterECEF = array(proj4.transform(ERSlla, ERSxyz, ctrLon, ctrLat, self.ctrAlt+1))
         
         #normal vector to earth's surface at the center is the local z direction
         n = aboveCenterECEF - self.centerECEF
@@ -347,7 +374,7 @@ class TangentPlaneCartesianSystem:
         # Point just to the north of the center on earth's surface, projected onto the tangent plane
         # This calculation seems like it should only be done with latitude/north since the local x 
         #   direction curves away along a non-straight line when projected onto the plane
-        northCenterECEF = array(proj4.transform(WGS84lla, WGS84xyz, self.ctrLon, self.ctrLat+0.01, self.ctrAlt))
+        northCenterECEF = array(proj4.transform(ERSlla, ERSxyz, self.ctrLon, self.ctrLat+0.01, self.ctrAlt))
         localy = dot(P, northCenterECEF[:,None] )
         localy = -localy / norm(localy) # negation gets x and y pointing in the right direction
         
