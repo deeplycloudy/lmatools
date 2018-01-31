@@ -57,11 +57,18 @@ class CoordinateSystem(object):
 class GeographicSystem(CoordinateSystem):
     """
     Coordinate system defined on the surface of the earth using latitude, 
-    longitide, and altitude, referenced by default to the WGS84 ellipse
+    longitude, and altitude, referenced by default to the WGS84 ellipse.
+    
+    Alternately, specify the ellipse shape using an ellipse known
+    to pyproj, or [NOT IMPLEMENTED] specify r_equator and r_pole directly. 
     """
-    def __init__(self, ellipse='WGS84', datum='WGS84'):
-        # lat lon alt in some earth reference system
-        self.ERSlla = proj4.Proj(proj='latlong', ellps=ellipse, datum=datum)
+    def __init__(self, ellipse='WGS84', datum='WGS84', 
+                 r_equator=None, r_pole=None):
+        if (r_equator is not None) | (r_pole is not None):
+            pass
+        else:
+            # lat lon alt in some earth reference system
+            self.ERSlla = proj4.Proj(proj='latlong', ellps=ellipse, datum=datum)
         self.ERSxyz = proj4.Proj(proj='geocent', ellps=ellipse, datum=datum)
     def toECEF(self, lon, lat, alt):
         projectedData = array(proj4.transform(self.ERSlla, self.ERSxyz, lon, lat, alt ))

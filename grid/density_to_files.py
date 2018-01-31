@@ -245,7 +245,8 @@ def no_projection(x_coord, y_coord, z_coord, target, use_flashes=False):
     
 
 @coroutine
-def project(x_coord, y_coord, z_coord, mapProj, geoProj, target, use_flashes=False):
+def project(x_coord, y_coord, z_coord, mapProj, geoProj, target, 
+            use_flashes=False, transform=True):
     """ Adds projected coordinates to the flash and events stream"""
     while True:
         events, flashes = (yield)
@@ -253,9 +254,11 @@ def project(x_coord, y_coord, z_coord, mapProj, geoProj, target, use_flashes=Fal
             points = flashes
         else:
             points = events
-        x,y,z = mapProj.fromECEF( 
-                *geoProj.toECEF(points[x_coord], points[y_coord], points[z_coord])
-                )
+        if transform:
+            x,y,z = mapProj.fromECEF(*geoProj.toECEF(
+                        points[x_coord], points[y_coord], points[z_coord]))
+        else:
+            x,y,z = points[x_coord], points[y_coord], points[z_coord]
         target.send((events, flashes, np.atleast_1d(x),
                      np.atleast_1d(y), np.atleast_1d(z)))
         del events, flashes, x,y,z, points
@@ -424,7 +427,7 @@ def extent_density(x0, y0, dx, dy, target, flash_id_key='flash_id',
         # print 'Doing extent density',
         x_i = np.floor( (x-x0)/dx ).astype('int32')
         y_i = np.floor( (y-y0)/dy ).astype('int32')
-
+        test_flash_id = 53735
         if len(x_i) > 0:
             print('extent with points numbering', len(x_i), ' with weights', weight_key)
             unq_idx = unique_vectors(x_i, y_i, events[flash_id_key])
@@ -449,6 +452,34 @@ def extent_density(x0, y0, dx, dy, target, flash_id_key='flash_id',
                 grid_frac = events[unq_idx][event_grid_area_fraction_key]
             else:
                 grid_frac = None
+                
+            # # Diagnostics
+            # test_flash_mask = (events['flash_id'] == test_flash_id)
+            # test_events = events[test_flash_mask]
+            # if (test_flash_mask.sum() > 0) & (weight_key is None):
+            #     print("Data for flash {0}".format(test_flash_id))
+            #     mesh_xi = test_events['mesh_xi']
+            #     mesh_yi = test_events['mesh_yi']
+            #     mesh_frac = test_events['mesh_frac']
+            #     mesh_t = test_events['time']
+            #     for vals in zip(mesh_t, mesh_frac,
+            #                     mesh_xi, x_i[test_flash_mask],
+            #                     mesh_yi, y_i[test_flash_mask]):
+            #         print(vals)
+            #
+            # test_flash_mask = (events[unq_idx]['flash_id'] == test_flash_id)
+            # test_events = events[unq_idx][test_flash_mask]
+            # if (test_flash_mask.sum() > 0) & (weight_key is None):
+            #     print("Unique data for flash {0}".format(test_flash_id))
+            #     mesh_xi = test_events['mesh_xi']
+            #     mesh_yi = test_events['mesh_yi']
+            #     mesh_frac = test_events['mesh_frac']
+            #     mesh_t = test_events['time']
+            #     for vals in zip(mesh_t, mesh_frac,
+            #                     mesh_xi, x_i[unq_idx][test_flash_mask],
+            #                     mesh_yi, y_i[unq_idx][test_flash_mask]):
+            #         print(vals)
+            
             target.send((x[unq_idx], y[unq_idx], weights, grid_frac))
             del weights, grid_frac, unq_idx
         # else:

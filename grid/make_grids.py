@@ -13,7 +13,7 @@ from lmatools.io.LMA_h5_file import read_flashes, to_seconds
 from lmatools.coordinateSystems import MapProjection, GeographicSystem
 from six.moves import range
 
-from .cf_netcdf import write_cf_netcdf, write_cf_netcdf_3d, write_cf_netcdf_latlon, write_cf_netcdf_3d_latlon, write_cf_netcdf_noproj
+from .cf_netcdf import write_cf_netcdf, write_cf_netcdf_3d, write_cf_netcdf_latlon, write_cf_netcdf_3d_latlon, write_cf_netcdf_noproj, write_cf_netcdf_fixedgrid
     
 
 def dlonlat_at_grid_center(ctr_lat, ctr_lon, dx=4.0e3, dy=4.0e3,
@@ -112,6 +112,8 @@ class FlashGridder(object):
                     
             If proj_name = 'pixel_grid' then pixel_coords must be an
                 instance of lmatools.coordinateSystems.PixelGrid
+            If proj_name = 'geos' then pixel_coords must be an instance of 
+                lmatools.coordinateSystems.GeostationaryFixedGridSystem
                     
             energy_grids controls which energy grids are saved, default None.
                 energy_grids may be True, which will calculate all energy grid 
@@ -164,6 +166,9 @@ class FlashGridder(object):
             mapProj = GeographicSystem()
         elif self.proj_name == 'pixel_grid':
             dx_units = 'pixel'
+            mapProj = pixel_coords
+        elif self.proj_name == 'geos':
+            dx_units = 'radians'
             mapProj = pixel_coords
         else:
             dx_units = '{0:5.1f}m'.format(dx)
