@@ -153,7 +153,7 @@ class PolyLasso(Widget):
                 self.do_callback(event)
                 # self.finalize()
             else:
-                print 'Need at least three vertices to make a polygon'
+                print('Need at least three vertices to make a polygon')
                 self.cleanup()
             return
 
@@ -261,14 +261,14 @@ class NCgridLasso(object):
             self.active_lasso = PolyLasso(self.f, self.callback)
             lock(self.active_lasso)
         elif lock.locked()==True:
-            print "Please deselect other tools to use the lasso."
+            print("Please deselect other tools to use the lasso.")
     
     def callback(self, ax, lasso_line, verts):
         from matplotlib.path import Path
         self.v = verts
 
         self.lasso_line = lasso_line
-        print "releasing lock"
+        print("releasing lock")
         self.f.canvas.widgetlock.release(self.active_lasso)
 
 #         self.active_lasso=None
