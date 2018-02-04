@@ -51,9 +51,12 @@ class LMAgridFileCollection(object):
         self.times = [t for t in self._all_times()]
         self.times.sort()
         
-    def data_for_time(self, t0):
+    def data_for_time(self, t0, return_nc=False):
         """ Read data from the file corresponding to datetime t.
             Returns xedge, yedge, and density for the file 
+        
+            If return_nc is True, also return the NetCDFFile corresponding
+            to the data as a fourth return value
         """
         fname, i = self._time_lookup[t0]  #i is the frame id for this time in NetCDFFile f
         
@@ -78,8 +81,12 @@ class LMAgridFileCollection(object):
         yedge = centers_to_edges(y)
         indexer[grid_t_idx] = i
         density = grid[indexer].transpose()
-        f.close()
-        return xedge, yedge, density
+        out = xedge, yedge, density
+        if return_nc:
+            out += (f,)
+        else:
+            f.close()
+        return out
         
     def _all_times(self):
         for f in self._filenames:
