@@ -535,10 +535,11 @@ class FlashGridder(object):
         outfiles = (os.path.join(outpath, outfile_basename)
                     for outfile_basename in outfile_basenames)
 
-        outfile_basenames_3d = (outfile_template % (basename_parts + (pfx,)) 
-                                for pfx in self.outfile_postfixes_3d)
-        outfiles_3d = (os.path.join(outpath, outfile_basename)
-                    for outfile_basename in outfile_basenames_3d)
+        if self.do_3d:
+            outfile_basenames_3d = (outfile_template % (basename_parts + (pfx,)) 
+                                    for pfx in self.outfile_postfixes_3d)
+            outfiles_3d = (os.path.join(outpath, outfile_basename)
+                        for outfile_basename in outfile_basenames_3d)
                     
         for (outfile, grid, field_name, description, units, outformat) in zip(
              outfiles, self.outgrids, self.field_names, 
