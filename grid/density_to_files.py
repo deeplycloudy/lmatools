@@ -315,8 +315,12 @@ def footprint_mean_3d(flash_id_key='flash_id', area_key='area'):
 
 
 @coroutine
-def point_density(target):
-    """ Sends event x, y, z location directly
+def point_density(target, weight_key=None, weight_flashes=True,
+        flash_id_key='flash_id'):
+    """ Sends event x, y, z location directly. If weight_key is provided
+    also extract the weights from the flash data with variable name matching
+    weight_key. if weight_flashes=False, use the event data instead of the
+    flash data.
     """
     while True:
         events, flash, x, y, z = (yield)
@@ -324,20 +328,46 @@ def point_density(target):
         x = np.atleast_1d(x)
         y = np.atleast_1d(y)
         if len(x) > 0:
+            if weight_key is not None:
+                if weight_flashes:
+                    weight_lookup = dict(list(zip(flash[flash_id_key],
+                        flash[weight_key])))
+                    #puts weights in same order as x, y
+                    weights = np.fromiter((weight_lookup[fi] for fi in
+                        events['flash_id']), dtype='float64')
+                else:
+                    weights = events[weight_key]
+            else:
+                weights = None
             print('with points numbering', len(x))
-            target.send((x, y, None))
+            target.send((x, y, weights))
         del events, flash ,x,y,z
 
 @coroutine
-def point_density_3d(target):
-    """ Sends event x, y, z location directly
+def point_density_3d(target, weight_key=None, weight_flashes=True,
+        flash_id_key='flash_id'):
+    """ Sends event x, y, z location directly. If weight_key is provided
+    also extract the weights from the flash data with variable name matching 
+    weight_key. if weight_flashes=False, use the event data instead of the
+    flash data.
     """
     while True:
         events, flash, x, y, z = (yield)
         # print 'Doing point density',
         if len(x) > 0:
+            if weight_key is not None:
+                if weight_flashes:
+                    weight_lookup = dict(list(zip(flash[flash_id_key], 
+                        flash[weight_key])))
+                    #puts weights in same order as x, y
+                    weights = np.fromiter((weight_lookup[fi] for fi in
+                        events['flash_id']), dtype='float64')
+                else:
+                    weights = events[weight_key]
+            else:
+                weights = None
             print('with points numbering', len(x))
-            target.send((x, y, z, None))
+            target.send((x, y, z, weights))
         del events, flash ,x,y,z
 
 @coroutine
@@ -750,6 +780,9 @@ def accumulate_points_on_grid_sdev_3d(grid, grid2, xedge, yedge, zedge, out=None
 #####FOR TOTAL ENERGY:
 @coroutine
 def accumulate_energy_on_grid(grid, xedge, yedge, out=None, label='', grid_frac_weights=True):
+    """
+    Like accumulate_points_on_grid, but doesn't normalize by the total count
+    """
     assert xedge.shape[0] == grid.shape[0]+1
     assert yedge.shape[0] == grid.shape[1]+1
     if out == None:
@@ -769,14 +802,16 @@ def accumulate_energy_on_grid(grid, xedge, yedge, out=None, label='', grid_frac_
                 count, edges = np.histogramdd((x,y), bins=(xedge, yedge), weights=grid_frac, normed=False)    
                 
                 if weights is not None:
+                    have_weights = True
                     # histogramdd sums up weights in each bin for normed=False
-                    total, edges = np.histogramdd((x,y), bins=(xedge, yedge), weights=np.abs(weights), normed=False)
+                    if grid_frac is not None:
+                        weights = weights*grid_frac
+                    total, edges = np.histogramdd((x,y), bins=(xedge, yedge),
+                        weights=weights, normed=False)
                     # return the mean of the weights in each bin
                     bad = (count <= 0)
-                  
                     count = np.asarray(total, dtype='float32')#/count 
-                    count[bad] = 0.0 
-                    
+                    count[bad] = 0.0
                     del total, edges, bad
     
                 # using += (as opposed to grid = grid + count) is essential
