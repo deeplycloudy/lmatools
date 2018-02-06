@@ -434,8 +434,10 @@ def extent_density(x0, y0, dx, dy, target, flash_id_key='flash_id',
             # if x[unq_idx].shape[0] > 1:
             if weight_key != None:
                 weight_lookup = dict(list(zip(flash[flash_id_key], flash[weight_key])))
-                weights = [weight_lookup[fi] for fi in events[unq_idx]['flash_id']] #puts weights in same order as x[unq_idx], y[unq_idx]
-                del weight_lookup
+                #puts weights in same order as x[unq_idx], y[unq_idx]
+                weights = np.fromiter((weight_lookup[fi] for fi in
+                    events[unq_idx]['flash_id']), dtype='float64')
+                # del weight_lookup
             else:
                 weights = None
             if event_grid_area_fraction_key is not None:
@@ -453,10 +455,10 @@ def extent_density(x0, y0, dx, dy, target, flash_id_key='flash_id',
             else:
                 grid_frac = None
                 
-            # # Diagnostics
+            # Diagnostics
             # test_flash_mask = (events['flash_id'] == test_flash_id)
             # test_events = events[test_flash_mask]
-            # if (test_flash_mask.sum() > 0) & (weight_key is None):
+            # if (test_flash_mask.sum() > 0) & (weight_key == 'area'):
             #     print("Data for flash {0}".format(test_flash_id))
             #     mesh_xi = test_events['mesh_xi']
             #     mesh_yi = test_events['mesh_yi']
@@ -464,12 +466,13 @@ def extent_density(x0, y0, dx, dy, target, flash_id_key='flash_id',
             #     mesh_t = test_events['time']
             #     for vals in zip(mesh_t, mesh_frac,
             #                     mesh_xi, x_i[test_flash_mask],
-            #                     mesh_yi, y_i[test_flash_mask]):
-            #         print(vals)
+            #                     mesh_yi, y_i[test_flash_mask],
+            #                     ):
+            #         print(vals, weight_lookup[test_flash_id])
             #
             # test_flash_mask = (events[unq_idx]['flash_id'] == test_flash_id)
             # test_events = events[unq_idx][test_flash_mask]
-            # if (test_flash_mask.sum() > 0) & (weight_key is None):
+            # if (test_flash_mask.sum() > 0) & (weight_key == 'area'):
             #     print("Unique data for flash {0}".format(test_flash_id))
             #     mesh_xi = test_events['mesh_xi']
             #     mesh_yi = test_events['mesh_yi']
@@ -477,8 +480,9 @@ def extent_density(x0, y0, dx, dy, target, flash_id_key='flash_id',
             #     mesh_t = test_events['time']
             #     for vals in zip(mesh_t, mesh_frac,
             #                     mesh_xi, x_i[unq_idx][test_flash_mask],
-            #                     mesh_yi, y_i[unq_idx][test_flash_mask]):
-            #         print(vals)
+            #                     mesh_yi, y_i[unq_idx][test_flash_mask],
+            #                     weights[test_flash_mask]):
+            #         print(vals, weight_lookup[test_flash_id])
             
             target.send((x[unq_idx], y[unq_idx], weights, grid_frac))
             del weights, grid_frac, unq_idx
@@ -530,6 +534,19 @@ def accumulate_points_on_grid(grid, xedge, yedge, out=None, label='',
     if out == None:
         out = {}
     # grid = None
+
+    # When we do a calculation like average flash area, we need to sum the
+    # areas, and sum the flashes, and divide at the end. Otherwise, if we have
+    # a frame that spans multiple data files (and therefore chunks of
+    # x,y,weights) we will calculate the sum of the averages due to each chunk
+    # instead of getting the true average. Therefore, create a set of grids for
+    # tracking the accumulation, and update the final grid with the new
+    # accumulation each time through the loop.
+    count_hist = grid.copy()
+    total_hist = grid.copy()
+
+    have_weights = False
+
     try:
         while True:
             if grid_frac_weights:
@@ -538,6 +555,7 @@ def accumulate_points_on_grid(grid, xedge, yedge, out=None, label='',
                 # zero in histogramdd, so multiply by some large value
                 # and divide it back out later.
                 # https://github.com/numpy/numpy/issues/9465
+                # seems to not be necessary for the dynamic range we have
                 # grid_frac = grid_frac.astype('f8')
                 # grid_frac_scale = 1.0e5
                 # grid_frac = grid_frac.astype('f8')*grid_frac_scale
@@ -548,18 +566,21 @@ def accumulate_points_on_grid(grid, xedge, yedge, out=None, label='',
                 x = np.atleast_1d(x)
                 y = np.atleast_1d(y)
                 print('accumulating ', len(x), 'points for ', label)
-                count, edges = np.histogramdd((x,y), bins=(xedge, yedge), weights=grid_frac, normed=False)
+                count, edges = np.histogramdd((x,y), bins=(xedge, yedge),
+                    weights=grid_frac, normed=False)
+
+                count_hist += count
                 # if grid_frac_weights:
                 #     count /= grid_frac_scale
                 if weights is not None:
+                    have_weights = True
                     # histogramdd sums up weights in each bin for normed=False
-                    total, edges = np.histogramdd((x,y), bins=(xedge, yedge), weights=weights, normed=False)
-                    # return the mean of the weights in each bin
-                    bad = (count <= 0)
-                    count = np.asarray(total, dtype='float32')/count
-                    count[bad] = 0.0 
-                    
-                    del total, edges, bad
+                    if grid_frac is not None:
+                        weights = weights*grid_frac
+                    total, edges = np.histogramdd((x,y), bins=(xedge, yedge),
+                        weights=weights, normed=False)
+                    total_hist += total
+                    del total, edges
                     
                 # try:
                     # count, edges = np.histogramdd((x,y), bins=(xedge, yedge), weights=weights)
@@ -575,8 +596,16 @@ def accumulate_points_on_grid(grid, xedge, yedge, out=None, label='',
                     grid = count
                     out['out'] = grid
                 else:
-                    grid += count.astype(grid.dtype)
-                del count
+                    if have_weights:
+                        bad = (count_hist <= 0)
+                        avg = np.asarray(total_hist, dtype='float32')/count_hist
+                        avg[bad] = 0.0
+                        del bad
+                    else:
+                        avg = count_hist
+                    grid[:] = avg[:].astype(grid.dtype)
+                    # grid += count.astype(grid.dtype)
+                del count, avg
             del x, y, weights, grid_frac
             gc.collect()
     except GeneratorExit:
