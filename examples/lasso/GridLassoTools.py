@@ -1,4 +1,4 @@
-import scipy.io.netcdf as netCDF4
+import netCDF4
 import numpy as np
 import pandas as pd
 import scipy as sci
@@ -278,7 +278,7 @@ class NCgridLasso(object):
 
         fname, frame_i = self.NCs._time_lookup[self.t] 
         geosys, mapproj = self.NCs.get_projection()
-        nc = netCDF4.NetCDFFile(fname)
+        nc = netCDF4.Dataset(fname)
         
         # if 'Lambert_Azimuthal_Equal_Area' in nc.variables.keys():
         #     nc_proj = nc.variables['Lambert_Azimuthal_Equal_Area']
@@ -398,7 +398,7 @@ class NCgridLassoWidgets(object):
         # filtered = widgets.Button(description='View Filtered Data', value=False)
         # filtered.on_click(self.view_filter)
         
-        contain = widgets.Box(description='NetCDF grid tools')
+        contain = widgets.VBox(description='NetCDF grid tools')
         contain.children = [draw,toggle,v_min,v_max,frame_selection,
                             # filtered, view_mask,
                              revert_plot, toggle_log_scale]
