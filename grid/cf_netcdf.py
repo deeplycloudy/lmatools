@@ -110,7 +110,7 @@ def write_cf_netcdf_latlon(outfile, t_start, t, xloc, yloc,
                 x_coord.long_name = "GOES fixed grid projection x-coordinate"
                 x_coord.standard_name = 'projection_x_coordinate'
                 y_coord.units = "rad"
-                y_coord.long_name = "GOES fixed grid projection x-coordinate"
+                y_coord.long_name = "GOES fixed grid projection y-coordinate"
                 y_coord.standard_name = 'projection_y_coordinate'
             else:
                 x_coord.units = "km"

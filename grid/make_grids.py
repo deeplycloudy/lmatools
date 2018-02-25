@@ -477,7 +477,6 @@ class FlashGridder(object):
             self.field_units_3d = tuple(k for k in filter_energy(self.field_units_3d))
             self.outformats_3d = tuple(k for k in filter_energy(self.outformats_3d))                
 
-
     def write_grids(self, outpath = '', output_writer = write_cf_netcdf, 
                     output_writer_3d = write_cf_netcdf_3d,
                     output_filename_prefix="LMA", output_kwargs = {}):
@@ -504,25 +503,11 @@ class FlashGridder(object):
         assert x_all.shape[0] == nx
         assert x_all.shape[1] == ny
         z_all = np.zeros_like(x_all)
-    
-        grid_shape_3d = (nx,ny,nz) 
-        x_ones_3d = np.ones(grid_shape_3d, dtype='f4')
-        y_ones_3d = np.ones(grid_shape_3d, dtype='f4')
-        z_ones_3d = np.ones(grid_shape_3d, dtype='f4')
-    
-        x_all_3d = x_coord[:, None, None]*x_ones_3d
-        y_all_3d = y_coord[None,:,None]*y_ones_3d
-        z_all_3d = z_coord[None, None, :]*z_ones_3d
-    
+
         lons, lats, alts = x,y,z = geoProj.fromECEF( *mapProj.toECEF(x_all, y_all, z_all) )
         lons.shape=x_all.shape
         lats.shape=y_all.shape
     
-        lons_3d, lats_3d, alts_3d = x_3d,y_3d,z_3d = geoProj.fromECEF(*mapProj.toECEF(x_all_3d, y_all_3d, z_all_3d) )
-        lons_3d.shape=x_all_3d.shape
-        lats_3d.shape=y_all_3d.shape
-        alts_3d.shape=z_all_3d.shape
-                    
         basename_parts = (output_filename_prefix, 
                           self.start_time.strftime('%Y%m%d_%H%M%S'), 
                           to_seconds(self.duration), 
@@ -536,11 +521,26 @@ class FlashGridder(object):
                     for outfile_basename in outfile_basenames)
 
         if self.do_3d:
+            grid_shape_3d = (nx,ny,nz)
+            x_ones_3d = np.ones(grid_shape_3d, dtype='f4')
+            y_ones_3d = np.ones(grid_shape_3d, dtype='f4')
+            z_ones_3d = np.ones(grid_shape_3d, dtype='f4')
+
+            x_all_3d = x_coord[:, None, None]*x_ones_3d
+            y_all_3d = y_coord[None,:,None]*y_ones_3d
+            z_all_3d = z_coord[None, None, :]*z_ones_3d
+
+            lons_3d, lats_3d, alts_3d = x_3d,y_3d,z_3d = geoProj.fromECEF(*mapProj.toECEF(x_all_3d, y_all_3d, z_all_3d) )
+            lons_3d.shape=x_all_3d.shape
+            lats_3d.shape=y_all_3d.shape
+            alts_3d.shape=z_all_3d.shape
+
             outfile_basenames_3d = (outfile_template % (basename_parts + (pfx,)) 
                                     for pfx in self.outfile_postfixes_3d)
             outfiles_3d = (os.path.join(outpath, outfile_basename)
                         for outfile_basename in outfile_basenames_3d)
-                    
+
+        print("Preparing to write NetCDF")
         for (outfile, grid, field_name, description, units, outformat) in zip(
              outfiles, self.outgrids, self.field_names, 
              self.field_descriptions, self.field_units, self.outformats):
