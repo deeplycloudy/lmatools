@@ -1763,16 +1763,17 @@ _Positive_Definite_data = {
 
     
 datad = {}
-current_locals = locals().keys()
-for name in current_locals:
+current_locals = locals()
+current_local_keys = list(current_locals.keys())
+for name in current_local_keys:
     if name.endswith('_data'):
         newname = name[1:-5]
         
         #Put data for colortable into dictionary under new name
-        datad[newname] = locals()[name]
+        datad[newname] = current_locals[name]
         
         #Create colortable from data and place it in local namespace under new name
-        locals()[newname] = colors.LinearSegmentedColormap(newname, locals()[name],
+        current_locals[newname] = colors.LinearSegmentedColormap(newname, current_locals[name],
             LUTSIZE)
 
 #Stolen shamelessly from matplotlib.cm
