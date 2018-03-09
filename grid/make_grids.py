@@ -443,8 +443,8 @@ class FlashGridder(object):
             extent_format='f'
         else:
             extent_format='i'
-        self.outformats = (extent_format, 'i', 'i', 'f', 'f', 'f', 'f')
-        self.outformats_3d = (extent_format, 'i', 'i', 'f', 'f', 'f', 'f')
+        self.outformats = tuple(extent_format, 'i', 'i', 'f', 'f', 'f', 'f')
+        self.outformats_3d = tuple(extent_format, 'i', 'i', 'f', 'f', 'f', 'f')
         
         remove_idx = []
         if energy_grids is not None:
@@ -515,9 +515,9 @@ class FlashGridder(object):
                           self.dx_units,
                           )
         outfile_template = '%s_%s_%d_%dsrc_%s-dx_%s'
-        outfile_basenames = (outfile_template % (basename_parts + (pfx,)) 
+        outfile_basenames = list(outfile_template % (basename_parts + (pfx,)) 
                              for pfx in self.outfile_postfixes)
-        outfiles = (os.path.join(outpath, outfile_basename)
+        outfiles = list(os.path.join(outpath, outfile_basename)
                     for outfile_basename in outfile_basenames)
 
         if self.do_3d:
@@ -537,14 +537,17 @@ class FlashGridder(object):
 
             outfile_basenames_3d = (outfile_template % (basename_parts + (pfx,)) 
                                     for pfx in self.outfile_postfixes_3d)
+            outfile_basenames_3d = list(outfile_basenames_3d)
             outfiles_3d = (os.path.join(outpath, outfile_basename)
                         for outfile_basename in outfile_basenames_3d)
+            outfiles_3d = list(outfiles_3d)
 
         print("Preparing to write NetCDF")
-        for (outfile, grid, field_name, description, units, outformat) in zip(
-             outfiles, self.outgrids, self.field_names, 
-             self.field_descriptions, self.field_units, self.outformats):
-                
+        file_iter = list(zip(
+                     outfiles, self.outgrids, self.field_names, 
+                     self.field_descriptions, self.field_units, self.outformats))
+        for (outfile, grid, field_name, description, units, outformat) in file_iter:
+            print("Writing", outfile)
             output_writer(outfile, t_ref, np.asarray(t_edges_seconds[:-1]),
                           x_coord*spatial_scale_factor, 
                           y_coord*spatial_scale_factor, 
