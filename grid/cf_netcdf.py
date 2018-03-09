@@ -56,7 +56,7 @@ def write_cf_netcdf_latlon(outfile, t_start, t, xloc, yloc,
                 grid_mapping  = "goes_imager_projection"
             else:
                 grid_mapping = "Lambert_Azimuthal_Equal_Area"
-    
+
     nc_out = NetCDFFile(outfile, 'w')
     nc_out.createDimension(east_dim, xloc.shape[0])
     nc_out.createDimension(north_dim, yloc.shape[0])
@@ -125,7 +125,7 @@ def write_cf_netcdf_latlon(outfile, t_start, t, xloc, yloc,
     times.units = "seconds since %s" % t_start.strftime('%Y-%m-%d %H:%M:%S')
     
     #Dtype change from 'd' to 'f':
-    if not is_latlon:
+    if (not is_latlon) & (not is_fixedgrid):
         lons = nc_out.createVariable('lons', 'f', (east_dim, north_dim))
         lons.long_name="longitude"
         lons.standard_name="longitude"
@@ -154,6 +154,7 @@ def write_cf_netcdf_latlon(outfile, t_start, t, xloc, yloc,
 
     for i in range(grid.shape[2]):
         lightning2d[i,:,:] = grid[:,:,i]
+    nc_out.sync()
     nc_out.close()
 
 write_cf_netcdf = partial(write_cf_netcdf_latlon, is_latlon=False)
