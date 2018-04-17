@@ -62,6 +62,7 @@ goesr_resolutions = {
     '4.0km': 112e-6,
     '8.0km': 224e-6, # not technically in the spec, but SYMMETRY.
     '10.0km': 280e-6,
+    '100.0km': 2800e-6,
 }
 
 

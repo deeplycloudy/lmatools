@@ -4,6 +4,10 @@ import glob
 import os, sys
 from datetime import datetime, timedelta
 
+import logging
+log = logging.getLogger(__name__)
+log.addHandler(logging.NullHandler())
+
 import numpy as np
 
 from .density_to_files import (accumulate_points_on_grid,
@@ -155,7 +159,7 @@ class FlashGridder(object):
         self.ctr_lat, self.ctr_lon, self.ctr_alt = ctr_lat, ctr_lon, ctr_alt
         
         if flash_count_logfile is None:
-            flash_count_logfile = sys.stdout
+            flash_count_logfile = log
         self.flash_count_logfile = flash_count_logfile
         
         t_edges, duration = time_edges(self.start_time, self.end_time, self.frame_interval)
@@ -547,7 +551,7 @@ class FlashGridder(object):
                      outfiles, self.outgrids, self.field_names, 
                      self.field_descriptions, self.field_units, self.outformats))
         for (outfile, grid, field_name, description, units, outformat) in file_iter:
-            print("Preparing to write NetCDF", outfile)
+            log.info("Preparing to write NetCDF", outfile)
             output_writer(outfile, t_ref, np.asarray(t_edges_seconds[:-1]),
                           x_coord*spatial_scale_factor, 
                           y_coord*spatial_scale_factor, 
