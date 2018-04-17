@@ -344,7 +344,7 @@ def point_density(target, weight_key=None, weight_flashes=True,
                     weights = events[weight_key]
             else:
                 weights = None
-            log.debug('with points numbering', len(x))
+            log.debug('with points numbering %s'.format(len(x)))
             target.send((x, y, weights))
         del events, flash ,x,y,z
 
@@ -371,7 +371,7 @@ def point_density_3d(target, weight_key=None, weight_flashes=True,
                     weights = events[weight_key]
             else:
                 weights = None
-            log.debug('with points numbering', len(x))
+            log.debug('with points numbering %s'.format(len(x)))
             target.send((x, y, z, weights))
         del events, flash ,x,y,z
 
@@ -395,7 +395,7 @@ def flash_std(x0, y0, dx, dy, target, flash_id_key='flash_id', weight_key=None):
         y_i = np.floor( (y-y0)/dy ).astype('int32')
 
         if len(x_i) > 0:
-            log.debug('extent with points numbering', len(x_i), ' with weights', weight_key)
+            log.debug(('extent with points numbering', len(x_i), ' with weights', weight_key))
             unq_idx = unique_vectors(x_i, y_i, events[flash_id_key])
             # if x[unq_idx].shape[0] > 1:
             if weight_key != None:
@@ -429,7 +429,7 @@ def flash_std_3d(x0, y0, z0, dx, dy, dz, target, flash_id_key='flash_id', weight
         z_i = np.floor( (z-z0)/dz ).astype('int32')
         log.debug(len(x_i))
         if len(x_i) > 0:
-            log.info('extent with points numbering', len(x_i), ' with weights', weight_key)
+            log.info(('extent with points numbering', len(x_i), ' with weights', weight_key))
             unq_idx = unique_vectors(x_i, y_i, z_i, events[flash_id_key])
             # if x[unq_idx].shape[0] > 1:
             if weight_key != None:
@@ -464,7 +464,7 @@ def extent_density(x0, y0, dx, dy, target, flash_id_key='flash_id',
         y_i = np.floor( (y-y0)/dy ).astype('int32')
         test_flash_id = 53735
         if len(x_i) > 0:
-            log.info('extent with points numbering', len(x_i), ' with weights', weight_key)
+            log.info(('extent with points numbering', len(x_i), ' with weights', weight_key))
             unq_idx = unique_vectors(x_i, y_i, events[flash_id_key])
             # if x[unq_idx].shape[0] > 1:
             if weight_key != None:
@@ -545,7 +545,7 @@ def extent_density_3d(x0, y0, z0, dx, dy, dz, target, flash_id_key='flash_id', w
         z_i = np.floor( (z-z0)/dz ).astype('int32')
         log.debug(len(x_i))
         if len(x_i) > 0:
-            log.info('extent with points numbering', len(x_i), ' with weights', weight_key)
+            log.info(('extent with points numbering', len(x_i), ' with weights', weight_key))
             unq_idx = unique_vectors(x_i, y_i, z_i, events[flash_id_key])
             # if x[unq_idx].shape[0] > 1:
             if weight_key != None:
@@ -600,7 +600,7 @@ def accumulate_points_on_grid(grid, xedge, yedge, out=None, label='',
             if len(x) > 0:
                 x = np.atleast_1d(x)
                 y = np.atleast_1d(y)
-                log.info('accumulating ', len(x), 'points for ', label)
+                log.info(('accumulating ', len(x), 'points for ', label))
                 count, edges = np.histogramdd((x,y), bins=(xedge, yedge),
                     weights=grid_frac, normed=False)
 
@@ -661,7 +661,7 @@ def accumulate_points_on_grid_3d(grid, xedge, yedge, zedge, out=None, label=''):
                 x = np.atleast_1d(x)
                 y = np.atleast_1d(y)
                 z = np.atleast_1d(z)
-                log.info('accumulating ', len(x), 'points for ', label)
+                log.info(('accumulating ', len(x), 'points for ', label))
                 count, edges = np.histogramdd((x,y,z), bins=(xedge, yedge, zedge), weights=None, normed=False)    
                 
                 if weights != None:
@@ -709,7 +709,7 @@ def accumulate_points_on_grid_sdev(grid, grid2, xedge, yedge, out=None, label=''
             if len(x) > 0:
                 x = np.atleast_1d(x)
                 y = np.atleast_1d(y)
-                log.info('accumulating ', len(x), 'points for ', label)
+                log.info(('accumulating ', len(x), 'points for ', label))
                 count, edges = np.histogramdd((x,y), bins=(xedge, yedge), weights=grid_frac, normed=False)    
                 
                 if weights is not None:
@@ -753,7 +753,7 @@ def accumulate_points_on_grid_sdev_3d(grid, grid2, xedge, yedge, zedge, out=None
                 x = np.atleast_1d(x)
                 y = np.atleast_1d(y)
                 z = np.atleast_1d(z)
-                log.info('accumulating ', len(x), 'points for ', label)
+                log.info(('accumulating ', len(x), 'points for ', label))
                 count, edges = np.histogramdd((x,y,z), bins=(xedge, yedge, zedge), weights=None, normed=False)    
                 
                 if weights != None:
@@ -803,7 +803,7 @@ def accumulate_energy_on_grid(grid, xedge, yedge, out=None, label='', grid_frac_
             if len(x) > 0:
                 x = np.atleast_1d(x)
                 y = np.atleast_1d(y)
-                log.info('accumulating ', len(x), 'points for ', label)
+                log.info(('accumulating ', len(x), 'points for ', label))
                 count, edges = np.histogramdd((x,y), bins=(xedge, yedge), weights=grid_frac, normed=False)    
                 
                 if weights is not None:
@@ -848,7 +848,7 @@ def accumulate_energy_on_grid_3d(grid, xedge, yedge, zedge, out=None, label=''):
                 x = np.atleast_1d(x)
                 y = np.atleast_1d(y)
                 z = np.atleast_1d(z)
-                log.info('accumulating ', len(x), 'points for ', label)
+                log.info(('accumulating ', len(x), 'points for ', label))
                 count, edges = np.histogramdd((x,y,z), bins=(xedge, yedge, zedge), weights=None, normed=False)    
                 
                 if weights != None:

@@ -551,7 +551,7 @@ class FlashGridder(object):
                      outfiles, self.outgrids, self.field_names, 
                      self.field_descriptions, self.field_units, self.outformats))
         for (outfile, grid, field_name, description, units, outformat) in file_iter:
-            log.info("Preparing to write NetCDF", outfile)
+            log.info("Preparing to write NetCDF %s".format(outfile))
             output_writer(outfile, t_ref, np.asarray(t_edges_seconds[:-1]),
                           x_coord*spatial_scale_factor, 
                           y_coord*spatial_scale_factor, 
