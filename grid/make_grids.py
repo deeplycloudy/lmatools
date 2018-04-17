@@ -114,6 +114,7 @@ class FlashGridder(object):
                     flash_count_logfile = None, energy_grids = None,
                     event_grid_area_fraction_key = None,
                     spatial_scale_factor = 1.0/1000.0,
+                    subdivide=False,
                     ):
         """ Class to support gridding of flash and event data. 
                     
@@ -443,8 +444,8 @@ class FlashGridder(object):
             extent_format='f'
         else:
             extent_format='i'
-        self.outformats = tuple(extent_format, 'i', 'i', 'f', 'f', 'f', 'f')
-        self.outformats_3d = tuple(extent_format, 'i', 'i', 'f', 'f', 'f', 'f')
+        self.outformats = tuple((extent_format, 'i', 'i', 'f', 'f', 'f', 'f'))
+        self.outformats_3d = tuple((extent_format, 'i', 'i', 'f', 'f', 'f', 'f'))
         
         remove_idx = []
         if energy_grids is not None:
@@ -542,12 +543,11 @@ class FlashGridder(object):
                         for outfile_basename in outfile_basenames_3d)
             outfiles_3d = list(outfiles_3d)
 
-        print("Preparing to write NetCDF")
         file_iter = list(zip(
                      outfiles, self.outgrids, self.field_names, 
                      self.field_descriptions, self.field_units, self.outformats))
         for (outfile, grid, field_name, description, units, outformat) in file_iter:
-            print("Writing", outfile)
+            print("Preparing to write NetCDF", outfile)
             output_writer(outfile, t_ref, np.asarray(t_edges_seconds[:-1]),
                           x_coord*spatial_scale_factor, 
                           y_coord*spatial_scale_factor, 

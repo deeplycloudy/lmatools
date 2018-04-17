@@ -103,7 +103,10 @@ class LMAgridFileCollection(object):
         dims = f.dimensions # dictionary of dimension names to sizes
         t = data[self.t_name]
         
-        base_date = datetime.strptime(t.units, "seconds since %Y-%m-%d %H:%M:%S")
+        try:
+            base_date = datetime.strptime(t.units, "seconds since %Y-%m-%d %H:%M:%S")
+        except ValueError:
+            base_date = datetime.strptime(t.units, "seconds since %Y-%m-%d")
         for i in range(np.atleast_1d(t).shape[0]):
             frame_start = base_date + timedelta(0,float(t[i]),0)
             self._time_lookup[frame_start] = (fname, i)

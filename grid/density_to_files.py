@@ -190,7 +190,6 @@ def event_yielder(evs, fls):
         for an_ev in these_events:
             yield an_ev
 
-
 @coroutine
 def extract_events_for_flashes(target, flashID_key='flash_id'):
     """ Takes a large table of events and grabs only the events belonging to the flashes.
@@ -243,7 +242,6 @@ def no_projection(x_coord, y_coord, z_coord, target, use_flashes=False):
         target.send((events, flashes, x,y,z))
         del events, flashes, x,y,z, points
     
-
 @coroutine
 def project(x_coord, y_coord, z_coord, mapProj, geoProj, target, 
             use_flashes=False, transform=True):
@@ -312,7 +310,6 @@ def footprint_mean_3d(flash_id_key='flash_id', area_key='area'):
         # else:
             # print ''
         del events, flash, x, y, z, x_i, y_i, z_i
-
 
 @coroutine
 def point_density(target, weight_key=None, weight_flashes=True,
@@ -599,7 +596,7 @@ def accumulate_points_on_grid(grid, xedge, yedge, out=None, label='',
                 count, edges = np.histogramdd((x,y), bins=(xedge, yedge),
                     weights=grid_frac, normed=False)
 
-                count_hist += count
+                count_hist += count.astype(count_hist.dtype)
                 # if grid_frac_weights:
                 #     count /= grid_frac_scale
                 if weights is not None:

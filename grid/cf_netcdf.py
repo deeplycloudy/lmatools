@@ -143,7 +143,7 @@ def write_cf_netcdf_latlon(outfile, t_start, t, xloc, yloc,
         ('ntimes',east_dim,north_dim), zlib=True)
     lightning2d.long_name=grid_description
     lightning2d.units=grid_units
-    if not is_latlon:
+    if (not is_latlon) & (not is_fixedgrid):
         lightning2d.coordinates='time lons lats'
     lightning2d.grid_mapping = grid_mapping
     lightning2d.missing_value = missing_value
