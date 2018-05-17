@@ -161,9 +161,24 @@ class ArrayChopper(object):
             yield data[mask]
 
 @coroutine
-def flashes_to_frames(time_edges, targets, time_key='start', time_edges_datetime=None, flash_counter=None):
-    """ time_edges_datetime is same len as time_edges but with datetime objects instead of floats.
-        allows 
+def flashes_to_frames(time_edges, targets, time_key='start', do_events=False,
+    time_edges_datetime=None, flash_counter=None):
+    """ time_edges_datetime is same len as time_edges but with datetime objects
+        instead of floats.
+
+        When paired with extract_events_for_flashes, and events=False, the
+        flashes are placed in the correct time frame, and any events from that
+        flash, including those that cross a time boundary, are included.
+
+        if do_events='event_time_key', then also subset the events. This
+        operation is naive, i.e., the events are selected by time with no
+        attempt to keep events together with their parent flash. Therefore, it
+        is important to ensure that events and flashes are sent together in
+        chunks that do not cross time boundaries, which implies pre-aggregating
+        and time-tagging the event data so that the events and flashes remain
+        together when naively subset. If those conditions are met then this
+        option allows one to set up a pipeline without an additional
+        extract_events_for_flashes step.
     """
     if time_edges_datetime is None:
         # print "Datetime-style time edges not found, using time edges in seconds for flash count label"
@@ -179,14 +194,26 @@ def flashes_to_frames(time_edges, targets, time_key='start', time_edges_datetime
         sort_idx = np.argsort(start_times) #, order=[time_key])
         idx = np.searchsorted(start_times[sort_idx], time_edges)
         slices = [slice(*i) for i in zip(idx[0:-1], idx[1:])]
-        for target, s, frame_start_time in zip(targets, slices, time_edges_datetime[:-1]):
+        if do_events != False:
+            ev_start_times = events[do_events]
+            ev_sort_idx = np.argsort(ev_start_times)
+            ev_idx = np.searchsorted(ev_start_times[ev_sort_idx], time_edges)
+            ev_slices = [slice(*i) for i in zip(ev_idx[0:-1], ev_idx[1:])]
+        else:
+            ev_slices = range(len(time_edges))
+        for target, s, ev_s, frame_start_time in zip(targets,
+                    slices, ev_slices, time_edges_datetime[:-1]):
             these_flashes = flashes[sort_idx][s]
+            if do_events != False:
+                these_events = events[ev_sort_idx][ev_s]
+            else:
+                these_events = events
             if flash_counter is not None:
                 flash_counter.send((these_flashes, frame_start_time))
             # flash_count_status = "Sending %s flashes to frame starting at %s" % (len(these_flashes), frame_start_time)
             # flash_count_messages += flash_count_status
             # print flash_count_status
-            target.send((events, these_flashes))
+            target.send((these_events, these_flashes))
         del events, flashes, start_times, sort_idx, idx, slices
     log.info(flash_count_messages)
 
@@ -321,7 +348,7 @@ def footprint_mean_3d(flash_id_key='flash_id', area_key='area'):
 
 @coroutine
 def point_density(target, weight_key=None, weight_flashes=True,
-        flash_id_key='flash_id'):
+        flash_id_key='flash_id', event_grid_area_fraction_key=None):
     """ Sends event x, y, z location directly. If weight_key is provided
     also extract the weights from the flash data with variable name matching
     weight_key. if weight_flashes=False, use the event data instead of the

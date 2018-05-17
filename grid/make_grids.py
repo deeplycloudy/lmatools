@@ -416,7 +416,18 @@ class FlashGridder(object):
                             'LMA flash specific energy (approx)',
                             'LMA local standard deviation of flash size',
                             'LMA flash total energy (approx)')
-    
+        
+        # In some use cases, it's easier to calculate totals (for area or
+        # energy) and then divide at the end. This dictionary maps numerator
+        # to denominator, with an index corresponding to self.outgrids.
+        # The avearge is then calculated on output with numerator_out =
+        # numerator/denominator. For example to calculate average energy
+        # instead of total energy:
+        #    self.divide_grids[6]=0 
+        # and change the labels in field_names, etc. to read as averages
+        # instead of totals.
+        self.divide_grids = {}
+
         if self.proj_name=='latlong':
             density_units = "grid"
             density_units_3d = "grid"
@@ -550,7 +561,12 @@ class FlashGridder(object):
         file_iter = list(zip(
                      outfiles, self.outgrids, self.field_names, 
                      self.field_descriptions, self.field_units, self.outformats))
-        for (outfile, grid, field_name, description, units, outformat) in file_iter:
+        for i, (outfile, grid, field_name, description, units, outformat) in enumerate(file_iter):
+            if i in self.divide_grids:
+                denom = self.outgrids[self.divide_grids[i]]
+                zeros = (denom == 0) | (grid == 0)
+                grid = grid/denom
+                grid[zeros] = 0 # avoid nans
             log.info("Preparing to write NetCDF %s".format(outfile))
             output_writer(outfile, t_ref, np.asarray(t_edges_seconds[:-1]),
                           x_coord*spatial_scale_factor, 
