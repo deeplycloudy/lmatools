@@ -229,7 +229,7 @@ def write_cf_netcdf_3d(outfile, t_start, t, xloc, yloc, zloc, lon_for_x, lat_for
     alts.standard_name="altitude"
     alts.units = "meters"
 
-    lightning3d = nc_out.createVariable(grid_var_name, format, ('ntimes','nx','ny', 'nz') )#, filters=no_compress)
+    lightning3d = nc_out.createVariable(grid_var_name, format, ('ntimes','nx','ny', 'nz'), zlib=True)#, filters=no_compress)
     lightning3d.long_name=grid_description #'LMA VHF event counts (vertically integrated)'
     lightning3d.units='dimensionless'
     lightning3d.coordinates='time lons lats alts'
@@ -291,7 +291,7 @@ def write_cf_netcdf_3d_latlon(outfile, t_start, t, xloc, yloc, zloc, lon_for_x, 
     times.long_name="time"
     times.units = "seconds since %s" % t_start.strftime('%Y-%m-%d %H:%M:%S')
     
-    lightning3d = nc_out.createVariable(grid_var_name, format, ('ntimes','lon','lat','alt') )#, filters=no_compress)
+    lightning3d = nc_out.createVariable(grid_var_name, format, ('ntimes','lon','lat','alt'), zlib=True )#, filters=no_compress)
     lightning3d.long_name=grid_description #'LMA VHF event counts (vertically integrated)'
     lightning3d.units=kwargs['grid_units']
     # lightning3d.coordinates='time lons lats alts'
