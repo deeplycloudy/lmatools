@@ -148,8 +148,6 @@ def calculate_flash_stats(flash, min_pts=2):
             # NOT cvh.area - it is the perimeter in 2D. 
             # cvh.area is the surface area in 3D.
             area = cvh.volume
-        except ImportError:
-            logger.error("*** Flash area not calculated - requires delaunay from or matplotlib or scipy")
         except IndexError:
             # tends to happen when a duplicate point causes the point count to
             # drop to 2, leading to a degenerate polygon with no area

@@ -14,6 +14,7 @@ except ImportError:
     from scipy.io.netcdf import NetCDFFile
 
 # from pylab import figure, get_cmap, colorbar
+import matplotlib
 from matplotlib.figure import figaspect, Figure
 from matplotlib.colorbar import ColorbarBase
 from matplotlib.cm import get_cmap
@@ -199,7 +200,10 @@ def make_plot_3d(grid, grid_name, x, y, all_z, t, grid_t_idx, grid_x_idx, grid_z
     pad = 0.0 # for time labels in each frame
 
     for ax in p.multiples.flat:
-        ax.set_axis_bgcolor('white')
+        if int(matplotlib.__version__[0]) <= 1:
+            ax.set_axis_bgcolor('white')
+        else:
+            ax.set_facecolor('white')
         ax.spines['top'].set_edgecolor(frame_color)
         ax.spines['bottom'].set_edgecolor(frame_color)
         ax.spines['left'].set_edgecolor(frame_color)
@@ -329,7 +333,10 @@ def make_plot(filename, grid_name, x_name='x', y_name='y', t_name='time',
     pad = 0.0 # for time labels in each frame
     
     for ax in p.multiples.flat:
-        ax.set_axis_bgcolor('black')
+        if int(matplotlib.__version__[0]) <= 1:
+            ax.set_axis_bgcolor('black')
+        else:
+            ax.set_facecolor('black')
         ax.spines['top'].set_edgecolor(frame_color)
         ax.spines['bottom'].set_edgecolor(frame_color)
         ax.spines['left'].set_edgecolor(frame_color)
