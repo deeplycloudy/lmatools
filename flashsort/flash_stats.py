@@ -4,7 +4,7 @@ import numpy as np
 import logging
 import re
 
-from scipy.spatial import Delaunay
+from scipy.spatial import Delaunay, ConvexHull
 from scipy.misc import factorial
 from scipy.spatial.qhull import QhullError
 from six.moves import range
@@ -144,12 +144,10 @@ def calculate_flash_stats(flash, min_pts=2):
     if flash.pointCount > 2:
         try:
             # find the convex hull and calculate its area
-            # There's a patch to deal with duplicate points - mpl has it as of 0.98.6svn
-            # scipy scikits.delaunay has it after r745
-            from matplotlib import delaunay
-            tri = delaunay.Triangulation(x,y)
-            hull = tri.hull
-            area = poly_area(tri.x[hull], tri.y[hull])
+            cvh = ConvexHull(np.vstack((x,y)).T)
+            # NOT cvh.area - it is the perimeter in 2D. 
+            # cvh.area is the surface area in 3D.
+            area = cvh.volume
         except ImportError:
             logger.error("*** Flash area not calculated - requires delaunay from or matplotlib or scipy")
         except IndexError:
