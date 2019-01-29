@@ -70,7 +70,7 @@ def write_cf_netcdf_latlon(outfile, t_start, t, xloc, yloc,
             proj.longitude_of_prime_meridian = 0.0 
             proj.semi_major_axis = 6378137.0 
             proj.inverse_flattening = 298.257223563 
-        elif is_projected:
+        elif is_fixedgrid:
             proj.long_name = 'GOES-R ABI fixed grid projection'
             proj.grid_mapping_name = 'geostationary'
             proj.perspective_point_height = 35786023.0
