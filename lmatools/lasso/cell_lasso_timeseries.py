@@ -6,8 +6,6 @@ from lmatools.io.LMA_h5_file import LMAh5Collection
 from lmatools.grid.make_grids import time_edges, seconds_since_start_of_day
 from lmatools.grid.density_to_files import ArrayChopper, stack_chopped_arrays
 
-from lmatools.lasso.energy_stats import TimeSeriesPolygonLassoFilter 
-
 class TimeSeriesGenericFlashSubset(object):
     """ This class is not meant to be used alone. A subclass which provides
         self.lma corresponding to the LMAh5Collection API is necessary.
@@ -98,6 +96,12 @@ class TimeSeriesPolygonFlashSubset(TimeSeriesFlashSubset):
         # could also accept coord_names and time_key kwargs here, but those
         # should be standardized in the lmatools h5 format, so we hard code
         # them below
+        
+        # This is here because the PolygonLassoFilter imports matplotlib
+        # and we don't want other imports from this module that don't
+        # need matplotlib to trigger a matplotlib import
+        from lmatools.lasso.energy_stats import TimeSeriesPolygonLassoFilter 
+        
         self.polys = kwargs.pop('polys', [])
         self.t_edges_polys = kwargs.pop('t_edges_polys', [])
 

@@ -13,6 +13,14 @@ class NLDNdataFile(object):
                   'date_dtype':[('year','i2'),('month','i1'),('day','i1')],
                   'time_dtype':[('hour','i1'),('minute','i1'),('second','float64')]
                  }
+
+    stroke_ICCG = {'columns':[ ('date','S10'), ('time','S20'),
+                              ('lat','f4'), ('lon','f4'),
+                              ('peak_current','f4'), ('ICCG','S1'),
+                              ],
+                  'date_dtype':[('year','i2'),('month','i1'),('day','i1')],
+                  'time_dtype':[('hour','i1'),('minute','i1'),('second','float64')]
+                 }
     
     def __init__(self, filename, date_sep='-', time_sep=':', format='stroke_DC3'):
         """ Load NLDN data from a file, into a numpy named array stored in the

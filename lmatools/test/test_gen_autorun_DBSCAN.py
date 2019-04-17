@@ -61,7 +61,7 @@ def test_sort_and_grid_and_plot(outpath):
     info.write(str(params))
     info.close()
     
-    if False:
+    if True:
         cluster = DBSCANFlashSorter(params).cluster
         sort_files(files, outdir, cluster)
     # Figure out which HDF5 files were created
