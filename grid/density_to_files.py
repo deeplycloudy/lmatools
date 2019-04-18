@@ -859,7 +859,8 @@ def accumulate_minimum_on_grid(grid, xedge, yedge, out=None, label='', grid_frac
                     grid = count
                     out['out'] = grid
                 else:
-                    grid[:] = np.minimum(grid, count.astype(grid.dtype))
+                    # Use max of negative to avoid pulling in zeros.
+                    grid[:] = -np.maximum(-grid, -count.astype(grid.dtype))
                 del count
             del x, y, weights
             gc.collect()
