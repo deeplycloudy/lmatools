@@ -495,6 +495,7 @@ class FlashGridder(object):
 
     def write_grids(self, outpath = '', output_writer = write_cf_netcdf, 
                     output_writer_3d = write_cf_netcdf_3d,
+                    calculate_2D_lonlat=True,
                     output_filename_prefix="LMA", output_kwargs = {}):
         spatial_scale_factor = self.spatial_scale_factor
         xedge = self.xedge
@@ -520,9 +521,18 @@ class FlashGridder(object):
         assert x_all.shape[1] == ny
         z_all = np.zeros_like(x_all)
 
-        lons, lats, alts = x,y,z = geoProj.fromECEF( *mapProj.toECEF(x_all, y_all, z_all) )
-        lons.shape=x_all.shape
-        lats.shape=y_all.shape
+        if calculate_2D_lonlat:
+            log.info("Calculating dense 2D lon lat grid from x y z")
+            lons, lats, alts = x,y,z = geoProj.fromECEF( *mapProj.toECEF(x_all, y_all, z_all) )
+            lons.shape=x_all.shape
+            lats.shape=y_all.shape
+        else:
+            lons = None
+            lats = None
+            alts = None
+            x = None
+            y = None
+            z = None
     
         basename_parts = (output_filename_prefix, 
                           self.start_time.strftime('%Y%m%d_%H%M%S'), 
