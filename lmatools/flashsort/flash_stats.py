@@ -5,7 +5,7 @@ import logging
 import re
 
 from scipy.spatial import Delaunay, ConvexHull
-from scipy.misc import factorial
+from scipy.special import factorial
 from scipy.spatial.qhull import QhullError
 from six.moves import range
 
