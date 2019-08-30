@@ -328,6 +328,7 @@ class RadarCoordinateSystem(CoordinateSystem):
         
     def fromECEF(self, x, y, z):
         """Convert ECEF system to slant range r, azimuth az, and elevation el"""
+        # x = np.atleast1d(x)
         geoSys = GeographicSystem()
         geodetic = proj4.Geod(ellps=self.ellps)
         
@@ -347,12 +348,12 @@ class RadarCoordinateSystem(CoordinateSystem):
         
         return r, az, el
 
-class TangentPlaneCartesianSystem:
+class TangentPlaneCartesianSystem(object):
     """ TODO: This function needs to be updated to inherit from CoordinateSystem
         
     """
     
-    def __init__(self, ctrLat, ctrLon, ctrAlt):
+    def __init__(self, ctrLat=0.0, ctrLon=0.0, ctrAlt=0.0):
         self.ctrLat = float(ctrLat)
         self.ctrLon = float(ctrLon)
         self.ctrAlt = float(ctrAlt)
@@ -418,12 +419,37 @@ class TangentPlaneCartesianSystem:
                                        [y1, y2, y3],
                                        [z1, z2, z3]]).squeeze()
         
-        
-        
+    def fromECEF(self, x, y, z):
+        """ Transforms 1D arrays of ECEF x, y, z to the local tangent plane system"""
+        data = vstack((x, y, z))
+        tpXYZ = self.toLocal(data)
+        tpX, tpY, tpZ = tpXYZ[0,:], tpXYZ[1,:], tpXYZ[2,:]
+        return tpX, tpY, tpZ
+
+    def toECEF(self, x, y, z):
+        """ Transforms 1D arrays of x, y, z in the local tangent plane system to ECEF"""
+        data = vstack((x, y, z))
+        ecXYZ = self.fromLocal(data)
+        ecX, ecY, ecZ = ecXYZ[0,:], ecXYZ[1,:], ecXYZ[2,:]
+        return ecX, ecY, ecZ
+
     def toLocal(self, data):
-        """Transforms 3xN array of data (position vectors) in the ECEF sytem to the local tangent plane cartesian system.
-           Returns another 3xN array 
+        """Transforms 3xN array of data (position vectors) in the ECEF system to
+           the local tangent plane cartesian system.
+
+           Returns another 3xN array.
         """
-        return array( [ dot(self.TransformToLocal, (v-self.centerECEF)[:,None]) for v in data[0:3,:].transpose()]).squeeze().transpose()
-        
+        return array( [ dot(self.TransformToLocal, (v-self.centerECEF)[:,None])
+                        for v in data[0:3,:].transpose()]
+                    ).squeeze().transpose()
+
+    def fromLocal(self, data):
+        """Transforms 3xN array of data (position vectors) in the local tangent
+           plane cartesian system to the ECEF system.
+
+           Returns another 3xN array.
+        """
         #Transform from local to ECEF uses transpose of the TransformToLocal matrix
+        return array( [ (dot(self.TransformToLocal.transpose(), v) + self.centerECEF)
+                        for v in data[0:3,:].transpose()]
+                    ).squeeze().transpose()
