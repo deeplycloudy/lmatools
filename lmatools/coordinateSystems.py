@@ -363,7 +363,7 @@ class TangentPlaneCartesianSystem(object):
         self.centerECEF = array(proj4.transform(ERSlla, ERSxyz, ctrLon, ctrLat, ctrAlt))
         
         #location of point directly above local center
-        aboveCenterECEF = array(proj4.transform(ERSlla, ERSxyz, ctrLon, ctrLat, self.ctrAlt+1))
+        aboveCenterECEF = array(proj4.transform(ERSlla, ERSxyz, ctrLon, ctrLat, self.ctrAlt+1e3))
         
         #normal vector to earth's surface at the center is the local z direction
         n = aboveCenterECEF - self.centerECEF
@@ -382,9 +382,9 @@ class TangentPlaneCartesianSystem(object):
         # Point just to the north of the center on earth's surface, projected onto the tangent plane
         # This calculation seems like it should only be done with latitude/north since the local x 
         #   direction curves away along a non-straight line when projected onto the plane
-        northCenterECEF = array(proj4.transform(ERSlla, ERSxyz, self.ctrLon, self.ctrLat+0.01, self.ctrAlt))
+        northCenterECEF = array(proj4.transform(ERSlla, ERSxyz, self.ctrLon, self.ctrLat+1.01, self.ctrAlt))
         localy = dot(P, northCenterECEF[:,None] )
-        localy = -localy / norm(localy) # negation gets x and y pointing in the right direction
+        localy = localy / norm(localy)
         
         
         #local x is y (cross) z to get an orthogonal system
