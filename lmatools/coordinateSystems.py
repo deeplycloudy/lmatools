@@ -199,10 +199,11 @@ class GeostationaryFixedGridSystem(CoordinateSystem):
         Satellite height is with respect to the ellipsoid. Fixed grid
         coordinates are in radians.
         """
+        # self.ECEFxyz = proj4.Proj(proj='cart', ellps=ellipse)#, datum=datum)
         self.ECEFxyz = proj4.Proj(proj='geocent', ellps=ellipse)#, datum=datum)
         self.fixedgrid = proj4.Proj(proj='geos', lon_0=subsat_lon,
             lat_0=subsat_lat, h=sat_ecef_height, x_0=0.0, y_0=0.0, 
-            units='m', sweep=sweep_axis)
+            units='m', sweep=sweep_axis, ellps=ellipse)
         self.h=sat_ecef_height
             
     def toECEF(self, x, y, z):
