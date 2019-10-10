@@ -10,8 +10,8 @@ goesr_nadir_lon = {
 }
 
 goesr_full = { # all values in radians on the fixed grid
-    # The spans here match the values in L1b PUG table 5.1.2.7-4 but 
-    # when combined with the 10 km resolution give two (2) fewer 
+    # The spans here match the values in L1b PUG table 5.1.2.7-4 but
+    # when combined with the 10 km resolution give two (2) fewer
     # pixels than claimed in table 5.1.2.6
     'spanEW': 0.151872*2.0,
     'spanNS': 0.151872*2.0,
@@ -67,17 +67,17 @@ goesr_resolutions = {
 
 
 def get_GOESR_coordsys(sat_lon_nadir = -75.0):
-    """ 
-    Values from the GOES-R PUG Volume 3, L1b data 
-    
-    Returns geofixcs, grs80lla: the fixed grid coordinate system and the 
+    """
+    Values from the GOES-R PUG Volume 3, L1b data
+
+    Returns geofixcs, grs80lla: the fixed grid coordinate system and the
     latitude, longitude, altitude coordinate system referenced to the GRS80
     ellipsoid used by GOES-R as its earth reference.
     """
     goes_sweep = 'x' # Meteosat is 'y'
     ellipse = 'GRS80'
     datum = 'WGS84'
-    sat_ecef_height=35786023.0        
+    sat_ecef_height=35786023.0
     geofixcs = GeostationaryFixedGridSystem(subsat_lon=sat_lon_nadir,
                    ellipse=ellipse, datum=datum, sweep_axis=goes_sweep,
                    sat_ecef_height=sat_ecef_height)
@@ -87,29 +87,39 @@ def get_GOESR_coordsys(sat_lon_nadir = -75.0):
 def get_GOESR_grid(position='east', view='full', resolution='2.0km'):
     """
     This helper function returns specifications of the GOES-R fixed grids.
-    
+
     position is ['east'|'west'|'test']
     resolution is ['0.5km'|'1.0km'|'2.0km'|'4.0km'|'10.0km']
     view is ['full'|'conus'|'meso']
-    
+
     returns a dictionary with the keys 'resolution', 'spanEW', 'spanNS',
-        'pixelsEW', 'pixelsNS', 'nadir_lon', and (for all non-meso sectors) 
+        'pixelsEW', 'pixelsNS', 'nadir_lon', and (for all non-meso sectors)
         'centerEW', 'centerNS'.
-        values are radians, except for the integer 
+        values are radians, except for the integer
     """
     assert position in ['east', 'west', 'test']
     assert view in ['full', 'conus', 'meso']
     assert resolution in goesr_resolutions.keys()
-    
+
+    sector = view
+
     # namespace = __import__(__name__)
     view = globals()['goes'+position+"_"+view].copy()
+
+    # according to scott's suggestion, change goes_west conus domain to
+    # 'mirror of East conus (from Eric) + west boundary of original WEST conus'
+    # by feng Jun 11, 2019
+    if position == 'west' and sector == 'conus':
+       view['spanEW'] = 0.172732
+       view['centerEW'] = 0.015652
+
     view['resolution'] = goesr_resolutions[resolution]
     view['pixelsEW'] = int(view['spanEW']/view['resolution'])
     view['pixelsNS'] = int(view['spanNS']/view['resolution'])
     view['nadir_lon'] = goesr_nadir_lon[position]
-    
+
     return view
-    
+
 if __name__ == '__main__':
     for pos in ['east', 'west', 'test']:
         for view in ['full', 'conus', 'meso']:
