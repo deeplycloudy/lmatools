@@ -24,7 +24,6 @@ a few more del statements might be needed.
 from __future__ import absolute_import
 from __future__ import print_function
 import numpy as np
-from six.moves import zip
 
 
 def coroutine(func):

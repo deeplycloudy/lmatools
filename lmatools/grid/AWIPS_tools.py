@@ -4,7 +4,6 @@ import datetime
 import scipy.io.netcdf as nc
 import glob
 from .make_grids import grid_h5flashfiles
-from six.moves import range
 
 def write_AWIPS_netcdf_grid(outfile, t_start, t, xloc, yloc, lon_for_x, lat_for_y, 
                 ctr_lat, ctr_lon, grid, grid_var_name, grid_description, format='i',

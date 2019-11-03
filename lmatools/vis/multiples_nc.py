@@ -23,7 +23,6 @@ from matplotlib.dates import mx2num, date2num, DateFormatter
 from matplotlib.backends.backend_agg import FigureCanvasAgg  
 
 from math import ceil
-from six.moves import range
 
 #import pytz
 #tz=pytz.timezone('US/Eastern') # Why, oh, why, is it using my local time zone?

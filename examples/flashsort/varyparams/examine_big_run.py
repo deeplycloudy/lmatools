@@ -3,7 +3,6 @@ from __future__ import print_function
 import os
 import glob
 import tables as T
-from six.moves import zip
 
 base_out_dir = '/Users/ebruning/out/flash_sort/'
 params_filename = 'input_params.py'

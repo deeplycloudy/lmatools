@@ -20,7 +20,6 @@ from lmatools.stream.subset import broadcast
 from lmatools.io.LMA_h5_file import read_flashes, to_seconds
 
 from lmatools.coordinateSystems import MapProjection, GeographicSystem
-from six.moves import range
 
 from .cf_netcdf import (write_cf_netcdf, write_cf_netcdf_3d,
     write_cf_netcdf_latlon, write_cf_netcdf_3d_latlon,

@@ -11,7 +11,6 @@ from lmatools.flashsort.autosort.autorun_sklearn import cluster
 
 from lmatools.grid.make_grids import grid_h5flashfiles, dlonlat_at_grid_center, write_cf_netcdf_latlon
 from lmatools.vis.multiples_nc import make_plot
-from six.moves import map
 
 
 def get_sample_data_list():
