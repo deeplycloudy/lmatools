@@ -9,8 +9,6 @@ from lmatools.io.LMA_h5_file import read_flashes
 from lmatools.stream.subset import coroutine, Branchpoint
 
 from lmatools.flashsort.flash_stats import hull_volume
-from six.moves import range
-from six.moves import zip
 
 def gen_flash_events(events, flashes):
     """ Given events and flashes tables, generate

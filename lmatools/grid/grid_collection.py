@@ -12,8 +12,7 @@ except ImportError:
     from scipy.io.netcdf import NetCDFFile
 
 from lmatools.vis.multiples_nc import centers_to_edges
-from six.moves import range
-        
+
 class LMAgridFileCollection(object):
     def __init__(self, filenames, grid_name, 
                  x_name='x', y_name='y', t_name='time'):

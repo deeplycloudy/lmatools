@@ -4,7 +4,7 @@ import itertools
 
 import numpy as np
 from scipy import sparse
-from six.moves import range
+
 
 def interpolation_matrix(A_in, alpha, ignore_negative=True, should_dilute=True, dilutThresh=0.1, dilutLimit=1.0, is_laplac=True):
     """ Create an interpolation matrix according to the given matrix A and a threshold alpha.

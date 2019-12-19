@@ -5,7 +5,6 @@ import gc
 import numpy as np
 from lmatools.stream.subset import coroutine
 from lmatools.density_tools import unique_vectors
-from six.moves import zip
 
 import logging
 log = logging.getLogger(__name__)
