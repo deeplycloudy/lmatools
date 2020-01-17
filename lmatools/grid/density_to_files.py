@@ -5,7 +5,6 @@ import gc
 import numpy as np
 from lmatools.stream.subset import coroutine
 from lmatools.density_tools import unique_vectors
-from six.moves import zip
 
 import logging
 log = logging.getLogger(__name__)
@@ -808,6 +807,70 @@ def accumulate_points_on_grid_sdev_3d(grid, grid2, xedge, yedge, zedge, out=None
             gc.collect()
     except GeneratorExit:
         out['out'] = grid
+
+
+#####For Minima of extensive quantities:
+@coroutine
+def accumulate_minimum_on_grid(grid, xedge, yedge, out=None, label='', grid_frac_weights=True):
+    """
+    Instead of adding values from the counts produced from new blobs of data as
+    they arrive, take the minimum of the previous value and the new value at
+    each grid location. Logic prior to this function must eliminate all but one
+    of the values at each grid cell, since the histogram process accumulates
+    all of the values at that grid cell location for the blob of data that.
+    arrives.
+    """
+    assert xedge.shape[0] == grid.shape[0]+1
+    assert yedge.shape[0] == grid.shape[1]+1
+    if out == None:
+        out = {}
+    # grid = None
+    try:
+        while True:
+            if grid_frac_weights:
+                x, y, weights, grid_frac = (yield)
+            else:
+                x, y, weights = (yield)
+                grid_frac=None
+            if len(x) > 0:
+                x = np.atleast_1d(x)
+                y = np.atleast_1d(y)
+                log.info(('accumulating ', len(x), 'points for ', label))
+                count, edges = np.histogramdd((x,y), bins=(xedge, yedge), weights=grid_frac, normed=False)    
+                
+                if weights is not None:
+                    have_weights = True
+                    # histogramdd sums up weights in each bin for normed=False
+                    if grid_frac is not None:
+                        weights = weights*grid_frac
+                    total, edges = np.histogramdd((x,y), bins=(xedge, yedge),
+                        weights=weights, normed=False)
+                    # return the mean of the weights in each bin
+                    bad = (count <= 0)
+                    count = np.asarray(total, dtype='float32')#/count 
+                    count[bad] = 0.0
+                    del total, edges, bad
+    
+                # using += (as opposed to grid = grid + count) is essential
+                # so that the user can retain a reference to the grid object
+                # outside this routine.
+                if grid is None:
+                    grid = count
+                    out['out'] = grid
+                else:
+                    hascount, hasgrid = (count > 0), (grid > 0)
+                    compboth = hasgrid & hascount
+                    countonly = np.isclose(grid, 0) & hascount
+                    minboth = np.minimum(grid[compboth],
+                              count[compboth].astype(grid.dtype))
+                    grid[compboth] = minboth
+                    grid[countonly] = count[countonly].astype(grid.dtype)
+                del count
+            del x, y, weights
+            gc.collect()
+    except GeneratorExit:
+        out['out'] = grid
+
         
 #####FOR TOTAL ENERGY:
 @coroutine

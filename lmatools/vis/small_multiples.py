@@ -1,7 +1,6 @@
 from __future__ import absolute_import
 import matplotlib 
-from six.moves import range
-matplotlib.rc('xtick', labelsize=6) 
+matplotlib.rc('xtick', labelsize=6)
 matplotlib.rc('ytick', labelsize=6) 
 
 

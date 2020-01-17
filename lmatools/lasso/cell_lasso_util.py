@@ -5,7 +5,6 @@ from datetime import datetime, timedelta
 import logging, json, operator
 
 import numpy as np
-from six.moves import zip
 
 from lmatools.io.LMA_h5_file import parse_lma_h5_filename
 

@@ -4,9 +4,6 @@ import os, re #, gzip
 import numpy as np
 import logging
 import subprocess
-from six.moves import map
-from six.moves import range
-from six.moves import zip
 
 logger = logging.getLogger('FlashAutorunLogger')
 
