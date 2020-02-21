@@ -2,6 +2,7 @@ from __future__ import absolute_import
 from __future__ import print_function
 import os, sys, re
 import glob
+import gzip
 import tempfile
 import shutil
 import subprocess
@@ -32,8 +33,14 @@ def sort_files(files, output_path, clusterer):
         try:
             file_base_name = os.path.split(a_file)[-1].replace('.gz', '')
             outfile = os.path.join(output_path, file_base_name+'.flash')
-            
-            lmadata = LMADataset(a_file)
+            with gzip.open(a_file) as f: 
+                for line_no, line in enumerate(f):
+                    if line.startswith(b'Data format:'):
+                        file_mask_length = int(line.decode().split(' ')[-1][:-2])
+                        # print (file_mask_length)
+                        break
+
+            lmadata = LMADataset(a_file,file_mask_length=file_mask_length)
             clusterer(lmadata)
             
             outfile_with_extension = outfile + '.h5'
