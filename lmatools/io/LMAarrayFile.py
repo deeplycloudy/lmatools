@@ -74,7 +74,7 @@ def mask_to_int(mask):
 
 class LMAdataFile(object):
     
-    def __init__(self, filename, iterator=False, mask_length=4):
+    def __init__(self, filename, iterator=False):
         """ iterator=True makes self.data an iterator yielding individual event records"""
         self.filename=filename
         self.iterator=iterator
@@ -85,8 +85,20 @@ class LMAdataFile(object):
         self.startmonth=1
         self.startday=1
         self.startyear=0
+        self.mask_length = 0
         self.starthour, self.startminute, self.startsecond = 0, 0, 0
-        
+
+        # Could read the mask length here, but that would mean opening/closing the 
+        #   file twice. Use this if there are issues
+        # if self.filename.find('.gz') >= 0:
+        #     with gzip.open(filename) as f: 
+        #         for line_no, line in enumerate(f):
+        #             if line.startswith(b'Data format:'):
+        #                 self.mask_length = int(line.decode().split(' ')[-1][:-2])
+        #                 # print (file_mask_length)
+        #                 break
+        # f.close()
+
         # This dictionary is used to match getattr calls for lat, lon, etc.
         #   with column names as indicated in the LMA data file header
         #   To a user of this object, the dictionary keys become attribute
@@ -112,7 +124,8 @@ class LMAdataFile(object):
                                 'lon':       float,
                                 'chi2':      float,
                                 'power':     float,
-                                'mask':      'S{0:d}'.format(mask_length),
+                                'mask':      'S{0:d}'.format(2),
+                                # 'mask':      'S{0:d}'.format(mask_length),
                                 # 'mask':      object,
                                 # 'mask':      str,
                                 'alt':       float,
@@ -228,6 +241,9 @@ class LMAdataFile(object):
         isColumnHeaderLine = r"^Data:(.*)"
         matchDataFormatLine = re.compile(isColumnHeaderLine, re.IGNORECASE)
 
+        DataFormatLine = r"^Data format: (.*)"
+        matchDataFormatLines = re.compile(DataFormatLine, re.IGNORECASE | re.MULTILINE)
+
         isDataStartTime = r"^Data start time:(.*)"
         matchDataStartTimeLine = re.compile(isDataStartTime, re.IGNORECASE)
         
@@ -254,6 +270,11 @@ class LMAdataFile(object):
             secAnalyzedMatch=matchSecAnalyzedLine.search(line)
             if secAnalyzedMatch:
                 self.sec_analyzed = int(secAnalyzedMatch.group(1))
+
+            DataFormatMatchs=matchDataFormatLines.search(line)
+            if DataFormatMatchs:
+                self.mask_length = int(DataFormatMatchs.group(1).split(' ')[-1][:-1])
+                self.columnTypes['mask'] = 'S{0:d}'.format(self.mask_length)
             
         
         n_columns = len(columns)
@@ -277,7 +298,8 @@ class LMAdataFile(object):
         
         thefile.close()
         thefile = self.get_file_obj(notify=False)
-                
+
+              
         if not self.iterator:
             # creates a rec-array
             self.data = np.loadtxt(thefile, dtype={'names':field_names, 'formats':types},

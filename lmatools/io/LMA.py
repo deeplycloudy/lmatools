@@ -76,7 +76,8 @@ class LMADataset(object):
         """
         
         if filename is not None:
-            self.load_data_from_LMA_file(filename, mask_length=file_mask_length)
+            # self.load_data_from_LMA_file(filename, mask_length=file_mask_length)
+            self.load_data_from_LMA_file(filename)
         elif data is not None:
             if basedate is None:
                 e = "Please provide basedate when manually loading data"
@@ -93,7 +94,8 @@ class LMADataset(object):
             self.sec_analyzed = sec_analyzed
             self.header = header
         self.flashes = []
-        
+        print ('Station mask Length =', self.mask_length)
+
     @property
     def startyear(self):
         return self.startdate.year
@@ -138,7 +140,7 @@ class LMADataset(object):
         return m
 
             
-    def load_data_from_LMA_file(self, filename, mask_length=6):
+    def load_data_from_LMA_file(self, filename):
         """ Load data from a single LMA file. Filter data using
             minimum number of stations and maximum chi2 values provided
             in the flashsort params dictionary.
@@ -146,7 +148,8 @@ class LMADataset(object):
             The data are stored in an 
         """
             
-        lma=LMAdataFile(filename, mask_length = mask_length)
+        lma=LMAdataFile(filename)
+        # lma=LMAdataFile(filename, mask_length = mask_length)
         # make sure the number of stations are calculated from the mask
         # see the implementation of LMAdataFile.__get_attr__
         stns = lma.stations
@@ -159,6 +162,7 @@ class LMADataset(object):
                             lma.startsecond)
         self.sec_analyzed = lma.sec_analyzed
         self.data = lma.data
+        self.mask_length = lma.mask_length
         # return (lma, data)
     
     def filter_data(self, params):
@@ -194,4 +198,4 @@ class LMADataset(object):
         """ Thin wrapper around common h5 writer; makes use of metadata
             and flashes already stored as attributes.
         """
-        write_h5(outfile, self.flashes, self.metadata, orig_LMA_file)
+        write_h5(outfile, self.flashes, self.metadata, orig_LMA_file, self.mask_length)
