@@ -5,7 +5,7 @@ from lmatools.io.LMA_h5_write import write_h5
 from lmatools.io.LMAarrayFile import LMAdataFile
 
 class LMADataset(object):    
-    def __init__(self, filename=None, file_mask_length=6, 
+    def __init__(self, filename=None,  
                  data=None, basedate=None, startdate=None,
                  sec_analyzed=None, header=''):
         """ Create a new LMA Dataset which can be used in a standardized way 
