@@ -71,9 +71,10 @@ class GeographicSystem(CoordinateSystem):
             self.ERSlla = proj4.Proj(proj='latlong', ellps=ellipse, datum=datum)
         self.ERSxyz = proj4.Proj(proj='geocent', ellps=ellipse, datum=datum)
     def toECEF(self, lon, lat, alt):
-        lat = atleast_1d(lat)
+        lat = atleast_1d(lat) # proj doesn't like scalars
         lon = atleast_1d(lon)
         alt = atleast_1d(alt)
+        if (lat.shape[0] == 0): return lon, lat, alt # proj doesn't like empties
         projectedData = array(proj4.transform(self.ERSlla, self.ERSxyz, lon, lat, alt ))
         if len(projectedData.shape) == 1:
             return projectedData[0], projectedData[1], projectedData[2]
@@ -81,9 +82,10 @@ class GeographicSystem(CoordinateSystem):
             return projectedData[0,:], projectedData[1,:], projectedData[2,:]
 
     def fromECEF(self, x, y, z):
-        x = atleast_1d(x)
+        x = atleast_1d(x) # proj doesn't like scalars
         y = atleast_1d(y)
         z = atleast_1d(z)
+        if (x.shape[0] == 0): return x, y, z # proj doesn't like empties
         projectedData = array(proj4.transform(self.ERSxyz, self.ERSlla, x, y, z ))
         if len(projectedData.shape) == 1:
             return projectedData[0], projectedData[1], projectedData[2]

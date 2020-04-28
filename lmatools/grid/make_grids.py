@@ -174,7 +174,7 @@ class FlashGridder(object):
         zedge=np.arange(z_bnd[0], z_bnd[1]+dz, dz) 
     
         if self.proj_name == 'latlong':
-            dx_units = '{0:6.4f}deg'.format(dx)
+            dx_units = '{0:6.4f}deg'.format(float(dx))
             mapProj = GeographicSystem()
         elif self.proj_name == 'pixel_grid':
             dx_units = 'pixel'
@@ -183,7 +183,7 @@ class FlashGridder(object):
             dx_units = '{0:03d}urad'.format(int(dx*1e6))
             mapProj = pixel_coords
         else:
-            dx_units = '{0:5.1f}m'.format(dx)
+            dx_units = '{0:5.1f}m'.format(float(dx))
             mapProj = MapProjection(projection=self.proj_name, ctrLat=ctr_lat, ctrLon=ctr_lon, lat_ts=ctr_lat, 
                                 lon_0=ctr_lon, lat_0=ctr_lat, lat_1=ctr_lat, ellipse=proj_ellipse, datum=proj_datum)
         geoProj = GeographicSystem()
