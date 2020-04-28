@@ -61,6 +61,7 @@ def countBits(values):
     
 def mask_to_int(mask):
     """ Convert object array of mask strings to integers"""
+    mask = np.atleast_1d(mask)
     if len(mask.shape) == 0:
         mask_int = np.asarray([], dtype=int)
     else:
@@ -171,7 +172,6 @@ class LMAdataFile(object):
         if mask is None: return None
         
         mask = mask_to_int(mask)
-        
         try:
             stationCount = countBits(mask)
         except:
@@ -304,7 +304,10 @@ class LMAdataFile(object):
             # creates a rec-array
             self.data = np.loadtxt(thefile, dtype={'names':field_names, 'formats':types},
                                             converters=converters, skiprows=len(self.header))
-    
+            if ('mask' in self.field_names) & ('station' not in self.field_names):
+                # Read the stations property, which triggers checking for the
+                # adding the column to the data structure
+                stations = self.stations
             # Done with file IO
             thefile.close()
         else:
