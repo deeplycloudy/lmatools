@@ -174,7 +174,7 @@ if __name__ == '__main__':
               'distance':3000.0, 'thresh_critical_time':0.15, # space and time grouping thresholds
               'thresh_duration':3.0, # maximum expected flash duration
               'ctr_lat':33.5, 'ctr_lon':-101.5, #center lat/lon to use for flash sorting, gridding
-              'mask_length':6, # length of the hexadecimal station mask column in the LMA ASCII files
+              # 'mask_length':6, # length of the hexadecimal station mask column in the LMA ASCII files
               }
     center_ID='WTLMA'
     

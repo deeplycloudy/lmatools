@@ -40,21 +40,6 @@ def mask_strings_to_stations(masks):
     stations = countBits(mask_int)
     return stations
 
-class Event(T.IsDescription):
-    # ascii line for all these data are 64 bytes + 4 for station count + 4 for charge = 72
-    
-    # 64+32*5+8+8+4*8 = 272 bytes per record
-
-    time = T.Float64Col()       # Seconds elapsed since start of day
-    lat  = T.Float32Col()       # Decimal latitude
-    lon  = T.Float32Col()       # Decimal longitude
-    alt  = T.Float32Col()       # Altitude, km MSL, WGS84
-    chi2 = T.Float32Col()       # Chi-squared solution quality
-    power= T.Float32Col()       # Radiated power
-    stations = T.UInt8Col()     # Station count
-    charge   = T.Int8Col()      # Inferred storm charge
-    flash_id    = T.Int32Col()     # Flash ID
-    mask     = T.StringCol(4)   # Station mask
 
 class Flash(T.IsDescription):
     flash_id = T.Int32Col()   # Flash ID
@@ -75,8 +60,7 @@ class Flash(T.IsDescription):
     specific_energy = T.Float32Col()    #tot_energy
         
 
-
-def write_h5(outfile, flashes, metadata, orig_LMA_file):
+def write_h5(outfile, flashes, metadata, orig_LMA_file, mask_length):
     # file_parts = lma.filename.split('.')[0].split('_')
     # time_code  = 'LMA_'+'_'.join(file_parts[1:])
     # LMA_090329_180000_3600
@@ -85,6 +69,22 @@ def write_h5(outfile, flashes, metadata, orig_LMA_file):
                                 m.starthour, m.startminute, m.startsecond, m.sec_analyzed)
     # orig_columns_LYLOUT = m.columns
     
+    class Event(T.IsDescription):
+        # ascii line for all these data are 64 bytes + 4 for station count + 4 for charge = 72
+        
+        # 64+32*5+8+8+4*8 = 272 bytes per record
+
+        time = T.Float64Col()       # Seconds elapsed since start of day
+        lat  = T.Float32Col()       # Decimal latitude
+        lon  = T.Float32Col()       # Decimal longitude
+        alt  = T.Float32Col()       # Altitude, km MSL, WGS84
+        chi2 = T.Float32Col()       # Chi-squared solution quality
+        power= T.Float32Col()       # Radiated power
+        stations = T.UInt8Col()     # Station count
+        charge   = T.Int8Col()      # Inferred storm charge
+        flash_id    = T.Int32Col()     # Flash ID
+        mask     = T.StringCol(mask_length)   # Station mask
+
     h5file = T.open_file(outfile, mode='w', title='Flash-sorted New Mexico Tech LMA Data')
     group  = h5file.create_group('/', 'events', 'Analyzed detected events')
     table  = h5file.create_table(group, time_code, Event, time_code)
