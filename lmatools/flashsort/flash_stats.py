@@ -96,21 +96,17 @@ def hull_volume(xyz):
     return volume, vertices, simplex_volumes
 
 ##############ADDED 01/05/2017 ###############
-def energy(area,constant=False):
-    # for f, (flashes, t0, t1) in enumerate(zip(flashes_series, flashes_in_poly.t_edges[:-1], flashes_in_poly.t_edges[1:])):
-        ###Now for charge densities approximated: #####
-        
-    # random = np.random.randn(1)*0.8e3 + 4.1e3#3.5e3
- #    distance = np.abs(random) #Generates random distance between capacitor plates.
-    
-    #New distance based on model comparison: 03-20-17: Assume Constant
-    random = np.abs(np.random.randn(1)*0.2e3 + 1.8e3)
-    distance = np.abs(random)
-    
-    # density = cd.rho_retrieve(area, distance)
-    density = cd.rho_retrieve(area,distance,False,0.4e-9)
-    rho,w = density.calculate()
-    return w
+def energy(area,separation,zinit,constant=False):
+    #Charge separation computed from 27th and 73rd percentiles of 
+    #flash altitude source locations - marks where the most sources are typically
+    #found from synthetic flashes generated in the NSSL COMMAS.
+
+    #random = np.abs(np.random.randn(1)*0.2e3 + 1.8e3)
+    distance = separation #np.abs(random)
+    density  = cd.rho_retrieve(area,distance,zinit,False,0.4e-9)
+    rho,w    = density.calculate()
+    eta_c    = 0.01 #this is a ballpark neutrlization efficiency as found in Salinas et al. [In Progress - 060220]
+    return(eta_c*w)
 ##############################################   
 
 def calculate_flash_stats(flash, min_pts=2):
@@ -139,7 +135,11 @@ def calculate_flash_stats(flash, min_pts=2):
     # sigma_sq = r_sq.sum()/r_sq.shape[0]
     # sigma = np.std(r_sq)
 
+    separation = np.percentile(z,73) - np.percentile(z,27)
+    flash_init_idx = np.argmin(flash.points['time'])
+    zinit = alt[flash_init_idx] #in meters
     area = 0.0
+
     if flash.pointCount > 2:
         try:
             # find the convex hull and calculate its area
@@ -160,7 +160,7 @@ def calculate_flash_stats(flash, min_pts=2):
     if area == 0.0:
         energy_estimate = 0.
     else:        
-        energy_estimate = energy(area/ 1.0e6 )
+        energy_estimate = energy(area/ 1.0e6, separation,zinit, False)
             
     volume = 0.0
     if flash.pointCount > 3:
@@ -204,5 +204,5 @@ def calculate_flash_stats(flash, min_pts=2):
     flash.ctrlon  = lonavg
     flash.volume  = volume / 1.0e9 # km^3, 1000x1000x1000 m
     #CHANGED 03-20-17
-    flash.total_energy  = energy_estimate    #flash.energy ---> flash.tot_energy
+    flash.total_energy    = energy_estimate    #flash.energy ---> flash.tot_energy
     flash.specific_energy = specific_energy  #flash.tot_energy ---> flash.specific_energy

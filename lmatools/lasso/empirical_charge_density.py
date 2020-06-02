@@ -77,10 +77,11 @@ class rho_retrieve(object):
 
     '''
     
-    def __init__(self, area, d, constant, arbitrary_rho):
+    def __init__(self, area, d, zinit,constant, arbitrary_rho):
         self.area = area
         self.d = d  #distance between charge region centers
         self.l = np.sqrt(area*1e6)  #in m
+        self.zinit = zinit
         # self.rho = []
         # self.w = []#electrostatic energy for capcitor plates
         self.e_0 = 8.85418782e-12
@@ -89,8 +90,27 @@ class rho_retrieve(object):
         self.w = 0
         self.constant = False
         self.arbitrary_rho = 0.4e-9
-        
+
+    def rho_br(z):
+        '''
+        Compute critical electric field from initiation altitudes.
+        From the electric field, compute critical charge density.
+        Note: does not assume RBE as breakdown mechanism, simply
+          allows for approximation of electric field upon
+          flash initiation. 
+          
+          args: z = initiation altitude in km 
+                     MUST CONVERT FROM INDEX TO ALTITUDE 
+                     USING GRID SPACING:
+                     
+                     z(km) = (z*125) * 1e-3
+                     
+          returns: rho_critical in kV/m
+        '''
+        rho_a = 1.208 * np.exp(-(z/8.4))
+        return(167.*rho_a)
     
+    #The power law idea is no longer used: Use methods in Salinas et al [In Progress]    
     def rho_powerlaw(self, l):
         #Convergence after 801 iterations of the solution: From leastsq output
         a = 2.83385909218e-09
@@ -107,7 +127,8 @@ class rho_retrieve(object):
         return w
         
     def calculate(self):
-        self.rho = self.rho_powerlaw(self.l*1e-3)
+        self.rho = self.rho_br(self.zinit*1e-3)
+        #self.rho = self.rho_powerlaw(self.l*1e-3)
         if self.constant == False:
             self.w = self.energy_estimation(self.rho, self.d, self.l)
         else: 
