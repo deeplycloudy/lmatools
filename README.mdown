@@ -1,21 +1,41 @@
-As of 16 July 2016, the master branch has preliminary support for Python 3. It makes use of six to support both Python 2.7 and 3+. 
-
-**Requirements**
-numpy, scipy, matplotlib
-pyproj
-pytables
-six
-
-
 Gridded Flash Products using lmatools
 =====================================
+
+Requirements
+------------
+- python 3.6+ (no support for Python 2)
+- numpy
+- scipy
+- pyproj
+
+For flash sorting and plotting:
+
+- scikit-learn
+- pytables
+- matplotlib
+
+
+
+Usage
+-----
+See examples/README for an example of how to
+
+1. Turn LMA ASCII data into HDF5 flash files.
+2. Turn the HDF5 flash data into 2D and 3D grids of flash properties
+3. Make some quick-look plots of the grids.
+4. Use an interactive interface to manually identify cells
+5. Use a log of the cells identified above to calculate flash statistics
 
 Configuration
 -------------
 
-VHF sources are grouped into flashes by first filtering out noise sources by using the reduced chi-squared value and number of contributing stations for each VHF source. Chi-squared of less than 5.0 is typical; 1.0 is the most stringent threshold in wide use. For all but the worst-performing networks, a minimum of six stations should be used; where available, seven or more will give the most noise-free results. These values should be determined by examining the source data for time periods of interest on a case-by-case basis. This step is especially important for networks with frequent station drop-outs, where the network is asymmetric, or where the network has poor sensitivity.
+VHF sources are grouped into flashes by first filtering out noise sources by using the reduced chi-squared value and number of contributing stations for each VHF source. Chi-squared of less than 5.0 is typical; 1.0 is one threshold in wide use. For all but the worst-performing networks, a minimum of six stations should be used; where available, seven or more will give the most noise-free results. These values should be determined by examining the source data for time periods of interest on a case-by-case basis. This step is especially important for networks with frequent station drop-outs, where the network is asymmetric, or where the network has poor sensitivity.
 
-Sources are grouped into flashes using space and time criteria. These default to 3 km spatial and 0.15 second temporal thresholds, with a maximum duration of 3 s. At the moment, the McCaul et al. (2009, Weather and Forecasting) flash sorting algorithm is the only one integrated into this codebase. (Prototype sorting using the clustering features in Python's scikits-learn is now in the repository in lmatools/flashsort/examples/, but is not yet integrated.)
+Sources are grouped into flashes using space and time criteria. These default to 3 km spatial and 0.15 second temporal thresholds, with a maximum duration of 3 s. The only fully integrated algorithm in this codebase uses the DBSCAN clustering features in Python's scikit-learn. The flash sorting process is described in Fuchs et al. (2016),
+
+> Fuchs, B. R., E. C. Bruning, S. A. Rutledge, L. D. Carey, P. R. Krehbiel, and W. Rison, 2016: Climatological analyses of LMA data with an open-source lightning flash-clustering algorithm. J. Geophys. Res. Atmos., 121, 8625–8648, [doi:10.1002/2015JD024663](https://dx.doi.org/10.1002/2015JD024663).
+
+There is historical support for the McCaul et al. (2009, Weather and Forecasting) flash sorting algorithm, but it is not included here. The code architecture supports the addition of other algorithms.
 
 Flashes are turned into gridded products by grabbing a flash, including associated VHF source points, performing filtering to select for certain kinds of flashes, doing necessary coordinate transformations, and then determining how each flash contributes to a gridded product field that has some meaning of interest. A requirement is levied on the minimum number of sources per flash, usually ten. The processing is implemented as a coroutine-style pipeline where flashes are pushed down the pipe before landing on a grid.
 

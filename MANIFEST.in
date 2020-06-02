@@ -1,0 +1,5 @@
+include lmatools/sampledata/ASCII_solutions/LYLOUT_140526_094000_0600.dat.gz
+include lmatools/sampledata/ASCII_solutions/LYLOUT_140526_095000_0600.dat.gz
+include lmatools/sampledata/flashsort-solution/NCGridLassoLog.txt
+include lmatools/sampledata/flashsort-solution/grid_files/*
+include lmatools/sampledata/flashsort-solution/h5_files/*

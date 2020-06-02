@@ -8,9 +8,17 @@ The FlashConnection class takes arguments:
 
    -)positive_sources: [n,3] array for the positive xyz coordinates.
    -)negative_sources: [n,3] array for the negative xyz coordinates.
+<<<<<<< HEAD
    -)Nearest Neighbor Max: The maximum number of points from which a single point is branched to, depending on the proximity of the    point.
    -)Edge Cut-Off: (From AstroPy) A fraction (from 0 to 1) of edges to keep for a cluster of source points.
    -)Minimum Cluster Size: Sets the minimum number of points for a single cluster. For small flashes, a smaller cluster size may be desired.
+=======
+   -)Nearest Neighbor Max: The maximum number of points from which a single point is branched to, 
+    depending on the proximity of the point.
+   -)Edge Cut-Off: (From AstroPy) A fraction (from 0 to 1) of edges to keep for a cluster of source points.
+   -)Minimum Cluster Size: Sets the minimum number of points for a single cluster. 
+     For small flashes, a smaller cluster size may be desired.
+>>>>>>> upstream/master
 
 To run, simply initialize FlashConnection. Functions that produce any desired output are:
 
