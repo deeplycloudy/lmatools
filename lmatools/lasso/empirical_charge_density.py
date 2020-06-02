@@ -77,11 +77,12 @@ class rho_retrieve(object):
 
     '''
     
-    def __init__(self, area, d, zinit,constant, arbitrary_rho):
+    def __init__(self, area, d, zinit,separation,constant, arbitrary_rho):
         self.area = area
         self.d = d  #distance between charge region centers
         self.l = np.sqrt(area*1e6)  #in m
         self.zinit = zinit
+        self.separation=separation
         # self.rho = []
         # self.w = []#electrostatic energy for capcitor plates
         self.e_0 = 8.85418782e-12
@@ -91,7 +92,7 @@ class rho_retrieve(object):
         self.constant = False
         self.arbitrary_rho = 0.4e-9
 
-    def rho_br(z):
+    def rho_br(self,z,separation):
         '''
         Compute critical electric field from initiation altitudes.
         From the electric field, compute critical charge density.
@@ -107,8 +108,12 @@ class rho_retrieve(object):
                      
           returns: rho_critical in kV/m
         '''
+        z = z*1e-3
         rho_a = 1.208 * np.exp(-(z/8.4))
-        return(167.*rho_a)
+        efield=(167.*rho_a)*1e3
+        sig_crit=2*efield*self.e_0
+        rho_crit=sig_crit/separation
+        return(rho_crit)
     
     #The power law idea is no longer used: Use methods in Salinas et al [In Progress]    
     def rho_powerlaw(self, l):
@@ -120,19 +125,18 @@ class rho_retrieve(object):
         self.rho = p_law
         return p_law
         
-    def energy_estimation(self, rho, d, l):
-        k = (rho**2. * d**3.)/(2. * self.e_0)
-        w = k * l**2.
+    def energy_estimation(self, rho, d, area):
+        w = (rho**2. * d**3. * area**2.)/(2. * self.e_0) 
         self.w = w
+        #print(w,area,area*1e-6,d,rho)
         return w
         
     def calculate(self):
-        self.rho = self.rho_br(self.zinit*1e-3)
-        #self.rho = self.rho_powerlaw(self.l*1e-3)
+        self.rho = self.rho_br(self.zinit,self.separation)
         if self.constant == False:
-            self.w = self.energy_estimation(self.rho, self.d, self.l)
+            self.w = self.energy_estimation(self.rho, self.separation, self.area)
         else: 
-            self.w = self.energy_estimation(self.arbitrary_rho, self.d, self.l)
+            self.w = self.energy_estimation(self.arbitrary_rho, self.separation, self.area)
         return self.rho, self.w
         
     # def plot_rho(self):

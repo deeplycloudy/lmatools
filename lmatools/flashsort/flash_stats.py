@@ -103,9 +103,9 @@ def energy(area,separation,zinit,constant=False):
 
     #random = np.abs(np.random.randn(1)*0.2e3 + 1.8e3)
     distance = separation #np.abs(random)
-    density  = cd.rho_retrieve(area,distance,zinit,False,0.4e-9)
+    density  = cd.rho_retrieve(area,distance,zinit,separation,False,0.4e-9)
     rho,w    = density.calculate()
-    eta_c    = 0.01 #this is a ballpark neutrlization efficiency as found in Salinas et al. [In Progress - 060220]
+    eta_c    = 0.008 #this is a ballpark neutrlization efficiency as found in Salinas et al. [In Progress - 060220]
     return(eta_c*w)
 ##############################################   
 
@@ -135,9 +135,9 @@ def calculate_flash_stats(flash, min_pts=2):
     # sigma_sq = r_sq.sum()/r_sq.shape[0]
     # sigma = np.std(r_sq)
 
-    separation = np.percentile(z,73) - np.percentile(z,27)
+    separation = np.abs(np.percentile(z,70) - np.percentile(z,30))
     flash_init_idx = np.argmin(flash.points['time'])
-    zinit = alt[flash_init_idx] #in meters
+    zinit = z[flash_init_idx] #in meters
     area = 0.0
 
     if flash.pointCount > 2:
@@ -160,7 +160,7 @@ def calculate_flash_stats(flash, min_pts=2):
     if area == 0.0:
         energy_estimate = 0.
     else:        
-        energy_estimate = energy(area/ 1.0e6, separation,zinit, False)
+        energy_estimate = energy(area, separation,zinit, False)
             
     volume = 0.0
     if flash.pointCount > 3:
@@ -183,7 +183,7 @@ def calculate_flash_stats(flash, min_pts=2):
     flash_init_idx = np.argmin(flash.points['time'])
     
     ###ROUGH APPROXIMATION FOR NOW: #######################
-    air_density = barotropic_rho(alt[flash_init_idx]*1e-3)
+    air_density = barotropic_rho(z[flash_init_idx]*1e-3)
     if volume == 0.:
         specific_energy = 0.
     else:
