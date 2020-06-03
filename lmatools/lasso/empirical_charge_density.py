@@ -126,7 +126,7 @@ class rho_retrieve(object):
         return p_law
         
     def energy_estimation(self, rho, d, area):
-        w = (rho**2. * d**3. * area**2.)/(2. * self.e_0) 
+        w = (rho**2. * d**3. * area)/(2. * self.e_0) 
         self.w = w
         #print(w,area,area*1e-6,d,rho)
         return w

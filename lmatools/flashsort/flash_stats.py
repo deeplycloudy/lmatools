@@ -135,9 +135,9 @@ def calculate_flash_stats(flash, min_pts=2):
     # sigma_sq = r_sq.sum()/r_sq.shape[0]
     # sigma = np.std(r_sq)
 
-    separation = np.abs(np.percentile(z,70) - np.percentile(z,30))
+    separation = np.abs(np.percentile(alt,73) - np.percentile(alt,27))
     flash_init_idx = np.argmin(flash.points['time'])
-    zinit = z[flash_init_idx] #in meters
+    zinit = alt[flash_init_idx] #in meters
     area = 0.0
 
     if flash.pointCount > 2:
@@ -183,7 +183,7 @@ def calculate_flash_stats(flash, min_pts=2):
     flash_init_idx = np.argmin(flash.points['time'])
     
     ###ROUGH APPROXIMATION FOR NOW: #######################
-    air_density = barotropic_rho(z[flash_init_idx]*1e-3)
+    air_density = barotropic_rho(alt[flash_init_idx]*1e-3)
     if volume == 0.:
         specific_energy = 0.
     else:
