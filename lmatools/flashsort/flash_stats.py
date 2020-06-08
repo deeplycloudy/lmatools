@@ -96,12 +96,12 @@ def hull_volume(xyz):
     return volume, vertices, simplex_volumes
 
 ##############ADDED 01/05/2017 ###############
-def energy(area, separation, zinit, constant=False, eta):
+def energy(area, separation, zinit, constant, eta):
     #Charge separation computed from 27th and 73rd percentiles of 
     #flash altitude source locations - marks where the most sources are typically
     #found from synthetic flashes generated in the NSSL COMMAS.
     #
-    #eta_c = 0.01 is recommended and is a ballpark neutrlization efficiency as found in Salinas et al. [In Progress - 060220]
+    #eta = 0.01 is recommended and is a ballpark neutrlization efficiency as found in Salinas et al. [In Progress - 060220]
 
     distance = separation #np.abs(random)
     density  = cd.rho_retrieve(area, distance, zinit, separation, False, None) #None - No constant charge density specified
