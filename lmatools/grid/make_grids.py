@@ -337,7 +337,7 @@ class FlashGridder(object):
             if energy_grids is not None:
                 if ('specific_energy' == energy_grids) | ('specific_energy' in energy_grids):
                     broadcast_targets += (
-                        project('lon', 'lat', 'alt', mapProj, geoProj, mean_total_energy_target, use_flashes=False),
+                        project('lon', 'lat', 'alt', mapProj, geoProj, mean_energy_target, use_flashes=False),
                         )
                 if ('total_energy' == energy_grids) | ('total_energy' in energy_grids):
                     broadcast_targets += (
