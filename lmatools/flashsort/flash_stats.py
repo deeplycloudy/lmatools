@@ -96,17 +96,17 @@ def hull_volume(xyz):
     return volume, vertices, simplex_volumes
 
 ##############ADDED 01/05/2017 ###############
-def energy(area,separation,zinit,constant=False):
+def energy(area, separation, zinit, constant=False, eta):
     #Charge separation computed from 27th and 73rd percentiles of 
     #flash altitude source locations - marks where the most sources are typically
     #found from synthetic flashes generated in the NSSL COMMAS.
+    #
+    #eta_c = 0.01 is recommended and is a ballpark neutrlization efficiency as found in Salinas et al. [In Progress - 060220]
 
-    #random = np.abs(np.random.randn(1)*0.2e3 + 1.8e3)
     distance = separation #np.abs(random)
-    density  = cd.rho_retrieve(area,distance,zinit,separation,False,0.4e-9)
+    density  = cd.rho_retrieve(area, distance, zinit, separation, False, None) #None - No constant charge density specified
     rho,w    = density.calculate()
-    eta_c    = 0.008 #this is a ballpark neutrlization efficiency as found in Salinas et al. [In Progress - 060220]
-    return(eta_c*w)
+    return(eta*w)
 ##############################################   
 
 def calculate_flash_stats(flash, min_pts=2):
@@ -135,10 +135,11 @@ def calculate_flash_stats(flash, min_pts=2):
     # sigma_sq = r_sq.sum()/r_sq.shape[0]
     # sigma = np.std(r_sq)
 
-    separation = np.abs(np.percentile(alt,73) - np.percentile(alt,27))
+    separation     = np.abs(np.percentile(alt,73) - np.percentile(alt,27))
     flash_init_idx = np.argmin(flash.points['time'])
     zinit = alt[flash_init_idx] #in meters
-    area = 0.0
+    area  = 0.0
+    eta   = 0.01
 
     if flash.pointCount > 2:
         try:
@@ -160,7 +161,7 @@ def calculate_flash_stats(flash, min_pts=2):
     if area == 0.0:
         energy_estimate = 0.
     else:        
-        energy_estimate = energy(area, separation,zinit, False)
+        energy_estimate = energy(area, separation, zinit, False, eta)
             
     volume = 0.0
     if flash.pointCount > 3:
