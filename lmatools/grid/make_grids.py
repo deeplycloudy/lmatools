@@ -1,6 +1,6 @@
 from __future__ import absolute_import
 from __future__ import print_function
-import glob 
+import glob
 import os, sys
 from datetime import datetime, timedelta
 
@@ -20,69 +20,68 @@ from lmatools.stream.subset import broadcast
 from lmatools.io.LMA_h5_file import read_flashes, to_seconds
 
 from lmatools.coordinateSystems import MapProjection, GeographicSystem
-from six.moves import range
 
 from .cf_netcdf import (write_cf_netcdf, write_cf_netcdf_3d,
     write_cf_netcdf_latlon, write_cf_netcdf_3d_latlon,
     write_cf_netcdf_noproj, write_cf_netcdf_fixedgrid)
-    
+
 
 def dlonlat_at_grid_center(ctr_lat, ctr_lon, dx=4.0e3, dy=4.0e3,
     x_bnd = (-100e3, 100e3), y_bnd = (-100e3, 100e3),
     proj_datum = 'WGS84', proj_ellipse = 'WGS84'):
-    """ 
-    
-    Utility function useful for producing a regular grid of lat/lon data, 
-    where an approximate spacing (dx, dy) and total span of the grid (x_bnd, y_bnd) 
+    """
+
+    Utility function useful for producing a regular grid of lat/lon data,
+    where an approximate spacing (dx, dy) and total span of the grid (x_bnd, y_bnd)
     is desired. Units are in meters.
-    
+
     There is guaranteed to be distortion away from the grid center, i.e.,
-    only the grid cells adjacent to the center location will have area dx * dy. 
-    
+    only the grid cells adjacent to the center location will have area dx * dy.
+
     Likewise, the lat, lon range is calculated naively using dlat, dlon multiplied
     by the number of grid cells implied by x_bnd/dx, y_bnd/dy. This is the naive approach,
     but probably what's expected when specifying distances in kilometers for
     an inherently distorted lat/lon grid.
-    
-    Returns: 
+
+    Returns:
     (dlon, dlat, lon_bnd, lat_bnd)
-    corresponding to 
+    corresponding to
     (dx, dy, x_range, y_range)
-    
+
     """
 
     # Use the Azimuthal equidistant projection as the method for converting to kilometers.
     proj_name = 'aeqd'
-    
-    mapProj = MapProjection(projection=proj_name, ctrLat=ctr_lat, ctrLon=ctr_lon, lat_ts=ctr_lat, 
+
+    mapProj = MapProjection(projection=proj_name, ctrLat=ctr_lat, ctrLon=ctr_lon, lat_ts=ctr_lat,
                             lon_0=ctr_lon, lat_0=ctr_lat, lat_1=ctr_lat, ellipse=proj_ellipse, datum=proj_datum)
     geoProj = GeographicSystem()
-    
+
     # Get dlat
     lon_n, lat_n, z_n = geoProj.fromECEF(*mapProj.toECEF(0,dy,0))
     dlat = lat_n - ctr_lat
-    
+
     # Get dlon
-    lon_e, lat_e, z_e = geoProj.fromECEF(*mapProj.toECEF(dx,0,0)) 
+    lon_e, lat_e, z_e = geoProj.fromECEF(*mapProj.toECEF(dx,0,0))
     dlon = lon_e - ctr_lon
-    
+
     lon_min = ctr_lon + dlon * (x_bnd[0]/dx)
     lon_max = ctr_lon + dlon * (x_bnd[1]/dx)
     lat_min = ctr_lat + dlat * (y_bnd[0]/dy)
     lat_max = ctr_lat + dlat * (y_bnd[1]/dy)
-    
+
     # Alternate method: lat lon for the actual distance to the NSEW in the projection
     #lon_range_n, lat_range_n, z_range_n = geoProj.fromECEF(*mapProj.toECEF(0,y_bnd,0))
     #lon_range_e, lat_range_e, z_range_e = geoProj.fromECEF(*mapProj.toECEF(x_bnd,0,0))
-    
+
     return dlon, dlat, (lon_min, lon_max), (lat_min, lat_max)
-    
+
 
 def time_edges(start_time, end_time, frame_interval):
     """ Return lists cooresponding the start and end times of frames lasting frame_interval
-        between start_time and end_time. The last interval may extend beyond end_time, but 
+        between start_time and end_time. The last interval may extend beyond end_time, but
         by no more than frame_interval. This makes each frame the same length.
-        
+
         returns t_edges, duration, where t_edges is a list of datetime objects, and
         duration is the total duration between the start and end times (and not the duration
         of all frames)
@@ -92,10 +91,10 @@ def time_edges(start_time, end_time, frame_interval):
     n_frames = int(np.ceil(to_seconds(duration) / to_seconds(frame_dt)))
     t_edges = [start_time + i*frame_dt for i in range(n_frames+1)]
     return t_edges, duration
-    
+
 def seconds_since_start_of_day(start_time, t):
-    """ For each datetime object t, return the number of seconds elapsed since the 
-        start of the date given by start_time. Only the date part of start_time is used. 
+    """ For each datetime object t, return the number of seconds elapsed since the
+        start of the date given by start_time. Only the date part of start_time is used.
     """
     ref_date = start_time.date()
     t_ref = datetime(ref_date.year, ref_date.month, ref_date.day)
@@ -120,33 +119,33 @@ class FlashGridder(object):
                     spatial_scale_factor = 1.0/1000.0,
                     subdivide=False,
                     ):
-        """ Class to support gridding of flash and event data. 
-                    
-            On init, specify the grid 
-                    
+        """ Class to support gridding of flash and event data.
+
+            On init, specify the grid
+
             If proj_name = 'pixel_grid' then pixel_coords must be an
                 instance of lmatools.coordinateSystems.PixelGrid
-            If proj_name = 'geos' then pixel_coords must be an instance of 
+            If proj_name = 'geos' then pixel_coords must be an instance of
                 lmatools.coordinateSystems.GeostationaryFixedGridSystem
-                    
+
             energy_grids controls which energy grids are saved, default None.
-                energy_grids may be True, which will calculate all energy grid 
-                types, or it may be one of 'specific_energy', 'total_energy', 
+                energy_grids may be True, which will calculate all energy grid
+                types, or it may be one of 'specific_energy', 'total_energy',
                 or a list of one or more of these.
-                    
+
             event_grid_area_fraction_key specifies the name of the variable
                 in the events array that gives the fraction of each grid cell
-                covered by each event. Used only for pixel-based event 
+                covered by each event. Used only for pixel-based event
                 detectors.
-        """                    
+        """
         if energy_grids == True:
             energy_grids = ('specific_energy', 'total_energy')
         self.energy_grids = energy_grids
-        
+
         self.spatial_scale_factor = spatial_scale_factor
-        
+
         self.event_grid_area_fraction_key = event_grid_area_fraction_key
-        
+
         # args, kwargs that are saved for the future
         self.do_3d = do_3d
         self.start_time = start_time
@@ -157,11 +156,11 @@ class FlashGridder(object):
         self.min_points_per_flash = 1
         self.proj_name = proj_name
         self.ctr_lat, self.ctr_lon, self.ctr_alt = ctr_lat, ctr_lon, ctr_alt
-        
+
         if flash_count_logfile is None:
             flash_count_logfile = log
         self.flash_count_logfile = flash_count_logfile
-        
+
         t_edges, duration = time_edges(self.start_time, self.end_time, self.frame_interval)
         # reference time is the date part of the start_time, unless the user provides a different date.
         if self.base_date is None:
@@ -169,13 +168,13 @@ class FlashGridder(object):
         else:
             t_ref, t_edges_seconds = seconds_since_start_of_day(self.base_date, t_edges)
         self.n_frames = len(t_edges)-1
-    
+
         xedge=np.arange(x_bnd[0], x_bnd[1]+dx, dx)
         yedge=np.arange(y_bnd[0], y_bnd[1]+dy, dy)
-        zedge=np.arange(z_bnd[0], z_bnd[1]+dz, dz) 
-    
+        zedge=np.arange(z_bnd[0], z_bnd[1]+dz, dz)
+
         if self.proj_name == 'latlong':
-            dx_units = '{0:6.4f}deg'.format(dx)
+            dx_units = '{0:6.4f}deg'.format(float(dx))
             mapProj = GeographicSystem()
         elif self.proj_name == 'pixel_grid':
             dx_units = 'pixel'
@@ -184,11 +183,11 @@ class FlashGridder(object):
             dx_units = '{0:03d}urad'.format(int(dx*1e6))
             mapProj = pixel_coords
         else:
-            dx_units = '{0:5.1f}m'.format(dx)
-            mapProj = MapProjection(projection=self.proj_name, ctrLat=ctr_lat, ctrLon=ctr_lon, lat_ts=ctr_lat, 
+            dx_units = '{0:5.1f}m'.format(float(dx))
+            mapProj = MapProjection(projection=self.proj_name, ctrLat=ctr_lat, ctrLon=ctr_lon, lat_ts=ctr_lat,
                                 lon_0=ctr_lon, lat_0=ctr_lat, lat_1=ctr_lat, ellipse=proj_ellipse, datum=proj_datum)
         geoProj = GeographicSystem()
-        
+
         self.t_ref = t_ref
         self.t_edges = t_edges
         self.t_edges_seconds = t_edges_seconds
@@ -199,15 +198,15 @@ class FlashGridder(object):
         self.mapProj = mapProj
         self.geoProj = geoProj
         self.dx_units = dx_units
-        
+
         self.pipeline_setup()
         self.output_setup()
-        
+
     def pipeline_setup(self):
         """
         Create the grids for each variable of interest.
-        
-        Set up the data processing pipeline up to the point at which data are 
+
+        Set up the data processing pipeline up to the point at which data are
         written to grids in memory.
         """
         event_grid_area_fraction_key=self.event_grid_area_fraction_key
@@ -220,7 +219,7 @@ class FlashGridder(object):
         z0 = zedge[0]
         mapProj = self.mapProj
         geoProj = self.geoProj
-        
+
         event_density_grid  = np.zeros((xedge.shape[0]-1, yedge.shape[0]-1, n_frames), dtype='int32')
         init_density_grid   = np.zeros((xedge.shape[0]-1, yedge.shape[0]-1, n_frames), dtype='int32')
         if self.event_grid_area_fraction_key is not None:
@@ -238,20 +237,20 @@ class FlashGridder(object):
             init_density_grid_3d   = np.zeros((xedge.shape[0]-1, yedge.shape[0]-1, zedge.shape[0]-1, n_frames), dtype='int32')
             extent_density_grid_3d = np.zeros((xedge.shape[0]-1, yedge.shape[0]-1, zedge.shape[0]-1, n_frames), dtype='int32')
             footprint_grid_3d      = np.zeros((xedge.shape[0]-1, yedge.shape[0]-1, zedge.shape[0]-1, n_frames), dtype='float32')
-    
+
             specific_energy_grid_3d = np.zeros((xedge.shape[0]-1, yedge.shape[0]-1, zedge.shape[0]-1, n_frames), dtype='float32')
             total_energy_grid_3d    = np.zeros((xedge.shape[0]-1, yedge.shape[0]-1, zedge.shape[0]-1, n_frames), dtype='float32')
             flashsize_std_grid_3d   = np.zeros((xedge.shape[0]-1, yedge.shape[0]-1, zedge.shape[0]-1, n_frames), dtype='float32')
-        
-        self.outgrids = (extent_density_grid, 
-                    init_density_grid,   
-                    event_density_grid,  
+
+        self.outgrids = (extent_density_grid,
+                    init_density_grid,
+                    event_density_grid,
                     footprint_grid,
                     specific_energy_grid,
                     flashsize_std_grid,
                     total_energy_grid,
                     )
-                
+
         if self.do_3d == True:
             self.outgrids_3d = (extent_density_grid_3d,
                     init_density_grid_3d,
@@ -263,20 +262,20 @@ class FlashGridder(object):
                     )
         else:
             self.outgrids_3d = None
-        
-        
+
+
         all_frames = []
         for i in range(n_frames):
             extent_out = {'name':'extent'}
             init_out   = {'name':'init'}
             event_out  = {'name':'event'}
             std_out    = {'name':'std'}
-        
+
             extent_out_3d = {'name':'extent_3d'}
             init_out_3d   = {'name':'init_3d'}
             event_out_3d  = {'name':'event_3d'}
             std_out_3d    = {'name':'std_3d'}
-        
+
             accum_event_density  = accumulate_points_on_grid(event_density_grid[:,:,i], xedge, yedge,  out=event_out, label='event')
             accum_init_density   = accumulate_points_on_grid(init_density_grid[:,:,i], xedge, yedge,   out=init_out,  label='init')
             accum_extent_density = accumulate_points_on_grid(extent_density_grid[:,:,i], xedge, yedge, out=extent_out,label='extent',  grid_frac_weights=True)
@@ -303,8 +302,8 @@ class FlashGridder(object):
             if self.do_3d == True:
                 extent_out_3d['func'] = accum_extent_density_3d
                 init_out_3d['func'] = accum_init_density_3d
-                event_out_3d['func'] = accum_event_density_3d        
-        
+                event_out_3d['func'] = accum_event_density_3d
+
             event_density_target  = point_density(accum_event_density)
             init_density_target   = point_density(accum_init_density)
             extent_density_target = extent_density(x0, y0, dx, dy, accum_extent_density,
@@ -323,12 +322,12 @@ class FlashGridder(object):
                 init_density_target_3d   = point_density_3d(accum_init_density_3d)
                 extent_density_target_3d = extent_density_3d(x0, y0, z0, dx, dy, dz, accum_extent_density_3d)
                 mean_footprint_target_3d = extent_density_3d(x0, y0, z0, dx, dy, dz, accum_footprint_3d, weight_key='area')
-            
+
                 mean_energy_target_3d    = extent_density_3d(x0, y0, z0, dx, dy, dz, accum_specific_energy_3d, weight_key='specific_energy')
                 mean_total_energy_target_3d = extent_density_3d(x0, y0, z0, dx, dy, dz, accum_total_energy_3d, weight_key='total_energy')
                 std_flashsize_target_3d  = extent_density_3d(x0, y0, z0, dx, dy, dz, accum_flashstd_3d, weight_key='area')
 
-            broadcast_targets = ( 
+            broadcast_targets = (
                 project('lon', 'lat', 'alt', mapProj, geoProj, event_density_target, use_flashes=False),
                 project('init_lon', 'init_lat', 'init_alt', mapProj, geoProj, init_density_target, use_flashes=True),
                 project('lon', 'lat', 'alt', mapProj, geoProj, extent_density_target, use_flashes=False),
@@ -338,7 +337,7 @@ class FlashGridder(object):
             if energy_grids is not None:
                 if ('specific_energy' == energy_grids) | ('specific_energy' in energy_grids):
                     broadcast_targets += (
-                        project('lon', 'lat', 'alt', mapProj, geoProj, mean_total_energy_target, use_flashes=False),
+                        project('lon', 'lat', 'alt', mapProj, geoProj, mean_energy_target, use_flashes=False),
                         )
                 if ('total_energy' == energy_grids) | ('total_energy' in energy_grids):
                     broadcast_targets += (
@@ -368,13 +367,13 @@ class FlashGridder(object):
             all_frames.append( extract_events_for_flashes( spew_to_density_types ) )
 
         frame_count_log = flash_count_log(self.flash_count_logfile)
-        
-        framer = flashes_to_frames(self.t_edges_seconds, all_frames, 
-                     time_key='start', time_edges_datetime=self.t_edges, 
+
+        framer = flashes_to_frames(self.t_edges_seconds, all_frames,
+                     time_key='start', time_edges_datetime=self.t_edges,
                      flash_counter=frame_count_log)
-    
+
         self.framer=framer
-        
+
     def output_setup(self):
         """
         For each of the grids of interest in self.outgrids, set up the
@@ -382,9 +381,9 @@ class FlashGridder(object):
         actual values on the grids.
         """
         energy_grids = self.energy_grids
-        spatial_scale_factor = self.spatial_scale_factor        
+        spatial_scale_factor = self.spatial_scale_factor
         dx, dy, dz = self.dx, self.dy, self.dz
-        
+
         self.outfile_postfixes = ('flash_extent.nc',
                                   'flash_init.nc',
                                   'source.nc',
@@ -392,7 +391,7 @@ class FlashGridder(object):
                                   'specific_energy.nc',
                                   'flashsize_std.nc',
                                   'total_energy.nc')
-    
+
         self.outfile_postfixes_3d = ('flash_extent_3d.nc',
                                      'flash_init_3d.nc',
                                      'source_3d.nc',
@@ -400,7 +399,7 @@ class FlashGridder(object):
                                      'specific_energy_3d.nc',
                                      'flashsize_std_3d.nc',
                                      'total_energy_3d.nc')
-                                                            
+
         self.field_names = ('flash_extent',
                        'flash_initiation',
                        'lma_source',
@@ -408,7 +407,7 @@ class FlashGridder(object):
                        'specific_energy',
                        'flashsize_std',
                        'total_energy')
-    
+
         self.field_descriptions = ('LMA flash extent density',
                             'LMA flash initiation density',
                             'LMA source density',
@@ -416,14 +415,14 @@ class FlashGridder(object):
                             'LMA flash specific energy (approx)',
                             'LMA local standard deviation of flash size',
                             'LMA flash total energy (approx)')
-        
+
         # In some use cases, it's easier to calculate totals (for area or
         # energy) and then divide at the end. This dictionary maps numerator
         # to denominator, with an index corresponding to self.outgrids.
         # The avearge is then calculated on output with numerator_out =
         # numerator/denominator. For example to calculate average energy
         # instead of total energy:
-        #    self.divide_grids[6]=0 
+        #    self.divide_grids[6]=0
         # and change the labels in field_names, etc. to read as averages
         # instead of totals.
         self.divide_grids = {}
@@ -437,7 +436,7 @@ class FlashGridder(object):
         time_units = "{0:5.1f} min".format(self.frame_interval/60.0).lstrip()
         density_label = 'Count per ' + density_units + " pixel per "+ time_units
         density_label_3d = 'Count per ' + density_units_3d + " pixel per "+ time_units
-    
+
         self.field_units = ( density_label,
                         density_label,
                         density_label,
@@ -454,14 +453,14 @@ class FlashGridder(object):
                         density_label_3d,
                         "J per flash",
                          )
-        
+
         if self.event_grid_area_fraction_key is not None:
             extent_format='f'
         else:
             extent_format='i'
         self.outformats = tuple((extent_format, 'i', 'i', 'f', 'f', 'f', 'f'))
         self.outformats_3d = tuple((extent_format, 'i', 'i', 'f', 'f', 'f', 'f'))
-        
+
         remove_idx = []
         if energy_grids is not None:
             if ('specific_energy' == energy_grids) | ('specific_energy' in energy_grids):
@@ -473,28 +472,29 @@ class FlashGridder(object):
             else:
                 remove_idx.append(6)
 
-        # Remove indices above so they're not written.        
+        # Remove indices above so they're not written.
         def filter_energy(var):
             for i, k in enumerate(var):
                 if i not in remove_idx:
                     yield k
         self.outgrids = tuple(k for k in filter_energy(self.outgrids))
-        self.outfile_postfixes = tuple(k for k in 
+        self.outfile_postfixes = tuple(k for k in
                                        filter_energy(self.outfile_postfixes))
         self.field_names = tuple(k for k in filter_energy(self.field_names))
         self.field_units = tuple(k for k in filter_energy(self.field_units))
-        self.field_descriptions = tuple(k for k in 
+        self.field_descriptions = tuple(k for k in
                                        filter_energy(self.field_descriptions))
-        self.outformats = tuple(k for k in filter_energy(self.outformats))                                       
+        self.outformats = tuple(k for k in filter_energy(self.outformats))
         if self.do_3d:
             self.outgrids_3d = tuple(k for k in filter_energy(self.outgrids_3d))
-            self.outfile_postfixes_3d = tuple(k for k in 
+            self.outfile_postfixes_3d = tuple(k for k in
                                               filter_energy(self.outfile_postfixes_3d))
             self.field_units_3d = tuple(k for k in filter_energy(self.field_units_3d))
-            self.outformats_3d = tuple(k for k in filter_energy(self.outformats_3d))                
+            self.outformats_3d = tuple(k for k in filter_energy(self.outformats_3d))
 
-    def write_grids(self, outpath = '', output_writer = write_cf_netcdf, 
+    def write_grids(self, outpath = '', output_writer = write_cf_netcdf,
                     output_writer_3d = write_cf_netcdf_3d,
+                    calculate_2D_lonlat=True,
                     output_filename_prefix="LMA", output_kwargs = {}):
         spatial_scale_factor = self.spatial_scale_factor
         xedge = self.xedge
@@ -506,32 +506,41 @@ class FlashGridder(object):
         geoProj = self.geoProj
         outgrids = self.outgrids
         outgrids_3d = self.outgrids_3d
-                
+
         x_coord = (xedge[:-1] + xedge[1:])/2.0
         y_coord = (yedge[:-1] + yedge[1:])/2.0
         z_coord = (zedge[:-1] + zedge[1:])/2.0
         nx = x_coord.shape[0]
         ny = y_coord.shape[0]
         nz = z_coord.shape[0]
-    
+
         x_all, y_all = (a.T for a in np.meshgrid(x_coord, y_coord))
         assert x_all.shape == y_all.shape
         assert x_all.shape[0] == nx
         assert x_all.shape[1] == ny
         z_all = np.zeros_like(x_all)
 
-        lons, lats, alts = x,y,z = geoProj.fromECEF( *mapProj.toECEF(x_all, y_all, z_all) )
-        lons.shape=x_all.shape
-        lats.shape=y_all.shape
-    
-        basename_parts = (output_filename_prefix, 
-                          self.start_time.strftime('%Y%m%d_%H%M%S'), 
-                          to_seconds(self.duration), 
-                          self.min_points_per_flash, 
+        if calculate_2D_lonlat:
+            log.info("Calculating dense 2D lon lat grid from x y z")
+            lons, lats, alts = x,y,z = geoProj.fromECEF( *mapProj.toECEF(x_all, y_all, z_all) )
+            lons.shape=x_all.shape
+            lats.shape=y_all.shape
+        else:
+            lons = None
+            lats = None
+            alts = None
+            x = None
+            y = None
+            z = None
+
+        basename_parts = (output_filename_prefix,
+                          self.start_time.strftime('%Y%m%d_%H%M%S'),
+                          to_seconds(self.duration),
+                          self.min_points_per_flash,
                           self.dx_units,
                           )
         outfile_template = '%s_%s_%d_%dsrc_%s-dx_%s'
-        outfile_basenames = list(outfile_template % (basename_parts + (pfx,)) 
+        outfile_basenames = list(outfile_template % (basename_parts + (pfx,))
                              for pfx in self.outfile_postfixes)
         outfiles = list(os.path.join(outpath, outfile_basename)
                     for outfile_basename in outfile_basenames)
@@ -551,7 +560,7 @@ class FlashGridder(object):
             lats_3d.shape=y_all_3d.shape
             alts_3d.shape=z_all_3d.shape
 
-            outfile_basenames_3d = (outfile_template % (basename_parts + (pfx,)) 
+            outfile_basenames_3d = (outfile_template % (basename_parts + (pfx,))
                                     for pfx in self.outfile_postfixes_3d)
             outfile_basenames_3d = list(outfile_basenames_3d)
             outfiles_3d = (os.path.join(outpath, outfile_basename)
@@ -559,7 +568,7 @@ class FlashGridder(object):
             outfiles_3d = list(outfiles_3d)
 
         file_iter = list(zip(
-                     outfiles, self.outgrids, self.field_names, 
+                     outfiles, self.outgrids, self.field_names,
                      self.field_descriptions, self.field_units, self.outformats))
         for i, (outfile, grid, field_name, description, units, outformat) in enumerate(file_iter):
             if i in self.divide_grids:
@@ -569,9 +578,9 @@ class FlashGridder(object):
                 grid[zeros] = 0 # avoid nans
             log.info("Preparing to write NetCDF %s".format(outfile))
             output_writer(outfile, t_ref, np.asarray(t_edges_seconds[:-1]),
-                          x_coord*spatial_scale_factor, 
-                          y_coord*spatial_scale_factor, 
-                          lons, lats, self.ctr_lat, self.ctr_lon, 
+                          x_coord*spatial_scale_factor,
+                          y_coord*spatial_scale_factor,
+                          lons, lats, self.ctr_lat, self.ctr_lon,
                           grid, field_name, description,
                           format=outformat, grid_units=units,
                           **output_kwargs)
@@ -602,11 +611,11 @@ class FlashGridder(object):
 def grid_h5flashfiles(h5_filenames, start_time, end_time, **kwargs):
     """ Grid LMA data contianed in HDF5-format LMA files. Keyword arguments to this function
         are those to the FlashGridder class and its functions.
-    
-        This function is provided as a convenience for compatibility with earlier 
+
+        This function is provided as a convenience for compatibility with earlier
         implementations of flash gridding.
     """
-    
+
     process_flash_kwargs = {}
     for prock in ('min_points_per_flash',):
         if prock in kwargs:
@@ -617,18 +626,18 @@ def grid_h5flashfiles(h5_filenames, start_time, end_time, **kwargs):
                  'output_kwargs', 'output_filename_prefix'):
         if outk in kwargs:
             out_kwargs[outk] = kwargs.pop(outk)
-    
+
     gridder = FlashGridder(start_time, end_time, **kwargs)
     gridder.process_flashes(h5_filenames, **process_flash_kwargs)
     output = gridder.write_grids(**out_kwargs)
-    return output    
+    return output
 
 
 if __name__ == '__main__':
     h5_filenames = glob.glob('data/LYL*090610_20*.h5')
     start_time = datetime(2009,6,10, 20,0,0)
     end_time   = datetime(2009,6,10, 21,0,0)
-    
+
     frame_interval=120.0
     dx=4.0e3
     dy=4.0e3
@@ -641,6 +650,6 @@ if __name__ == '__main__':
     # DC
     # ctr_lat =  38.889444
     # ctr_lon =  -77.035278
-    
-    grid_h5flashfiles(h5_filenames, start_time, end_time, frame_interval=frame_interval, 
+
+    grid_h5flashfiles(h5_filenames, start_time, end_time, frame_interval=frame_interval,
                 dx=dx, dy=dy, x_bnd=x_bnd, y_bnd=y_bnd, ctr_lon=ctr_lon, ctr_lat=ctr_lat)

@@ -31,8 +31,6 @@ from lmatools.grid.make_grids import time_edges, seconds_since_start_of_day
 
 from stormdrain.pipeline import coroutine, Branchpoint
 from stormdrain.support.matplotlib.formatters import SecDayFormatter
-from six.moves import range
-from six.moves import zip
 
 def gen_fractal_length_for_flashes(events, flashes, D, b_s, alt_bins):
     """ Given events and flashes, calculate the fractal length

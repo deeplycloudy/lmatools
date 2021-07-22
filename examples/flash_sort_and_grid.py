@@ -22,7 +22,6 @@ from lmatools.flashsort.gen_sklearn import DBSCANFlashSorter
 
 from lmatools.grid.make_grids import grid_h5flashfiles, dlonlat_at_grid_center, write_cf_netcdf_latlon, write_cf_netcdf_3d_latlon
 from lmatools.vis.multiples_nc import make_plot, make_plot_3d, read_file_3d
-from six.moves import map
 
 
 def tfromfile(name):
@@ -175,7 +174,7 @@ if __name__ == '__main__':
               'distance':3000.0, 'thresh_critical_time':0.15, # space and time grouping thresholds
               'thresh_duration':3.0, # maximum expected flash duration
               'ctr_lat':33.5, 'ctr_lon':-101.5, #center lat/lon to use for flash sorting, gridding
-              'mask_length':6, # length of the hexadecimal station mask column in the LMA ASCII files
+              # 'mask_length':6, # length of the hexadecimal station mask column in the LMA ASCII files
               }
     center_ID='WTLMA'
     

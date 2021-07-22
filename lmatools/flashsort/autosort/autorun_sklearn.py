@@ -12,9 +12,6 @@ from lmatools.io.LMAarrayFile import LMAdataFile
 from lmatools.coordinateSystems import GeographicSystem
 
 from lmatools.flashsort.flash_stats import calculate_flash_stats, Flash, FlashMetadata
-from six.moves import range
-from six.moves import zip
-
 
 
 @coroutine
@@ -255,13 +252,7 @@ def cluster(a_file, output_path, outfile, params, logger, min_points=1, **kwargs
     """
     logger = logging.getLogger('FlashAutorunLogger')
     
-    
-    if 'mask_length' in params:
-        mask_length = params['mask_length']
-    else:
-        mask_length = 4
-    
-    lma=LMAdataFile(a_file, mask_length = mask_length)
+    lma=LMAdataFile(a_file)
     # for line in lma.header:
         # print line
 

@@ -12,10 +12,8 @@ from lmatools.flashsort.flash_stats import calculate_flash_stats, Flash, FlashMe
 from lmatools.io.LMAarrayFile import cat_LMA, LMAdataFile
 
 from .mflash import write_header
-from six.moves import zip
 
 LOG_BASEFILENAME = datetime.datetime.now().strftime('Flash-autosort.log')
-
 
 
 def logger_setup(logpath):

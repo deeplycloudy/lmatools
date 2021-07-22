@@ -5,7 +5,6 @@ import numpy as np
 from collections import deque
 
 import threading
-import six
 
 # 
 # # Header data is packed in a structure:
@@ -175,7 +174,7 @@ class LiveLMAController(object):
         # See time handling in archive_to_LiveLMA for examples
         data['t'] = sources['t'].astype('f8')+header['header_second'].astype('f8')
         
-        for k, v in six.iteritems(self.dtype_mapping):
+        for k, v in self.dtype_mapping.items():
             data[v] = sources[k]
             
         for view in self.views:

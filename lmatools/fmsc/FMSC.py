@@ -13,9 +13,8 @@ from scipy.spatial import cKDTree as KDTree
 from scipy import sparse
 
 from .InterpolationMatrix import interpolation_matrix
-from six.moves import range
-from six.moves import zip
-    
+
+
 def initial_weights(data, k, min_dist=None):
     """ Calculate a matrix of weights for the k nearest points.
     
