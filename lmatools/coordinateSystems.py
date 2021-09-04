@@ -434,14 +434,20 @@ class TangentPlaneCartesianSystem(object):
         """ Transforms 1D arrays of ECEF x, y, z to the local tangent plane system"""
         data = vstack((x, y, z))
         tpXYZ = self.toLocal(data)
-        tpX, tpY, tpZ = tpXYZ[0,:], tpXYZ[1,:], tpXYZ[2,:]
+        if len(tpXYZ.shape) == 1:
+            tpX, tpY, tpZ = tpXYZ[0], tpXYZ[1], tpXYZ[2]
+        else:
+            tpX, tpY, tpZ = tpXYZ[0,:], tpXYZ[1,:], tpXYZ[2,:]
         return tpX, tpY, tpZ
 
     def toECEF(self, x, y, z):
         """ Transforms 1D arrays of x, y, z in the local tangent plane system to ECEF"""
         data = vstack((x, y, z))
         ecXYZ = self.fromLocal(data)
-        ecX, ecY, ecZ = ecXYZ[0,:], ecXYZ[1,:], ecXYZ[2,:]
+        if len(ecXYZ.shape) == 1:
+            ecX, ecY, ecZ = ecXYZ[0], ecXYZ[1], ecXYZ[2]
+        else:
+            ecX, ecY, ecZ = ecXYZ[0,:], ecXYZ[1,:], ecXYZ[2,:]
         return ecX, ecY, ecZ
 
     def toLocal(self, data):
