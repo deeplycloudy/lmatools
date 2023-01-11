@@ -241,7 +241,7 @@ class LMAdataFile(object):
         isColumnHeaderLine = r"^Data:(.*)"
         matchDataFormatLine = re.compile(isColumnHeaderLine, re.IGNORECASE)
 
-        DataFormatLine = r"^Data format: (.*)"
+        DataFormatLine = r"^Data format:(.*)"
         matchDataFormatLines = re.compile(DataFormatLine, re.IGNORECASE | re.MULTILINE)
 
         isDataStartTime = r"^Data start time:(.*)"
@@ -270,7 +270,6 @@ class LMAdataFile(object):
             secAnalyzedMatch=matchSecAnalyzedLine.search(line)
             if secAnalyzedMatch:
                 self.sec_analyzed = int(secAnalyzedMatch.group(1))
-
             DataFormatMatchs=matchDataFormatLines.search(line)
             if DataFormatMatchs:
                 self.mask_length = int(DataFormatMatchs.group(1).split(' ')[-1][:-1])
