@@ -179,8 +179,11 @@ def calculate_flash_stats(flash, min_pts=2):
             x[0] += perturb[0]
             y[0] += perturb[1]
             z[0] += perturb[2]
-            volume, vertices, simplex_volumes = hull_volume(np.vstack((x,y,z)).T)
-    
+            try:
+                volume, vertices, simplex_volumes = hull_volume(np.vstack((x,y,z)).T)
+            except Exception as e:
+                pass
+
     flash_init_idx = np.argmin(flash.points['time'])
     
     ###ROUGH APPROXIMATION FOR NOW: #######################
