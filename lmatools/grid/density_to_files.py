@@ -628,7 +628,7 @@ def accumulate_points_on_grid(grid, xedge, yedge, out=None, label='',
                 y = np.atleast_1d(y)
                 log.info(('accumulating ', len(x), 'points for ', label))
                 count, edges = np.histogramdd((x,y), bins=(xedge, yedge),
-                    weights=grid_frac, normed=False)
+                    weights=grid_frac)
 
                 count_hist += count.astype(count_hist.dtype)
                 # if grid_frac_weights:
@@ -639,7 +639,7 @@ def accumulate_points_on_grid(grid, xedge, yedge, out=None, label='',
                     if grid_frac is not None:
                         weights = weights*grid_frac
                     total, edges = np.histogramdd((x,y), bins=(xedge, yedge),
-                        weights=weights, normed=False)
+                        weights=weights)
                     total_hist += total
                     del total, edges
                     
@@ -688,11 +688,11 @@ def accumulate_points_on_grid_3d(grid, xedge, yedge, zedge, out=None, label=''):
                 y = np.atleast_1d(y)
                 z = np.atleast_1d(z)
                 log.info(('accumulating ', len(x), 'points for ', label))
-                count, edges = np.histogramdd((x,y,z), bins=(xedge, yedge, zedge), weights=None, normed=False)    
+                count, edges = np.histogramdd((x,y,z), bins=(xedge, yedge, zedge), weights=None)    
                 
                 if weights != None:
                     # histogramdd sums up weights in each bin for normed=False
-                    total, edges = np.histogramdd((x,y,z), bins=(xedge, yedge, zedge), weights=weights, normed=False)
+                    total, edges = np.histogramdd((x,y,z), bins=(xedge, yedge, zedge), weights=weights)
                     # return the mean of the weights in each bin
                     bad = (count <= 0)
                     count = np.asarray(total, dtype='float32')/count
@@ -736,11 +736,11 @@ def accumulate_points_on_grid_sdev(grid, grid2, xedge, yedge, out=None, label=''
                 x = np.atleast_1d(x)
                 y = np.atleast_1d(y)
                 log.info(('accumulating ', len(x), 'points for ', label))
-                count, edges = np.histogramdd((x,y), bins=(xedge, yedge), weights=grid_frac, normed=False)    
+                count, edges = np.histogramdd((x,y), bins=(xedge, yedge), weights=grid_frac)    
                 
                 if weights is not None:
                     # histogramdd sums up weights in each bin for normed=False
-                    total, edges = np.histogramdd((x,y), bins=(xedge, yedge), weights=np.asarray(weights)**2., normed=False)
+                    total, edges = np.histogramdd((x,y), bins=(xedge, yedge), weights=np.asarray(weights)**2.)
                     
                     # return the mean of the weights in each bin
                     bad = (count <= 0)
@@ -780,11 +780,11 @@ def accumulate_points_on_grid_sdev_3d(grid, grid2, xedge, yedge, zedge, out=None
                 y = np.atleast_1d(y)
                 z = np.atleast_1d(z)
                 log.info(('accumulating ', len(x), 'points for ', label))
-                count, edges = np.histogramdd((x,y,z), bins=(xedge, yedge, zedge), weights=None, normed=False)    
+                count, edges = np.histogramdd((x,y,z), bins=(xedge, yedge, zedge), weights=None)    
                 
                 if weights != None:
                     # histogramdd sums up weights in each bin for normed=False
-                    total, edges = np.histogramdd((x,y,z), bins=(xedge, yedge, zedge), weights=np.asarray(weights)**2., normed=False)
+                    total, edges = np.histogramdd((x,y,z), bins=(xedge, yedge, zedge), weights=np.asarray(weights)**2.)
                     
                     # return the mean of the weights in each bin
                     bad = (count <= 0)
@@ -836,7 +836,7 @@ def accumulate_minimum_on_grid(grid, xedge, yedge, out=None, label='', grid_frac
                 x = np.atleast_1d(x)
                 y = np.atleast_1d(y)
                 log.info(('accumulating ', len(x), 'points for ', label))
-                count, edges = np.histogramdd((x,y), bins=(xedge, yedge), weights=grid_frac, normed=False)    
+                count, edges = np.histogramdd((x,y), bins=(xedge, yedge), weights=grid_frac)    
                 
                 if weights is not None:
                     have_weights = True
@@ -844,7 +844,7 @@ def accumulate_minimum_on_grid(grid, xedge, yedge, out=None, label='', grid_frac
                     if grid_frac is not None:
                         weights = weights*grid_frac
                     total, edges = np.histogramdd((x,y), bins=(xedge, yedge),
-                        weights=weights, normed=False)
+                        weights=weights)
                     # return the mean of the weights in each bin
                     bad = (count <= 0)
                     count = np.asarray(total, dtype='float32')#/count 
@@ -894,7 +894,7 @@ def accumulate_energy_on_grid(grid, xedge, yedge, out=None, label='', grid_frac_
                 x = np.atleast_1d(x)
                 y = np.atleast_1d(y)
                 log.info(('accumulating ', len(x), 'points for ', label))
-                count, edges = np.histogramdd((x,y), bins=(xedge, yedge), weights=grid_frac, normed=False)    
+                count, edges = np.histogramdd((x,y), bins=(xedge, yedge), weights=grid_frac)    
                 
                 if weights is not None:
                     have_weights = True
@@ -902,7 +902,7 @@ def accumulate_energy_on_grid(grid, xedge, yedge, out=None, label='', grid_frac_
                     if grid_frac is not None:
                         weights = weights*grid_frac
                     total, edges = np.histogramdd((x,y), bins=(xedge, yedge),
-                        weights=weights, normed=False)
+                        weights=weights)
                     # return the mean of the weights in each bin
                     bad = (count <= 0)
                     count = np.asarray(total, dtype='float32')#/count 
@@ -939,11 +939,11 @@ def accumulate_energy_on_grid_3d(grid, xedge, yedge, zedge, out=None, label=''):
                 y = np.atleast_1d(y)
                 z = np.atleast_1d(z)
                 log.info(('accumulating ', len(x), 'points for ', label))
-                count, edges = np.histogramdd((x,y,z), bins=(xedge, yedge, zedge), weights=None, normed=False)    
+                count, edges = np.histogramdd((x,y,z), bins=(xedge, yedge, zedge), weights=None)    
                 
                 if weights != None:
                     # histogramdd sums up weights in each bin for normed=False
-                    total, edges = np.histogramdd((x,y,z), bins=(xedge, yedge, zedge), weights=np.abs(weights), normed=False)
+                    total, edges = np.histogramdd((x,y,z), bins=(xedge, yedge, zedge), weights=np.abs(weights))
                     
                     # return the mean of the weights in each bin
                     bad = (count <= 0)
