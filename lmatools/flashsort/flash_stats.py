@@ -164,8 +164,8 @@ def calculate_flash_stats(flash, min_pts=2):
         energy_estimate = energy(area, separation, zinit, False, eta)
             
     volume = 0.0
-    if flash.pointCount > 3:
-        # Need four points to make at least one tetrahedron.
+    if flash.pointCount > 4:
+        # Need five points to make at least one tetrahedron.
         try:
             volume, vertices, simplex_volumes = hull_volume(np.vstack((x,y,z)).T)
         except QhullError:
@@ -179,8 +179,7 @@ def calculate_flash_stats(flash, min_pts=2):
             x[0] += perturb[0]
             y[0] += perturb[1]
             z[0] += perturb[2]
-            volume, vertices, simplex_volumes = hull_volume(np.vstack((x,y,z)).T)
-    
+
     flash_init_idx = np.argmin(flash.points['time'])
     
     ###ROUGH APPROXIMATION FOR NOW: #######################

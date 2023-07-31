@@ -19,7 +19,7 @@ from matplotlib.figure import figaspect, Figure
 from matplotlib.colorbar import ColorbarBase
 from matplotlib.cm import get_cmap
 from matplotlib.ticker import FuncFormatter
-from matplotlib.dates import mx2num, date2num, DateFormatter
+from matplotlib.dates import date2num, DateFormatter
 from matplotlib.backends.backend_agg import FigureCanvasAgg  
 
 from math import ceil
