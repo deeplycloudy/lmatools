@@ -76,7 +76,7 @@ def hull_volume(xyz):
     assert xyz.shape[1] == 3
         
     tri = Delaunay(xyz[:,0:3])
-    vertices = tri.points[tri.vertices]
+    vertices = tri.points[tri.simplices]
     
     # This is the volume formula in 
     # https://github.com/scipy/scipy/blob/master/scipy/spatial/tests/test_qhull.py#L106
