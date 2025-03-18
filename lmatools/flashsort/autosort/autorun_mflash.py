@@ -98,7 +98,7 @@ def sort_file(filename, directory):
     
     
 
-def collect_output(datafile, min_points=1, mask_length=4):
+def collect_output(datafile, min_points=1):
     """ collect all output from the flash program output directory created by
         the flash program in flash_dir and calculate some additional stats on each flash        
         """
@@ -109,7 +109,7 @@ def collect_output(datafile, min_points=1, mask_length=4):
     # outdir = os.path.join(flash_dir,flash_output_dir)
     # os.chdir(outdir)
     
-    lma = LMAdataFile(datafile, mask_length=mask_length)
+    lma = LMAdataFile(datafile)
     
     # get the mapping from flash_ids to the points
     order = np.argsort(lma.flash_id)
@@ -170,11 +170,7 @@ def cluster(a_file, output_path, outfile, params, logger, min_points=1, retain_a
     shutil.copyfile(os.path.join(d, 'flashes_out.dat'),
                     outfile)            
     
-    if 'mask_length' in params:
-        mask_length = params['mask_length']
-    else:
-        mask_length = 4
-    lmadata, flashes = collect_output(outfile, mask_length=mask_length)#, min_points=min_points)
+    lmadata, flashes = collect_output(outfile)#, min_points=min_points)
 
     if retain_ascii_output==False:
         os.remove(outfile)

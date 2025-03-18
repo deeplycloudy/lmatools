@@ -25,14 +25,14 @@ def logger_setup(logpath):
     logger.setLevel(logging.DEBUG)
 
 
-def write_output(outfile, flashes, orig_LMA_file, metadata=None):
+def write_output(outfile, flashes, orig_LMA_file, metadata=None, mask_length=6):
     from lmatools.io.LMA_h5_write import write_h5
     if metadata is None:
         # use metadata from the first flash as the canonical metadata, 
         #   since all flashes were sorted fromt the same LYLOUT file
         # This breaks in the case of empty flashes; in that case the calling function should pass in metadata.
         metadata = flashes[0].metadata
-    write_h5(outfile, flashes, metadata, orig_LMA_file)
+    write_h5(outfile, flashes, metadata, orig_LMA_file, mask_length)
 
 
 def run_files_with_params(files, output_path, params, clusterer=None, min_points=1, retain_ascii_output=True, cleanup_tmp=True):
@@ -86,7 +86,7 @@ def run_files_with_params(files, output_path, params, clusterer=None, min_points
             fl_metadata = FlashMetadata(header)
             outfile_with_extension = outfile + '.h5'
             h5_outfiles.append(outfile_with_extension)
-            write_output(outfile_with_extension, flashes, a_file, metadata=fl_metadata)
+            write_output(outfile_with_extension, flashes, a_file, metadata=fl_metadata, mask_length=params['mask_length'])
             
         except:
             logger.error("Did not successfully sort %s \n Error was: %s" % (a_file, sys.exc_info()[1]))
