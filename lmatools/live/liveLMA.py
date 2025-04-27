@@ -3,6 +3,8 @@ from __future__ import print_function
 import sys
 import numpy as np
 from collections import deque
+import base64
+
 
 import threading
 
@@ -94,11 +96,12 @@ class LiveLMAprinter(object):
     def __init__(self):
         pass
         
-    def show(self, data):
+    def show(self, header, data):
         """docstring for show"""
-        for v in data:
-            # print("{0}: {1}, {2}".format(data['t'], data['lat'], data['lon']))
-            print(("{1}, {2}".format(data['t'], data['lat'], data['lon'])))
+        print(data)
+        # for v in data:
+        #     # print("{0}: {1}, {2}".format(data['t'], data['lat'], data['lon']))
+        #     print(("{1}, {2}".format(data['t'], data['lat'], data['lon'])))
 
 def redraw(canvas):
     canvas.draw()
@@ -112,7 +115,7 @@ class LiveLMAplanview(object):
         self.scatter_artist = scatter_artist
     
 
-    def show(self, data):
+    def show(self, header, data):
         canvas = self.scatter_artist.figure.canvas
         
         # print data, self.scatter_artist.get_array()
@@ -129,7 +132,7 @@ class LiveLMAplanview(object):
         self.scatter_artist.set_offsets(xy)
         self.scatter_artist.set_array(t)
         self.scatter_artist.set_clim(t.min(),t.max())
-        # print "about to draw"
+        # print("about to draw")
         canvas.draw()
 
 class LiveLMAController(object):
@@ -162,21 +165,35 @@ class LiveLMAController(object):
     def on_message(self, ws, message):
         """ ws is the low-level websocket object, message is the binary string of data"""
         
+        message = base64.b64decode(message)
+        
+        # print(len(message), type(message))
+        # print(message[0:header_size])
+        # print(message[header_size:])
 
-        header = np.fromstring(message[0:header_size], dtype=header_dtype)
-        sources = np.fromstring(message[header_size:], dtype=source_dtype, count=header['num_sources'])
+        header = np.frombuffer(message[0:header_size], dtype=header_dtype)
+        # print(header['num_sources'])
+        sources = np.frombuffer(message[header_size:], dtype=source_dtype, count=header['num_sources'][0])
+        # print('parse 2')
+
+
+        # header = np.fromstring(message[0:header_size], dtype=header_dtype)
+        # sources = np.fromstring(message[header_size:], dtype=source_dtype, count=header['num_sources'])
         
         #print("{0} new, {1} stations".format(header['num_sources'][0], header['num_stations'][0]))
                 
         data = np.empty_like(sources, dtype=self.dtype) 
+        # print('empty')
         
         # This may not be the optimal precision; perhaps should convert to seconds of day.
         # See time handling in archive_to_LiveLMA for examples
         data['t'] = sources['t'].astype('f8')+header['header_second'].astype('f8')
+        # print('time')
         
         for k, v in self.dtype_mapping.items():
             data[v] = sources[k]
-            
+        
+        # print('mapped, showing')
         for view in self.views:
             view.show(header, data)
         
@@ -200,7 +217,7 @@ if __name__ == '__main__':
     import matplotlib.pyplot as plt
     fig = plt.figure()
     ax = fig.add_subplot(111)
-    ax.axis(( -103.5, -99.5, 31.5, 35.5))
+    ax.axis(( -104.5, -99.5, 31.0, 36.0))
     scatter = ax.scatter([33,35], [-102,-101], c=[0,1], s=9, marker='.', linewidth=0)
     plt.draw()
     plotter = LiveLMAplanview(scatter)
