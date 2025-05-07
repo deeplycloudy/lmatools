@@ -157,6 +157,13 @@ def calculate_flash_stats(flash, min_pts=2):
             # hull indexing has problems here
             logger.warning('Setting area to 0 for flash with points %s, %s' % (x, y))
             area=0.0
+        except QhullError:
+            # tends to happen when a duplicate point causes the point count to
+            # drop to 2, leading to a degenerate polygon with no area, but more recent
+            # Qhull seems to emit a different error
+            logger.warning('Setting area to 0 for flash with points %s, %s' % (x, y))
+            area=0.0
+        
            
     if area == 0.0:
         energy_estimate = 0.
